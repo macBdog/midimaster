@@ -1,6 +1,8 @@
 import pygame
 from texture import TextureManager
 from gui import Gui
+from widget import AlignX
+from widget import AlignY
 
 def main():
     """The entry point and controlling loop for the game. 
@@ -17,17 +19,19 @@ def main():
     textures = TextureManager("tex", subsystems)
     gui = Gui(screen, window_width, window_height)
 
-    texLogo = textures.Get("logo.png")
+    texLogo = textures.get("logo.png")
     pygame.display.set_icon(texLogo)
     running = True
 
-    gui.AddWidget(textures.GetSub("gui", "imgtitle.tga"), gui.width // 2, gui.height // 2)
+    title = gui.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui.width // 2, gui.height // 2)
+    title.alignX = AlignX.Centre
+    title.alignY = AlignY.Middle
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            gui.Draw()
+            gui.draw()
             pygame.display.flip()
 
 main()

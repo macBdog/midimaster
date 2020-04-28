@@ -1,4 +1,5 @@
 import pygame
+from pygame import Surface
 import os.path
 
 class TextureManager:
@@ -12,7 +13,7 @@ class TextureManager:
         self.sub_paths = []
         self.sub_paths += subsystems
 
-    def Get(self, texture_name):
+    def get(self, texture_name: str) -> Surface:
         if texture_name in self.cache:
             return self.cache[texture_name]
 
@@ -21,7 +22,7 @@ class TextureManager:
         self.cache[texture_name] = texture
         return texture
 
-    def GetSub(self, sub_name, texture_name):
+    def get_sub(self, sub_name: str, texture_name:str) -> Surface:
         if sub_name in self.sub_paths:
             texture_path = os.path.join(sub_name, texture_name)
-            return self.Get(texture_path)
+            return self.get(texture_path)
