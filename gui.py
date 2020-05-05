@@ -21,8 +21,8 @@ class Gui:
         self.widgets.append(widget)
         return widget
 
-    def draw(self):
+    def draw(self, dt: float):
         """Blit all the widgets in the collection to the screen.
         """
         for i in self.widgets:
-            i.draw(self.screen)
+            i.draw(self.screen, dt)

@@ -18,7 +18,8 @@ class TextureManager:
             return self.cache[texture_name]
 
         texture_path = os.path.join(self.base_path, texture_name)
-        texture = pygame.image.load(texture_path)
+        texture = pygame.image.load(texture_path).convert()
+        texture.set_colorkey((0,0,0))
         self.cache[texture_name] = texture
         return texture
 

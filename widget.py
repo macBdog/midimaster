@@ -1,5 +1,6 @@
 import enum
 from pygame import Surface
+from animation import Animation
 
 class AlignX(enum.Enum):
     Left = 1
@@ -24,8 +25,12 @@ class Widget:
         self.y = y
         self.alignX = AlignX.Left
         self.alignY = AlignY.Top
+        self.animation = None
 
-    def draw(self, screen):
+    def animate(self, animation: Animation):
+        self.animation = animation
+
+    def draw(self, screen: Surface, dt: float):
         """Blit a widget to the screen
         :param screen: The pygame.screen used to write the pixel data
         """
@@ -41,4 +46,10 @@ class Widget:
         elif self.alignY == AlignY.Bottom:
             dY -= self.height
 
+        # Apply any active animation
+        if self.animation and self.animation.active:
+            self.texture.set_alpha(int(self.animation.val * 255.0))
+            self.animation.tick(dt)
+
+        # Do the final blit
         screen.blit(self.texture, (dX, dY))
