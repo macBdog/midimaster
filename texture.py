@@ -27,3 +27,13 @@ class TextureManager:
         if sub_name in self.sub_paths:
             texture_path = os.path.join(sub_name, texture_name)
             return self.get(texture_path)
+
+    def tint(self, surface: Surface, colour: tuple) -> Surface: 
+        """ Modifies the supplied texture by adding colour onto surface.
+        :param surface: The surface to be modified
+        :param colour: The RGB colour value to be added
+		""" 
+        surface = surface.copy()
+        surface.fill((255, 255, 255, 255), None, pygame.BLEND_RGBA_MULT)
+        surface.fill(colour[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)
+        return surface

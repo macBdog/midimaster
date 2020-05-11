@@ -5,6 +5,8 @@ from widget import AlignX
 from widget import AlignY
 from animation import Animation
 from animation import AnimType
+from music import Music
+import os.path
 
 def main():
     """The entry point and controlling loop for the game. 
@@ -19,23 +21,47 @@ def main():
 
     subsystems = "gui", "mesh"
     textures = TextureManager("tex", subsystems)
-    gui = Gui(screen, window_width, window_height)
+    gui_splash = Gui(screen, window_width, window_height)
 
     texLogo = textures.get("logo.png")
     pygame.display.set_icon(texLogo)
     running = True
 
     # Create a background image stretched to the size of the window
-    bg = gui.add_widget(textures.get("game_background.tga"), 0, 0)
-    bg.alignX = AlignX.Left
-    bg.alignY = AlignY.Top
-    bg.texture = pygame.transform.scale(bg.texture, (gui.width, gui.height))
+    bg_splash = gui_splash.add_widget(textures.get("menu_background.tga"), 0, 0)
+    bg_splash.alignX = AlignX.Left
+    bg_splash.alignY = AlignY.Top
+    bg_splash.texture = pygame.transform.scale(bg_splash.texture, (gui_splash.width, gui_splash.height))
 
     # Create a title image and fade it in
-    title = gui.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui.width // 2, gui.height // 2)
+    title = gui_splash.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui_splash.width // 2, gui_splash.height // 2)
     title.alignX = AlignX.Centre
     title.alignY = AlignY.Middle
     title.animation = Animation(AnimType.FadeIn, 1.7)
+
+    # Create the holder UI for the game play elements
+    gui_game = Gui(screen, window_width, window_height)
+    bg_game = gui_game.add_widget(textures.get("game_background.tga"), 0, 0)
+    bg_game.alignX = AlignX.Left
+    bg_game.alignY = AlignY.Top
+    bg_game.texture = pygame.transform.scale(bg_game.texture, (gui_splash.width, gui_splash.height))
+
+    # Draw the 5 staff lines of the treble clef
+    staff_pos_x = 50
+    staff_pos_y = gui_splash.height // 2
+    staff_lines = []
+    staff_spacing = 64
+    num_staff_lines = 5
+    staff_colours = [(128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 0, 128), (128, 128, 0)]
+    for i in range(num_staff_lines):
+        staff_lines.append(gui_game.add_widget(textures.get("staff.png"), staff_pos_x, staff_pos_y - i * staff_spacing))
+        staff_lines[i].alignX = AlignX.Left
+        staff_lines[i].alignY = AlignY.Top
+        staff_lines[i].texture = pygame.transform.scale(staff_lines[i].texture, (gui_splash.width, staff_spacing))
+        staff_lines[i].texture = textures.tint(staff_lines[i].texture, staff_colours[i])
+
+    # Read a midi file and load the notes
+    music = Music(screen, textures, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
 
     clock = pygame.time.Clock()
     while running:
@@ -48,7 +74,11 @@ def main():
         
         # Then draw frame
         screen.fill((0,0,0))
-        gui.draw(dt)
+
+        # gui_splash.draw(dt)
+        gui_game.draw(dt)
+        music.draw(dt)
+
         pygame.display.flip()
 
 main()
