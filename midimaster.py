@@ -1,4 +1,5 @@
 import pygame
+import pygame.freetype
 from texture import TextureManager
 from gui import Gui
 from widget import AlignX
@@ -6,6 +7,7 @@ from widget import AlignY
 from animation import Animation
 from animation import AnimType
 from music import Music
+from collections import deque 
 import os.path
 
 def main():
@@ -16,6 +18,11 @@ def main():
     window_width = 1280
     window_height = 720
     pygame.init()
+    font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
+    font_game_h1 = pygame.freetype.Font(font_game_path, 50)
+    font_game_h2 = pygame.freetype.Font(font_game_path, 38)
+    font_game_body = pygame.freetype.Font(font_game_path, 22)
+
     screen = pygame.display.set_mode((window_width, window_height))
     pygame.display.set_caption("MidiMaster")
 
@@ -59,14 +66,23 @@ def main():
         staff_lines[i].alignY = AlignY.Top
         staff_lines[i].texture = pygame.transform.scale(staff_lines[i].texture, (gui_splash.width, staff_spacing))
         staff_lines[i].texture = textures.tint(staff_lines[i].texture, staff_colours[i])
+        staff_lines[i].texture.set_alpha(150)
 
     # Read a midi file and load the notes
     music = Music(screen, textures, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
 
+    num_fps_samples = 8
+    fps_samples = deque()
     clock = pygame.time.Clock()
     while running:
         dt = clock.tick() * 0.001
         
+        if len(fps_samples) < num_fps_samples:
+            fps_samples.appendleft(dt)
+        else:
+            fps_samples.pop()
+            fps_samples.appendleft(dt)
+
         # Handle all events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -78,6 +94,12 @@ def main():
         # gui_splash.draw(dt)
         gui_game.draw(dt)
         music.draw(dt)
+
+        # draw the fps
+        total_fps = sum(fps_samples) / num_fps_samples
+        if total_fps > 0:
+            fps_string = "FPS: {0:3.2f}".format(1.0 / total_fps);
+            font_game_body.render_to(screen, (window_width - 200, 50), fps_string, (128, 128, 128))
 
         pygame.display.flip()
 
