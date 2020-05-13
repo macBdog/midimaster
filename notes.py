@@ -2,20 +2,25 @@ import pygame
 from pygame import Surface
 from texture import TextureManager
 import os.path
+import math
 
-class Note:
+class Note(pygame.sprite.DirtySprite):
     """Note is a wrapper around a texture to display it in an animated
     sequence during a game. A note also knows about it's scoring data.
     """
 
-    def __init__(self, texture: Surface, x: int, y: int):
-        self.texture = texture
-        self.x = x
-        self.y = y
+    def __init__(self, texture: Surface, rect, x: int, y: int):
+        pygame.sprite.DirtySprite.__init__(self)
+        self.image = texture.copy()
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
-    def draw(self, screen: Surface, dt: float, tempo: float):
-        screen.blit(self.texture, (self.x, self.y))
-        self.x -= dt * tempo
+    def draw(self, dt: float, tempo: float):
+        self.rect.move_ip(-dt * tempo, 0)
+
+    def update(self):
+        self.dirty = 1
 
 class Notes:
     """Notes manages all the on-screen note representations for a game.
@@ -23,15 +28,16 @@ class Notes:
     for each piece of music when they should be on-screen.
     """
 
-    def __init__(self, screen: Surface, textures: TextureManager, staff_pos: tuple, tempo: float):
+    def __init__(self, screen: Surface, textures: TextureManager, sprites: pygame.sprite.LayeredDirty, staff_pos: tuple, tempo: float):
         self.screen = screen
         self.notes = []
+        self.sprites = sprites
         self.textures = textures
         self.pos = staff_pos
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
         self.tempo = tempo
-        self.music_font_size = 320
-        self.pixels_per_pitch = 32
+        self.music_font_size = 220
+        self.pixels_per_pitch = 20
         self.pixels_per_32nd = 18
         self.font_music_path = os.path.join("ext", "Musisync.ttf")
         self.font_music = pygame.freetype.Font(self.font_music_path, self.music_font_size)
@@ -45,13 +51,16 @@ class Notes:
         self.add_note_definition(2, "s")
         self.add_note_definition(1, "s")
 
-        # Create the barlines and offsets
-        self.num_barlines = 3
+        # Create the barlines with 0 being the immovable 0 bar
+        self.num_barlines = 4
         self.barlines = []
-        self.barline_offsets = []
         for i in range(self.num_barlines):
-            self.barlines.append(textures.get("barline.png"))
-            self.barline_offsets.append(i * self.pixels_per_32nd * 32)
+            barline = textures.get("barline.png")
+            barline.rect.x = self.pos[0] + (i * self.pixels_per_32nd * 32)
+            barline.rect.y = self.pos[1] - self.pixels_per_pitch * 6
+            barline.resize(4, self.pixels_per_pitch * 8)
+            self.barlines.append(barline)
+            self.sprites.add(barline)
 
     def add_note_definition(self, num_32nd_notes: int, font_character: str):
         note_texture, rect = self.font_music.render(font_character)
@@ -63,17 +72,19 @@ class Notes:
         note_offset = self.note_offsets.get(length) or self.note_offsets[min(self.note_offsets.keys(), key=lambda k: abs(k-length))]
         pitch_diff = (self.origin_note_pitch - pitch) * self.pixels_per_pitch
         time_diff = time * self.pixels_per_32nd
-        newNote = Note(note_texture, self.pos[0] + time_diff, self.origin_note_y + pitch_diff - note_offset.height)
+        newNote = Note(note_texture, note_offset, self.pos[0] + time_diff, self.origin_note_y + pitch_diff - note_offset.height)
         self.notes.append(newNote)
+        self.sprites.add(newNote)
 
     def draw(self, dt: float):
         # Draw and update the bar lines
         for i in range(self.num_barlines):
-            self.screen.blit(self.barlines[i], (self.barline_offsets[i], self.pos[1] - self.pixels_per_pitch * 6))
-            self.barline_offsets[i] -= dt * self.tempo
-            if self.barline_offsets[i] < 0:
-                self.barline_offsets[i] = self.num_barlines * self.pixels_per_32nd * 32
+            if i > 0:
+                self.barlines[i].rect.move_ip(-dt * self.tempo, 0)
+                if self.barlines[i].rect.x <= self.pos[0]:
+                    self.barlines[i].rect.x = self.num_barlines * self.pixels_per_32nd * 32
+            self.barlines[i].dirty = 1
 
         # Draw all the current notes
         for note in self.notes:
-            note.draw(self.screen, dt, self.tempo)
+            note.draw(dt, self.tempo)

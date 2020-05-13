@@ -1,6 +1,7 @@
 import enum
 from pygame import Surface
 from animation import Animation
+from texture import SpriteTexture
 
 class AlignX(enum.Enum):
     Left = 1
@@ -17,12 +18,10 @@ class Widget:
         Base class can display and animate alpha, width, height. 
         Child classes are expected to handle input and other functionality."""
 
-    def __init__(self, texture: Surface, x: int, y: int):
+    def __init__(self, texture: SpriteTexture, x: int, y: int):
         self.texture = texture
-        self.width = texture.get_width()
-        self.height = texture.get_height()
-        self.x = x
-        self.y = y
+        self.texture.rect.x = x
+        self.texture.rect.y = y
         self.alignX = AlignX.Left
         self.alignY = AlignY.Top
         self.animation = None
@@ -30,26 +29,25 @@ class Widget:
     def animate(self, animation: Animation):
         self.animation = animation
 
+    def align(self, x: AlignX, y: AlignY):
+        if x == AlignX.Centre:
+            self.texture.rect.x -= self.texture.rect.width // 2
+        elif x == AlignX.Right:
+            self.texture.rect.x -= self.texture.rect.width
+        if y == AlignY.Middle:
+            self.texture.rect.y -= self.texture.rect.height // 2
+        elif y == AlignY.Bottom:
+            self.texture.rect.y -= self.texture.rect.height
+        self.texture.dirty = 1
+
     def draw(self, screen: Surface, dt: float):
-        """Blit a widget to the screen
+        """Apply any changes to the widget rect
         :param screen: The pygame.screen used to write the pixel data
         """
-        dX = self.x
-        dY = self.y
-        if self.alignX == AlignX.Centre:
-            dX -= self.width // 2
-        elif self.alignX == AlignX.Right:
-            dX -= self.width
-
-        if self.alignY == AlignY.Middle:
-            dY -= self.height // 2
-        elif self.alignY == AlignY.Bottom:
-            dY -= self.height
 
         # Apply any active animation
         if self.animation and self.animation.active:
-            self.texture.set_alpha(int(self.animation.val * 255.0))
+            self.texture.image.set_alpha(int(self.animation.val * 255.0))
+            self.texture.dirty = 1
             self.animation.tick(dt)
 
-        # Do the final blit
-        screen.blit(self.texture, (dX, dY))
