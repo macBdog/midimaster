@@ -58,8 +58,8 @@ def main():
     staff_pos_y = gui_splash.height // 2
     staff_lines = []
     staff_spacing = 64
-    num_staff_lines = 5
-    staff_colours = [(128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 0, 128), (128, 128, 0)]
+    num_staff_lines = 4
+    staff_colours = [(0, 128, 0), (0, 0, 128), (128, 0, 128), (128, 128, 0)]
     for i in range(num_staff_lines):
         staff_lines.append(gui_game.add_widget(textures.get("staff.png"), staff_pos_x, staff_pos_y - i * staff_spacing))
         staff_lines[i].alignX = AlignX.Left
@@ -69,7 +69,7 @@ def main():
         staff_lines[i].texture.set_alpha(150)
 
     # Read a midi file and load the notes
-    music = Music(screen, textures, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
+    music = Music(screen, textures, (staff_pos_x, staff_pos_y), os.path.join("music", "test.mid"))
 
     num_fps_samples = 8
     fps_samples = deque()
