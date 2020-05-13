@@ -35,7 +35,7 @@ def main():
     running = True
 
     # Create a background image stretched to the size of the window
-    bg_splash = gui_splash.add_widget(textures.get("menu_background.tga"), 0, 0)
+    bg_splash = gui_splash.add_widget(textures.get("game_background.tga"), 0, 0)
     bg_splash.alignX = AlignX.Left
     bg_splash.alignY = AlignY.Top
     bg_splash.texture = pygame.transform.scale(bg_splash.texture, (gui_splash.width, gui_splash.height))
@@ -48,10 +48,14 @@ def main():
 
     # Create the holder UI for the game play elements
     gui_game = Gui(screen, window_width, window_height)
-    bg_game = gui_game.add_widget(textures.get("game_background.tga"), 0, 0)
+    bg_game = gui_game.add_widget(textures.get("menu_background.tga"), 0, 0)
     bg_game.alignX = AlignX.Left
     bg_game.alignY = AlignY.Top
     bg_game.texture = pygame.transform.scale(bg_game.texture, (gui_splash.width, gui_splash.height))
+
+    bg_score = gui_game.add_widget(textures.get("score_bg.tga"), gui_splash.width * 0.5, gui_splash.height - 100)
+    bg_score.alignX = AlignX.Centre
+    bg_score.alignY = AlignY.Bottom
 
     # Draw the 5 staff lines of the treble clef
     staff_pos_x = 50
@@ -69,13 +73,13 @@ def main():
         staff_lines[i].texture.set_alpha(150)
 
     # Read a midi file and load the notes
-    music = Music(screen, textures, (staff_pos_x, staff_pos_y), os.path.join("music", "test.mid"))
+    music = Music(screen, textures, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
 
     num_fps_samples = 8
     fps_samples = deque()
     clock = pygame.time.Clock()
     while running:
-        dt = clock.tick() * 0.001
+        dt = clock.tick(60) * 0.001
         
         if len(fps_samples) < num_fps_samples:
             fps_samples.appendleft(dt)
@@ -88,9 +92,6 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
         
-        # Then draw frame
-        screen.fill((0,0,0))
-
         # gui_splash.draw(dt)
         gui_game.draw(dt)
         music.draw(dt)
@@ -101,6 +102,5 @@ def main():
             fps_string = "FPS: {0:3.2f}".format(1.0 / total_fps);
             font_game_body.render_to(screen, (window_width - 200, 50), fps_string, (128, 128, 128))
 
-        pygame.display.flip()
-
+        pygame.display.update()
 main()

@@ -31,18 +31,19 @@ class Notes:
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
         self.tempo = tempo
         self.music_font_size = 320
+        self.pixels_per_pitch = 32
+        self.pixels_per_32nd = 18
         self.font_music_path = os.path.join("ext", "Musisync.ttf")
         self.font_music = pygame.freetype.Font(self.font_music_path, self.music_font_size)
-        self.origin_note_y = self.pos[1] - self.music_font_size * 0.5
-        self.pixels_per_pitch = 64
-        self.pixels_per_32nd = 24
+        self.origin_note_y = self.pos[1] - self.pixels_per_pitch * 2;
         self.note_textures = {}
-        self.note_textures[32] = self.font_music.render("w")[0]
-        self.note_textures[16] = self.font_music.render("h")[0]
-        self.note_textures[8] = self.font_music.render("q")[0]
-        self.note_textures[4] = self.font_music.render("e")[0]
-        self.note_textures[2] = self.font_music.render("s")[0]
-        self.note_textures[1] = self.font_music.render("s")[0]
+        self.note_offsets = {}
+        self.add_note_definition(32, "w")
+        self.add_note_definition(16, "h")
+        self.add_note_definition(8, "q")
+        self.add_note_definition(4, "e")
+        self.add_note_definition(2, "s")
+        self.add_note_definition(1, "s")
 
         # Create the barlines and offsets
         self.num_barlines = 3
@@ -52,19 +53,23 @@ class Notes:
             self.barlines.append(textures.get("barline.png"))
             self.barline_offsets.append(i * self.pixels_per_32nd * 32)
 
+    def add_note_definition(self, num_32nd_notes: int, font_character: str):
+        note_texture, rect = self.font_music.render(font_character)
+        self.note_textures[num_32nd_notes] = note_texture
+        self.note_offsets[num_32nd_notes] = rect
+
     def add(self, pitch: int, time: int, length: int):
-        if length in self.note_textures:
-            pitch_diff = (self.origin_note_pitch - pitch) * self.pixels_per_pitch
-            time_diff = time * self.pixels_per_32nd
-            newNote = Note(self.note_textures[length], self.pos[0] + time_diff, self.origin_note_y + pitch_diff)
-            self.notes.append(newNote)
-        else:
-            print("Error! Note value of {0} not supported.".format(time))
+        note_texture = self.note_textures.get(length) or self.note_textures[min(self.note_textures.keys(), key=lambda k: abs(k-length))]
+        note_offset = self.note_offsets.get(length) or self.note_offsets[min(self.note_offsets.keys(), key=lambda k: abs(k-length))]
+        pitch_diff = (self.origin_note_pitch - pitch) * self.pixels_per_pitch
+        time_diff = time * self.pixels_per_32nd
+        newNote = Note(note_texture, self.pos[0] + time_diff, self.origin_note_y + pitch_diff - note_offset.height)
+        self.notes.append(newNote)
 
     def draw(self, dt: float):
         # Draw and update the bar lines
         for i in range(self.num_barlines):
-            self.screen.blit(self.barlines[i], (self.barline_offsets[i], self.pos[1] - self.pixels_per_pitch * 3))
+            self.screen.blit(self.barlines[i], (self.barline_offsets[i], self.pos[1] - self.pixels_per_pitch * 6))
             self.barline_offsets[i] -= dt * self.tempo
             if self.barline_offsets[i] < 0:
                 self.barline_offsets[i] = self.num_barlines * self.pixels_per_32nd * 32
