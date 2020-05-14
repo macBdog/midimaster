@@ -8,6 +8,7 @@ from animation import Animation
 from animation import AnimType
 from music import Music
 from collections import deque 
+from sprite_string import SpriteString
 import os.path
 
 def main():
@@ -38,18 +39,18 @@ def main():
     running = True
 
     # Create a background image stretched to the size of the window
-    bg_splash = gui_splash.add_widget(textures.get("game_background.tga"), 0, 0)
-    bg_splash.texture.image = pygame.transform.scale(bg_splash.texture.image, (gui_splash.width, gui_splash.height))
+    #bg_splash = gui_splash.add_widget(textures.get("game_background.tga"), 0, 0)
+    #bg_splash.texture.image = pygame.transform.scale(bg_splash.texture.image, (gui_splash.width, gui_splash.height))
 
     # Create a title image and fade it in
-    title = gui_splash.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui_splash.width // 2, gui_splash.height // 2)
-    title.align(AlignX.Centre, AlignY.Middle)
-    title.animation = Animation(AnimType.FadeIn, 1.7)
+    # title = gui_splash.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui_splash.width // 2, gui_splash.height // 2)
+    # title.align(AlignX.Centre, AlignY.Middle)
+    # title.animation = Animation(AnimType.FadeIn, 1.7)
 
     # Create the holder UI for the game play elements
     gui_game = Gui(screen, sprites, window_width, window_height)
-    bg_game = gui_game.add_widget(textures.get("menu_background.tga"), 0, 0)
-    bg_game.texture.resize(gui_splash.width, gui_splash.height)
+    bg_game = gui_game.add_widget(textures.get("game_background.tga"), 0, 0)
+    bg_game.texture.resize(gui_game.width, gui_game.height)
 
     bg_score = gui_game.add_widget(textures.get("score_bg.tga"), gui_splash.width * 0.5, gui_splash.height - 100)
     bg_score.align(AlignX.Centre, AlignY.Bottom)
@@ -70,7 +71,11 @@ def main():
     # Read a midi file and load the notes
     music = Music(screen, textures, sprites, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
 
+    # Show the score
     score = 0
+    text_score = SpriteString(font_game_h1, "{0} XP".format(score), (232, 38), (28, 28, 28))
+    sprites.add(text_score)
+
     num_fps_samples = 8
     fps_samples = deque()
     clock = pygame.time.Clock()
@@ -91,10 +96,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_c:
                     score += 1
-                    bg_score.texture.dirty = 1
-                if event.key == pygame.K_d:
-                    score += 1
-                    bg_score.texture.dirty = 1
+                    text_score.set_text("{0} XP".format(score))
         
         # gui_splash.draw(dt)
         gui_game.draw(dt)
@@ -104,18 +106,15 @@ def main():
         sprites.update()
         rects = sprites.draw(screen)
 
-        # draw the score on top of the widget
-        font_game_h1.render_to(bg_score.texture.image, (232, 38), "{0} XP".format(score), (28, 28, 28))
-
         # Draw the treble clef
-        font_game_music_large.render_to(screen, (staff_pos_x - 96, staff_pos_y - 186), "G", (28, 28, 28))
+        font_game_music_large.render_to(screen, (staff_pos_x - 96, staff_pos_y - 186), "G", (0, 0, 0))
 
         # draw the fps
         total_fps = sum(fps_samples) / num_fps_samples
         if total_fps > 0:
             fps_avg = 1.0 / total_fps;
             if fps_avg < desired_framerate - 2:
-                print("Framerate has dipped below target, timing is compromised.")
+                print("Framerate has dipped below target - {0:3.2f}, timing is compromised.".format(fps_avg))
 
         pygame.display.update()
 main()
