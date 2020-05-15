@@ -16,6 +16,7 @@ class SpriteTexture(pygame.sprite.DirtySprite):
 		""" 
         self.image.fill((255, 255, 255, 255), None, pygame.BLEND_RGBA_MULT)
         self.image.fill(colour[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)
+        self.dirty = 1
 
     def resize(self, width: int, height: int):
         x_cache = self.rect.x
@@ -24,9 +25,11 @@ class SpriteTexture(pygame.sprite.DirtySprite):
         self.rect = self.image.get_rect()
         self.rect.x = x_cache
         self.rect.y = y_cache
+        self.dirty = 1
 
     def set_alpha(self, alpha: int):
         self.image.set_alpha(alpha)
+        self.dirty = 1
 
 class TextureManager:
     """The textures class handles loading and management of 

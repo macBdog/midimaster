@@ -7,6 +7,8 @@ from widget import AlignY
 from animation import Animation
 from animation import AnimType
 from music import Music
+from mido import Message
+from midi_devices import MidiDevices
 from collections import deque 
 from sprite_string import SpriteString
 import os.path
@@ -49,32 +51,49 @@ def main():
 
     # Create the holder UI for the game play elements
     gui_game = Gui(screen, sprites, window_width, window_height)
-    bg_game = gui_game.add_widget(textures.get("game_background.tga"), 0, 0)
-    bg_game.texture.resize(gui_game.width, gui_game.height)
+    bg_game = textures.get("game_background.tga")
+    bg_game.resize(gui_game.width, gui_game.height)
 
     bg_score = gui_game.add_widget(textures.get("score_bg.tga"), gui_splash.width * 0.5, gui_splash.height - 100)
     bg_score.align(AlignX.Centre, AlignY.Bottom)
 
-    # Draw the 5 staff lines of the treble clef
+    # Draw the 12 note lines with the staff lines of the treble clef highlighted
     staff_pos_x = 150
     staff_pos_y = gui_splash.height // 2
     staff_lines = []
-    staff_spacing = 40
+    note_box = []
+    note_highlight = []
+    note_spacing = 20
+    note_base_alpha = 32
+    staff_spacing = note_spacing * 2
     num_staff_lines = 4
-    staff_colours = [(0, 128, 0), (0, 0, 128), (128, 0, 128), (128, 128, 0)]
+    num_notes = 12
+    note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) - 2
+    note_colours = [(252, 64, 58), (205, 153, 254), (255, 235, 63), (101, 101, 153),    # C, Db, D, Eb
+                    (227, 251, 255), (172, 28, 2), (0, 204, 255), (255, 101, 1),        # E, F, Gb, G
+                    (255, 96, 236), (50, 205, 51), (140, 138, 141), (75, 75, 252)]      # Ab, A, Bb, B 
     for i in range(num_staff_lines):
         staff_lines.append(gui_game.add_widget(textures.get("staff.png"), staff_pos_x, staff_pos_y - i * staff_spacing))
         staff_lines[i].texture.resize(window_width - 100, staff_spacing)
-        staff_lines[i].texture.tint(staff_colours[i])
         staff_lines[i].texture.set_alpha(150)
+    for i in range(num_notes):
+        note_highlight.append(note_base_alpha)
+        note_box.append(gui_game.add_widget(textures.get("note_box.png"), staff_pos_x - note_spacing, note_start - i * note_spacing))
+        note_box[i].texture.tint(note_colours[i])
+        note_box[i].texture.set_alpha(note_highlight[i])
 
     # Read a midi file and load the notes
     music = Music(screen, textures, sprites, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
 
     # Show the score
     score = 0
-    text_score = SpriteString(font_game_h1, "{0} XP".format(score), (232, 38), (28, 28, 28))
+    text_score = SpriteString(font_game_h1, "{0} XP".format(score), (bg_score.texture.rect.x + 232, bg_score.texture.rect.y + 38), (28, 28, 28))
     sprites.add(text_score)
+
+    # Connect midi inputs and outputs
+    devices = MidiDevices()
+    devices.open_input_default()
+    devices.open_output_default()
 
     num_fps_samples = 8
     fps_samples = deque()
@@ -89,6 +108,8 @@ def main():
             fps_samples.pop()
             fps_samples.appendleft(dt)
 
+        devices.update()
+
         # Handle all events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -96,18 +117,30 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_c:
                     score += 1
+                    note_highlight[0] = 255
                     text_score.set_text("{0} XP".format(score))
+                    new_note = Message('note_on')
+                    new_note.note = 60
+                    new_note.velocity = 100
+                    devices.output_messages.append(new_note)
         
+        devices.input_messages = []
+
         # gui_splash.draw(dt)
         gui_game.draw(dt)
         music.draw(dt)
 
+        for i in range(num_notes):
+            if note_highlight[i] > note_base_alpha:
+                note_highlight[i] -= 4
+                note_box[i].texture.set_alpha(note_highlight[i])
+
         # Update and draw the cached dirty rect list
         sprites.update()
-        rects = sprites.draw(screen)
+        rects = sprites.draw(screen, bg_game.image)
 
         # Draw the treble clef
-        font_game_music_large.render_to(screen, (staff_pos_x - 96, staff_pos_y - 186), "G", (0, 0, 0))
+        font_game_music_large.render_to(screen, (staff_pos_x - 128, staff_pos_y - 186), "G", (0, 0, 0))
 
         # draw the fps
         total_fps = sum(fps_samples) / num_fps_samples

@@ -14,7 +14,8 @@ class AlignY(enum.Enum):
     Bottom = 3
 
 class Widget:
-    """A collection of functionality around the display of a texture.
+    """A collection of functionality around the display of a texture for interfaces.
+        It owns a reference to a SpriteTexture for drawing.
         Base class can display and animate alpha, width, height. 
         Child classes are expected to handle input and other functionality."""
 
@@ -31,13 +32,13 @@ class Widget:
 
     def align(self, x: AlignX, y: AlignY):
         if x == AlignX.Centre:
-            self.texture.rect.x -= self.texture.rect.width // 2
+            self.texture.rect.move_ip(-self.texture.rect.width // 2, 0)
         elif x == AlignX.Right:
-            self.texture.rect.x -= self.texture.rect.width
+            self.texture.rect.move_ip(-self.texture.rect.width, 0)
         if y == AlignY.Middle:
-            self.texture.rect.y -= self.texture.rect.height // 2
+            self.texture.rect.move_ip(0, -self.texture.rect.height // 2)
         elif y == AlignY.Bottom:
-            self.texture.rect.y -= self.texture.rect.height
+            self.texture.rect.move_ip(0, -self.texture.rect.height)
         self.texture.dirty = 1
 
     def draw(self, screen: Surface, dt: float):

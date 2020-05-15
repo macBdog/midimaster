@@ -30,12 +30,19 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="midimaster.py" />
+    <Compile Include="midi_devices.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="music.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="notes.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="setup.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="sprite_string.py" />
     <Compile Include="texture.py" />
     <Compile Include="widget.py">
       <SubType>Code</SubType>
