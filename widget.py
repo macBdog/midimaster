@@ -39,9 +39,9 @@ class Widget:
             self.texture.rect.move_ip(0, -self.texture.rect.height // 2)
         elif y == AlignY.Bottom:
             self.texture.rect.move_ip(0, -self.texture.rect.height)
-        self.texture.dirty = 1
+        self.texture.dirty = 0
 
-    def draw(self, screen: Surface, dt: float):
+    def draw(self, dt: float):
         """Apply any changes to the widget rect
         :param screen: The pygame.screen used to write the pixel data
         """
@@ -49,6 +49,6 @@ class Widget:
         # Apply any active animation
         if self.animation and self.animation.active:
             self.texture.image.set_alpha(int(self.animation.val * 255.0))
-            self.texture.dirty = 1
+            #self.texture.dirty = 1
             self.animation.tick(dt)
 

@@ -20,4 +20,4 @@ class SpriteString(pygame.sprite.DirtySprite):
     	self.image, self.rect = self.font.render(self.text, self.colour)
     	self.rect.x = self.pos[0]
     	self.rect.y = self.pos[1]
-    	self.dirty = 1
+    	self.dirty = 0

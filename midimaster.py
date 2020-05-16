@@ -34,15 +34,15 @@ def main():
 
     subsystems = "gui", "mesh"
     textures = TextureManager("tex", subsystems)
-    gui_splash = Gui(screen, sprites, window_width, window_height)
 
     texLogo = textures.get("logo.png")
     pygame.display.set_icon(texLogo.image)
     running = True
 
     # Create a background image stretched to the size of the window
-    #bg_splash = gui_splash.add_widget(textures.get("game_background.tga"), 0, 0)
-    #bg_splash.texture.image = pygame.transform.scale(bg_splash.texture.image, (gui_splash.width, gui_splash.height))
+    # gui_splash = Gui(screen, sprites, window_width, window_height)
+    # bg_splash = gui_splash.add_widget(textures.get("game_background.tga"), 0, 0)
+    # bg_splash.texture.image = pygame.transform.scale(bg_splash.texture.image, (gui_splash.width, gui_splash.height))
 
     # Create a title image and fade it in
     # title = gui_splash.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui_splash.width // 2, gui_splash.height // 2)
@@ -50,16 +50,16 @@ def main():
     # title.animation = Animation(AnimType.FadeIn, 1.7)
 
     # Create the holder UI for the game play elements
-    gui_game = Gui(screen, sprites, window_width, window_height)
-    bg_game = textures.get("game_background.tga")
-    bg_game.resize(gui_game.width, gui_game.height)
+    gui_game = Gui(sprites, window_width, window_height)
+    bg_game = gui_game.add_widget(textures.get("game_background.tga"), 0, 0)
+    bg_game.texture.resize(gui_game.width, gui_game.height)
 
-    bg_score = gui_game.add_widget(textures.get("score_bg.tga"), gui_splash.width * 0.5, gui_splash.height - 100)
+    bg_score = gui_game.add_widget(textures.get("score_bg.tga"), window_width * 0.5, window_height - 100)
     bg_score.align(AlignX.Centre, AlignY.Bottom)
 
     # Draw the 12 note lines with the staff lines of the treble clef highlighted
     staff_pos_x = 150
-    staff_pos_y = gui_splash.height // 2
+    staff_pos_y = window_height // 2
     staff_lines = []
     note_box = []
     note_highlight = []
@@ -90,6 +90,10 @@ def main():
     text_score = SpriteString(font_game_h1, "{0} XP".format(score), (bg_score.texture.rect.x + 232, bg_score.texture.rect.y + 38), (28, 28, 28))
     sprites.add(text_score)
 
+    # Show a large treble clef to be animated
+    text_treble_clef = SpriteString(font_game_music_large, "G", (staff_pos_x - 128, staff_pos_y - 186), (0,0,0))
+    sprites.add(text_treble_clef)
+
     # Connect midi inputs and outputs
     devices = MidiDevices()
     devices.open_input_default()
@@ -99,6 +103,7 @@ def main():
     fps_samples = deque()
     clock = pygame.time.Clock()
     desired_framerate = 60
+
     while running:
         dt = clock.tick(desired_framerate) * 0.001
         
@@ -115,7 +120,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_c:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif event.key == pygame.K_c:
                     score += 1
                     note_highlight[0] = 255
                     text_score.set_text("{0} XP".format(score))
@@ -126,7 +133,6 @@ def main():
         
         devices.input_messages = []
 
-        # gui_splash.draw(dt)
         gui_game.draw(dt)
         music.draw(dt)
 
@@ -137,17 +143,16 @@ def main():
 
         # Update and draw the cached dirty rect list
         sprites.update()
-        rects = sprites.draw(screen, bg_game.image)
+        rects = sprites.draw(screen)
+        pygame.display.update(rects)
 
-        # Draw the treble clef
-        font_game_music_large.render_to(screen, (staff_pos_x - 128, staff_pos_y - 186), "G", (0, 0, 0))
-
-        # draw the fps
+        # Print the fps when it dips below our target
         total_fps = sum(fps_samples) / num_fps_samples
         if total_fps > 0:
             fps_avg = 1.0 / total_fps;
             if fps_avg < desired_framerate - 2:
                 print("Framerate has dipped below target - {0:3.2f}, timing is compromised.".format(fps_avg))
 
-        pygame.display.update()
+    devices.quit()
+    pygame.quit()
 main()

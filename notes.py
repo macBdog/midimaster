@@ -18,8 +18,6 @@ class Note(pygame.sprite.DirtySprite):
 
     def draw(self, dt: float, tempo: float):
         self.rect.move_ip(-dt * tempo, 0)
-
-    def update(self):
         self.dirty = 1
 
 class Notes:
@@ -83,7 +81,7 @@ class Notes:
                 self.barlines[i].rect.move_ip(-dt * self.tempo, 0)
                 if self.barlines[i].rect.x <= self.pos[0]:
                     self.barlines[i].rect.x = self.num_barlines * self.pixels_per_32nd * 32
-            self.barlines[i].dirty = 1
+            #self.barlines[i].dirty = 1
 
         # Draw all the current notes
         for note in self.notes:

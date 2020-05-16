@@ -8,6 +8,8 @@ class SpriteTexture(pygame.sprite.DirtySprite):
         self.image = pygame.image.load(texture_path)
         self.image.convert_alpha()
         self.rect = self.image.get_rect()
+        self.layer = 1
+        self.dirty = 1
 
     def tint(self, colour: tuple): 
         """ Modifies the supplied texture by adding colour onto surface.
@@ -19,12 +21,14 @@ class SpriteTexture(pygame.sprite.DirtySprite):
         self.dirty = 1
 
     def resize(self, width: int, height: int):
-        x_cache = self.rect.x
-        y_cache = self.rect.y
-        self.image = pygame.transform.scale(self.image, (width, height))
-        self.rect = self.image.get_rect()
-        self.rect.x = x_cache
-        self.rect.y = y_cache
+        #x_cache = self.rect.x
+        #y_cache = self.rect.y
+        #self.image = pygame.transform.scale(self.image, (width, height))
+        #self.rect = self.image.get_rect()
+        #self.rect.x = x_cache
+        #self.rect.y = y_cache
+        self.rect.width = width
+        self.rect.height = height
         self.dirty = 1
 
     def set_alpha(self, alpha: int):

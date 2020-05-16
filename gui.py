@@ -5,8 +5,7 @@ from pygame import sprite
 class Gui:
     """Manager style functionality for a collection of widget classes. 
         Also convenience functions for window handling."""
-    def __init__(self, screen: Surface, sprites: sprite.LayeredDirty, window_width: int, window_height: int):
-        self.screen = screen
+    def __init__(self, sprites: sprite.LayeredDirty, window_width: int, window_height: int):
         self.sprites = sprites
         self.width = window_width
         self.height = window_height
@@ -25,4 +24,4 @@ class Gui:
 
     def draw(self, dt: float):
         for i in self.widgets:
-            i.draw(self.screen, dt)
+            i.draw(dt)

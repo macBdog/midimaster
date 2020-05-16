@@ -23,7 +23,7 @@ class MidiDevices:
         if self.output_port is None:
             self.output_device_name = output_name
             if output_name in self.output_devices:
-                self.out_port = mido.open_output(output_name)
+                self.output_port = mido.open_output(output_name)
 
     def open_input_default(self):
         if len(self.input_devices) > 0:
@@ -40,5 +40,16 @@ class MidiDevices:
 
         if self.output_device_name:
             for message in self.output_messages:               
-                self.out_port.send(message)
+                self.output_port.send(message)
             self.output_messages = []
+
+    def quit(self):
+        if self.output_port is not None:
+            self.output_port.close()
+            if not self.output_port.closed:
+                print ("Unable to close output MIDI port {0}.".format(self.output_device_name))
+
+        if self.input_port is not None:
+            self.input_port.close()
+            if not self.input_port.closed:
+                print ("Unable to close input MIDI port {0}.".format(self.input_device_name))                
