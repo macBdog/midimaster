@@ -1,6 +1,7 @@
 import pygame
 from pygame import Surface
 from texture import TextureManager
+from midi_devices import MidiDevices
 import os.path
 import math
 
@@ -26,9 +27,9 @@ class Notes:
     for each piece of music when they should be on-screen.
     """
 
-    def __init__(self, screen: Surface, textures: TextureManager, sprites: pygame.sprite.LayeredDirty, staff_pos: tuple, tempo: float):
-        self.screen = screen
+    def __init__(self, devices: MidiDevices, textures: TextureManager, sprites: pygame.sprite.LayeredDirty, staff_pos: tuple, tempo: float):
         self.notes = []
+        self.devices = devices
         self.sprites = sprites
         self.textures = textures
         self.pos = staff_pos
@@ -81,7 +82,7 @@ class Notes:
                 self.barlines[i].rect.move_ip(-dt * self.tempo, 0)
                 if self.barlines[i].rect.x <= self.pos[0]:
                     self.barlines[i].rect.x = self.num_barlines * self.pixels_per_32nd * 32
-            #self.barlines[i].dirty = 1
+            self.barlines[i].dirty = 1
 
         # Draw all the current notes
         for note in self.notes:

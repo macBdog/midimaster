@@ -31,11 +31,16 @@ class MidiDevices:
 
     def open_output_default(self):
         if len(self.output_devices) > 0:
-            self.open_output(self.output_devices[0])
+            preferred_device_id = 0
+            for i in range(len(self.output_devices)):
+                if self.output_devices[i].find("Synth") >= 0:
+                    preferred_device_id = i
+                    break
+            self.open_output(self.output_devices[preferred_device_id])
 
     def update(self):
         if self.input_device_name:
-            for message in self.input_port:
+            for message in self.input_port.iter_pending():
                 self.input_messages.append(message)
 
         if self.output_device_name:

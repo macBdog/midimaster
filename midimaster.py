@@ -68,6 +68,7 @@ def main():
     staff_spacing = note_spacing * 2
     num_staff_lines = 4
     num_notes = 12
+    staff_pitch_origin = 60 # Using middle C4 as the reference note
     note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) - 2
     note_colours = [(252, 64, 58), (205, 153, 254), (255, 235, 63), (101, 101, 153),    # C, Db, D, Eb
                     (227, 251, 255), (172, 28, 2), (0, 204, 255), (255, 101, 1),        # E, F, Gb, G
@@ -82,8 +83,13 @@ def main():
         note_box[i].texture.tint(note_colours[i])
         note_box[i].texture.set_alpha(note_highlight[i])
 
+    # Connect midi inputs and outputs
+    devices = MidiDevices()
+    devices.open_input_default()
+    devices.open_output_default()
+
     # Read a midi file and load the notes
-    music = Music(screen, textures, sprites, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
+    music = Music(devices, textures, sprites, (staff_pos_x, staff_pos_y), os.path.join("music", "mary.mid"))
 
     # Show the score
     score = 0
@@ -93,11 +99,6 @@ def main():
     # Show a large treble clef to be animated
     text_treble_clef = SpriteString(font_game_music_large, "G", (staff_pos_x - 128, staff_pos_y - 186), (0,0,0))
     sprites.add(text_treble_clef)
-
-    # Connect midi inputs and outputs
-    devices = MidiDevices()
-    devices.open_input_default()
-    devices.open_output_default()
 
     num_fps_samples = 8
     fps_samples = deque()
@@ -115,7 +116,18 @@ def main():
 
         devices.update()
 
-        # Handle all events
+        # Handle all events from MIDI input devices
+        for message in devices.input_messages:
+            if message.type == 'note_on' or message.type == 'note_off':
+                score += 100
+                highlight_id = message.note - staff_pitch_origin
+                if highlight_id >= 0 and highlight_id < num_notes:
+                    note_highlight[highlight_id] = 255
+                devices.output_messages.append(message)
+
+        devices.input_messages = []
+
+        # Handle all events from pygame
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -130,8 +142,6 @@ def main():
                     new_note.note = 60
                     new_note.velocity = 100
                     devices.output_messages.append(new_note)
-        
-        devices.input_messages = []
 
         gui_game.draw(dt)
         music.draw(dt)
