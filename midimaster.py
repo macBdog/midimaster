@@ -11,6 +11,8 @@ from mido import Message
 from midi_devices import MidiDevices
 from collections import deque 
 from sprite_string import SpriteString
+from texture import SpriteShape
+import time
 import os.path
 
 def main():
@@ -51,8 +53,8 @@ def main():
 
     # Create the holder UI for the game play elements
     gui_game = Gui(sprites, window_width, window_height)
-    bg_game = gui_game.add_widget(textures.get("game_background.tga"), 0, 0)
-    bg_game.texture.resize(gui_game.width, gui_game.height)
+    game_bg = SpriteShape((window_width, window_height), (16, 16, 16))
+    gui_game.add_widget(game_bg, 0, 0)
 
     bg_score = gui_game.add_widget(textures.get("score_bg.tga"), window_width * 0.5, window_height - 100)
     bg_score.align(AlignX.Centre, AlignY.Bottom)
@@ -64,7 +66,7 @@ def main():
     note_box = []
     note_highlight = []
     note_spacing = 20
-    note_base_alpha = 32
+    note_base_alpha = 0.15
     staff_spacing = note_spacing * 2
     num_staff_lines = 4
     num_notes = 12
@@ -74,14 +76,15 @@ def main():
                     (227, 251, 255), (172, 28, 2), (0, 204, 255), (255, 101, 1),        # E, F, Gb, G
                     (255, 96, 236), (50, 205, 51), (140, 138, 141), (75, 75, 252)]      # Ab, A, Bb, B 
     for i in range(num_staff_lines):
-        staff_lines.append(gui_game.add_widget(textures.get("staff.png"), staff_pos_x, staff_pos_y - i * staff_spacing))
-        staff_lines[i].texture.resize(window_width - 100, staff_spacing)
-        staff_lines[i].texture.set_alpha(150)
+        staff_body_white = SpriteShape((window_width - 100, staff_spacing), (200, 200, 200))
+        staff_body_black = SpriteShape((window_width - 100, 4), (0, 0, 0))
+        staff_lines.append(gui_game.add_widget(staff_body_white, staff_pos_x, staff_pos_y - i * staff_spacing))
+        staff_lines.append(gui_game.add_widget(staff_body_black, staff_pos_x, staff_pos_y - i * staff_spacing))
     for i in range(num_notes):
         note_highlight.append(note_base_alpha)
         note_box.append(gui_game.add_widget(textures.get("note_box.png"), staff_pos_x - note_spacing, note_start - i * note_spacing))
         note_box[i].texture.tint(note_colours[i])
-        note_box[i].texture.set_alpha(note_highlight[i])
+        note_box[i].texture.set_alpha(note_highlight[i] * 255)
 
     # Connect midi inputs and outputs
     devices = MidiDevices()
@@ -100,20 +103,15 @@ def main():
     text_treble_clef = SpriteString(font_game_music_large, "G", (staff_pos_x - 128, staff_pos_y - 186), (0,0,0))
     sprites.add(text_treble_clef)
 
-    num_fps_samples = 8
-    fps_samples = deque()
-    clock = pygame.time.Clock()
-    desired_framerate = 60
+    music_time = 0.0
+    dt_cur = time.time()
+    dt_last = time.time()
 
     while running:
-        dt = clock.tick(desired_framerate) * 0.001
+        dt_cur = time.time()
+        dt = dt_cur - dt_last
+        dt_last = dt_cur
         
-        if len(fps_samples) < num_fps_samples:
-            fps_samples.appendleft(dt)
-        else:
-            fps_samples.pop()
-            fps_samples.appendleft(dt)
-
         devices.update()
 
         # Handle all events from MIDI input devices
@@ -122,7 +120,7 @@ def main():
                 score += 100
                 highlight_id = message.note - staff_pitch_origin
                 if highlight_id >= 0 and highlight_id < num_notes:
-                    note_highlight[highlight_id] = 255
+                    note_highlight[highlight_id] = 1.0
                 devices.output_messages.append(message)
 
         devices.input_messages = []
@@ -136,7 +134,7 @@ def main():
                     running = False
                 elif event.key == pygame.K_c:
                     score += 1
-                    note_highlight[0] = 255
+                    note_highlight[0] = 1.0
                     text_score.set_text("{0} XP".format(score))
                     new_note = Message('note_on')
                     new_note.note = 60
@@ -144,24 +142,18 @@ def main():
                     devices.output_messages.append(new_note)
 
         gui_game.draw(dt)
-        music.draw(dt)
+        music.draw(music_time)
+        music_time += dt * 120.0
 
         for i in range(num_notes):
+            note_box[i].texture.set_alpha(note_highlight[i] * 255)
             if note_highlight[i] > note_base_alpha:
-                note_highlight[i] -= 4
-                note_box[i].texture.set_alpha(note_highlight[i])
+                note_highlight[i] -= 2.0 * dt
 
         # Update and draw the cached dirty rect list
         sprites.update()
         rects = sprites.draw(screen)
         pygame.display.update(rects)
-
-        # Print the fps when it dips below our target
-        total_fps = sum(fps_samples) / num_fps_samples
-        if total_fps > 0:
-            fps_avg = 1.0 / total_fps;
-            if fps_avg < desired_framerate - 2:
-                print("Framerate has dipped below target - {0:3.2f}, timing is compromised.".format(fps_avg))
 
     devices.quit()
     pygame.quit()

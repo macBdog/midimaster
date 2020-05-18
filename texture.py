@@ -2,13 +2,24 @@ import pygame
 from pygame import Surface
 import os.path
 
+class SpriteShape(pygame.sprite.DirtySprite):
+    def __init__(self, size: tuple, colour: tuple):
+        pygame.sprite.DirtySprite.__init__(self)
+        self.image = pygame.Surface(size)
+        self.image.fill(colour)
+        self.rect = self.image.get_rect()
+        self.dirty = 1
+
+    def set_alpha(self, alpha: int):
+        self.image.set_alpha(alpha)
+        self.dirty = 1
+
 class SpriteTexture(pygame.sprite.DirtySprite):
     def __init__(self, texture_path: str):
         pygame.sprite.DirtySprite.__init__(self)
         self.image = pygame.image.load(texture_path)
         self.image.convert_alpha()
         self.rect = self.image.get_rect()
-        self.layer = 1
         self.dirty = 1
 
     def tint(self, colour: tuple): 
@@ -21,12 +32,12 @@ class SpriteTexture(pygame.sprite.DirtySprite):
         self.dirty = 1
 
     def resize(self, width: int, height: int):
-        #x_cache = self.rect.x
-        #y_cache = self.rect.y
-        #self.image = pygame.transform.scale(self.image, (width, height))
-        #self.rect = self.image.get_rect()
-        #self.rect.x = x_cache
-        #self.rect.y = y_cache
+        x_cache = self.rect.x
+        y_cache = self.rect.y
+        self.image = pygame.transform.scale(self.image, (width, height))
+        self.rect = self.image.get_rect()
+        self.rect.x = x_cache
+        self.rect.y = y_cache
         self.rect.width = width
         self.rect.height = height
         self.dirty = 1

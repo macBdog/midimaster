@@ -20,8 +20,7 @@ class Music:
         self.clocks_per_tick = 24
         self.num_32nd_notes_per_beat = 8
         self.time_signature = (4,4)
-        self.tempo = 160
-        self.notes = Notes(devices, textures, sprites, staff_pos, self.tempo)
+        self.notes = Notes(devices, textures, sprites, staff_pos)
         self.keys = {}
         accumulated_time = 0
         for i, track in enumerate(self.mid.tracks):

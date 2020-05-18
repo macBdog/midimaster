@@ -15,7 +15,7 @@ class AlignY(enum.Enum):
 
 class Widget:
     """A collection of functionality around the display of a texture for interfaces.
-        It owns a reference to a SpriteTexture for drawing.
+        It owns a reference to a SpriteTexture or SpriteShape for drawing.
         Base class can display and animate alpha, width, height. 
         Child classes are expected to handle input and other functionality."""
 
@@ -49,6 +49,6 @@ class Widget:
         # Apply any active animation
         if self.animation and self.animation.active:
             self.texture.image.set_alpha(int(self.animation.val * 255.0))
-            #self.texture.dirty = 1
+            self.texture.dirty = 1
             self.animation.tick(dt)
 
