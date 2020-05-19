@@ -24,8 +24,10 @@ class NoteSprite(pygame.sprite.DirtySprite):
         self.dirty = 0
         self.note_id = -1
 
-    def assign(self, note_id: int, texture: Surface, time: int, pitch_pos: int):
+    def assign(self, note_id: int, texture: Surface, note: int, time: int, length: int, pitch_pos: int):
+        self.note = note
         self.time = time
+        self.length = length
         self.pitch_pos = pitch_pos
         self.image = texture.copy()
         self.rect = self.image.get_rect()
@@ -37,13 +39,14 @@ class NoteSprite(pygame.sprite.DirtySprite):
         self.note_id = -1
         self.dirty = 1
 
-    def draw(self, music_time: float):
+    def draw(self, music_time: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
-            self.rect.x = self.time - music_time
+            self.rect.x = origin_note_x + self.time - music_time
             self.rect.y = self.pitch_pos
             self.dirty = 1
 
             if self.time < music_time:
+                notes_on[self.note] = self.time + self.length
                 self.recycle()
 
 class Notes:
@@ -73,6 +76,7 @@ class Notes:
         self.origin_note_x = staff_pos[0]
         self.note_textures = {}
         self.note_offsets = {}
+        self.notes_on = {}
         self.add_note_definition(32, "w")
         self.add_note_definition(16, "h")
         self.add_note_definition(8, "q")
@@ -128,11 +132,13 @@ class Notes:
             pitch_diff = (self.origin_note_pitch - note.note) * self.pixels_per_pitch
             note_time = note.time * self.pixels_per_32nd
             
-            note_sprite.assign(self.notes_offset, note_texture, note_time, self.origin_note_y + pitch_diff - note_offset.height)
+            note_sprite.assign(self.notes_offset, note_texture, note.note, note_time, note.length, self.origin_note_y + pitch_diff - note_offset.height)
             self.notes_offset += 1
             
-    def draw(self, music_time):
-        # Draw and update the bar lines
+    def draw(self, music_time) -> dict:
+        """ Draw and update the bar lines and all notes in the pool.
+        Return a dictionary keyed on note numbers with value of the end music time note length
+        """
         for i in range(self.num_barlines):
             self.barlines[i].rect.x = self.origin_note_x + self.bartimes[i] - music_time
             self.barlines[i].rect.y = self.pos[1] - self.pixels_per_pitch * 6
@@ -142,4 +148,6 @@ class Notes:
                               
         # Draw all the notes in the pool
         for i in range(len(self.note_pool)):
-            self.note_pool[i].draw(music_time)
+            self.note_pool[i].draw(music_time, self.origin_note_x, self.notes_on)
+
+        return self.notes_on

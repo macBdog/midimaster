@@ -142,9 +142,16 @@ def main():
                     devices.output_messages.append(new_note)
 
         gui_game.draw(dt)
-        music.draw(music_time)
+        notes_on = music.draw(music_time)
         music_time += dt * 120.0
 
+        # Highlight the scoring box as the notes hit the playhead
+        for k in notes_on:
+            highlight_id = k - staff_pitch_origin
+            if notes_on[k] >= music_time:
+                note_highlight[highlight_id] = 1.0
+
+        # Pull the scoring box alpha down to 0
         for i in range(num_notes):
             note_box[i].texture.set_alpha(note_highlight[i] * 255)
             if note_highlight[i] > note_base_alpha:
