@@ -19,10 +19,12 @@ class NoteSprite(pygame.sprite.DirtySprite):
         It owns an index into the Notes class note array of  note data for scoring and timing.
     """
 
-    def __init__(self):
+    def __init__(self, default_texture: Surface):
         pygame.sprite.DirtySprite.__init__(self)
         self.dirty = 0
         self.note_id = -1
+        self.image = default_texture
+        self.rect = self.image.get_rect()
 
     def assign(self, note_id: int, texture: Surface, note: int, time: int, length: int, pitch_pos: int):
         self.note = note
@@ -67,12 +69,12 @@ class Notes:
         self.textures = textures
         self.pos = staff_pos
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
-        self.music_font_size = 220
-        self.pixels_per_pitch = 20
+        self.music_font_size = 190
+        self.pixels_per_pitch = 10
         self.pixels_per_32nd = 12
         self.font_music_path = os.path.join("ext", "Musisync.ttf")
         self.font_music = pygame.freetype.Font(self.font_music_path, self.music_font_size)
-        self.origin_note_y = self.pos[1] - self.pixels_per_pitch * 2;
+        self.origin_note_y = self.pos[1] + self.pixels_per_pitch * 10;
         self.origin_note_x = staff_pos[0]
         self.note_textures = {}
         self.note_offsets = {}
@@ -89,14 +91,14 @@ class Notes:
         self.barlines = []
         self.bartimes = []
         for i in range(self.num_barlines):
-            barline = SpriteShape((4, self.pixels_per_pitch * 8), (0, 0, 0))
+            barline = SpriteShape((4, self.pixels_per_pitch * 16), (0, 0, 0))
             self.barlines.append(barline)
             self.sprites.add(barline)
             self.bartimes.append(i * self.pixels_per_32nd * 32);
             
         # Fill the note pool with inactive note sprites to be assigned data when drawn
         for i in range(self.note_pool_size):
-            self.note_pool.append(NoteSprite())
+            self.note_pool.append(NoteSprite(self.note_textures[32]))
             self.sprites.add(self.note_pool[i])
 
     def add_note_definition(self, num_32nd_notes: int, font_character: str):
@@ -141,7 +143,7 @@ class Notes:
         """
         for i in range(self.num_barlines):
             self.barlines[i].rect.x = self.origin_note_x + self.bartimes[i] - music_time
-            self.barlines[i].rect.y = self.pos[1] - self.pixels_per_pitch * 6
+            self.barlines[i].rect.y = self.pos[1] - self.pixels_per_pitch * 12
             self.barlines[i].dirty = 1
             if self.bartimes[i] < music_time:
                 self.bartimes[i] += self.pixels_per_32nd * 32

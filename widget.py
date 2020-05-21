@@ -39,7 +39,7 @@ class Widget:
             self.texture.rect.move_ip(0, -self.texture.rect.height // 2)
         elif y == AlignY.Bottom:
             self.texture.rect.move_ip(0, -self.texture.rect.height)
-        self.texture.dirty = 0
+        self.texture.dirty = 1
 
     def draw(self, dt: float):
         """Apply any changes to the widget rect
