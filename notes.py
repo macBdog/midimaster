@@ -58,7 +58,7 @@ class Notes:
     of onscreen notes that recycled when they reach the playhead.
     """
 
-    def __init__(self, devices: MidiDevices, textures: TextureManager, sprites: pygame.sprite.LayeredDirty, staff_pos: tuple):
+    def __init__(self, devices: MidiDevices, textures: TextureManager, sprites: pygame.sprite.LayeredDirty, staff_pos: tuple, note_positions: list, incidentals: dict):
         self.notes = []
         self.note_pool = []
         self.note_pool_offset = 0
@@ -67,6 +67,8 @@ class Notes:
         self.devices = devices
         self.sprites = sprites
         self.textures = textures
+        self.incidentals = incidentals
+        self.note_positions = note_positions
         self.pos = staff_pos
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
         self.music_font_size = 190
@@ -131,7 +133,10 @@ class Notes:
 
             note_texture = self.note_textures.get(note.length) or self.note_textures[min(self.note_textures.keys(), key=lambda k: abs(k-note.length))]
             note_offset = self.note_offsets.get(note.length) or self.note_offsets[min(self.note_offsets.keys(), key=lambda k: abs(k-note.length))]
-            pitch_diff = (self.origin_note_pitch - note.note) * self.pixels_per_pitch
+            note_diff = self.note_positions[note.note % 12]
+            num_octaves = (note.note - 60) // 12
+            per_octave = self.note_positions[12]
+            pitch_diff = -note_diff - (num_octaves * per_octave)
             note_time = note.time * self.pixels_per_32nd
             
             note_sprite.assign(self.notes_offset, note_texture, note.note, note_time, note.length, self.origin_note_y + pitch_diff - note_offset.height)

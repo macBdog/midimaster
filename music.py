@@ -13,14 +13,14 @@ class Music:
         self.notes is a list of all the notes in the file for rendering and scoring
         self.keys is a dictionary keyed by note number to keep track on note on and note off events.
     """
-    def __init__(self, devices: MidiDevices, textures: TextureManager, sprites, staff_pos, filename: str):
+    def __init__(self, devices: MidiDevices, textures: TextureManager, sprites, staff_pos, note_positions: list, incidentals: dict, filename: str):
         self.devices = devices
         self.textures = textures
         self.mid = MidiFile(filename)
         self.clocks_per_tick = 24
         self.num_32nd_notes_per_beat = 8
         self.time_signature = (4,4)
-        self.notes = Notes(devices, textures, sprites, staff_pos)
+        self.notes = Notes(devices, textures, sprites, staff_pos, note_positions, incidentals)
         self.keys = {}
         accumulated_time = 0
         for i, track in enumerate(self.mid.tracks):

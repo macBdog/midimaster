@@ -73,6 +73,7 @@ def main():
     staff_pitch_origin = 60 # Using middle C4 as the reference note
     note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) + 2
     incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
+    note_positions = []
     note_colours = [(252, 64, 58), (255, 84, 78), (205, 153, 254), (225, 173, 255), (255, 235, 63), (101, 101, 153), (121, 121, 173),  # C4, Db4, D4, Eb4, E4, F4, Gb4
                     (227, 251, 255), (247, 255, 255), (172, 28, 2), (192, 48, 22), (0, 204, 255), (255, 101, 1), (255, 121, 21),       # G4, Ab4, A4, Bb4, B4, C5, Db5
                     (255, 96, 236), (255, 116, 255), (50, 205, 51), (140, 138, 141), (140, 138, 141), (75, 75, 252)]                   # D5, Eb5, E5, F5, Gb5, G5
@@ -99,6 +100,8 @@ def main():
         else:
             note_box.append(gui_game.add_widget(note, staff_pos_x - note_spacing, note_start - (20 * tone_count)))
 
+        note_positions.append(20 * tone_count)
+
         if is_incidental:
             incidental_count += 1
         else:
@@ -111,7 +114,7 @@ def main():
     devices.open_output_default()
 
     # Read a midi file and load the notes
-    music = Music(devices, textures, sprites, (staff_pos_x, staff_pos_y), os.path.join("music", "test.mid"))
+    music = Music(devices, textures, sprites, (staff_pos_x, staff_pos_y), note_positions, incidentals, os.path.join("music", "mary.mid"))
 
     # Show the score
     score = 0
@@ -126,7 +129,7 @@ def main():
     music_running = True
     dt_cur = time.time()
     dt_last = time.time()
-
+    midi_keys_on = {}
     while running:
         dt_cur = time.time()
         dt = dt_cur - dt_last
@@ -173,6 +176,16 @@ def main():
             highlight_id = k - staff_pitch_origin
             if notes_on[k] >= music_time:
                 note_highlight[highlight_id] = 1.0
+                play_midi_note = True
+                if k in midi_keys_on:
+                    play_midi_note = midi_keys_on[k] < music_time
+                    
+                if play_midi_note:
+                    midi_keys_on[k] = notes_on[k]
+                    new_note = Message('note_on')
+                    new_note.note = k
+                    new_note.velocity = 100
+                    devices.output_messages.append(new_note)
 
         # Pull the scoring box alpha down to 0
         for i in range(num_notes):
