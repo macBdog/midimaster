@@ -36,8 +36,8 @@ class Music:
                         self.keys[msg.note] = msg.time
                     elif msg.type == 'note_off' or msg.type == 'note_on' and msg.velocity <= 0:
                         if msg.note in self.keys:
-                            accumulated_time += msg.time + self.keys[msg.note]
                             time_in_32s = math.ceil(accumulated_time / self.clocks_per_tick)
+                            accumulated_time += msg.time + self.keys[msg.note]
                             num_32nd_notes = math.ceil(msg.time / self.clocks_per_tick)
                             self.notes.add(msg.note, time_in_32s, num_32nd_notes)
                             self.keys.pop(msg.note)

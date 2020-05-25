@@ -41,14 +41,14 @@ class NoteSprite(pygame.sprite.DirtySprite):
         self.note_id = -1
         self.dirty = 1
 
-    def draw(self, music_time: float, origin_note_x: int, notes_on: dict):
+    def draw(self, music_time: float, pixels_per_32nd: int, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
             self.rect.x = origin_note_x + self.time - music_time
             self.rect.y = self.pitch_pos
             self.dirty = 1
 
             if self.time < music_time:
-                notes_on[self.note] = self.time + self.length
+                notes_on[self.note] = self.time + self.length * pixels_per_32nd
                 self.recycle()
 
 class Notes:
@@ -155,6 +155,6 @@ class Notes:
                               
         # Draw all the notes in the pool
         for i in range(len(self.note_pool)):
-            self.note_pool[i].draw(music_time, self.origin_note_x, self.notes_on)
+            self.note_pool[i].draw(music_time, self.pixels_per_32nd, self.origin_note_x, self.notes_on)
 
         return self.notes_on

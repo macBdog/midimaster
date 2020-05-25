@@ -114,7 +114,7 @@ def main():
     devices.open_output_default()
 
     # Read a midi file and load the notes
-    music = Music(devices, textures, sprites, (staff_pos_x, staff_pos_y), note_positions, incidentals, os.path.join("music", "mary.mid"))
+    music = Music(devices, textures, sprites, (staff_pos_x, staff_pos_y), note_positions, incidentals, os.path.join("music", "test.mid"))
 
     # Show the score
     score = 0
@@ -129,7 +129,7 @@ def main():
     music_running = True
     dt_cur = time.time()
     dt_last = time.time()
-    midi_keys_on = {}
+    midi_notes = {}
     while running:
         dt_cur = time.time()
         dt = dt_cur - dt_last
@@ -167,25 +167,37 @@ def main():
                     music_running = not music_running
 
         gui_game.draw(dt)
-        notes_on = music.draw(music_time)
+        music_notes = music.draw(music_time)
+
         if music_running:
             music_time += dt * 120.0
 
-        # Highlight the scoring box as the notes hit the playhead
-        for k in notes_on:
-            highlight_id = k - staff_pitch_origin
-            if notes_on[k] >= music_time:
+        # Process all notes that have hit the play head
+        music_notes_off = {}
+        for k in music_notes:
+            # Highlight the note box to show this note should be currently played
+            if music_notes[k] >= music_time:
+                highlight_id = k - staff_pitch_origin
                 note_highlight[highlight_id] = 1.0
-                play_midi_note = True
-                if k in midi_keys_on:
-                    play_midi_note = midi_keys_on[k] < music_time
-                    
-                if play_midi_note:
-                    midi_keys_on[k] = notes_on[k]
-                    new_note = Message('note_on')
-                    new_note.note = k
-                    new_note.velocity = 100
-                    devices.output_messages.append(new_note)
+
+            # The note value in the dictionary is the time to turn off
+            if k in midi_notes:
+                if music_notes[k] < music_time:
+                    music_notes_off[k] = True
+            elif music_notes[k] >= music_time:   
+                midi_notes[k] = music_notes[k]
+                new_note_on = Message('note_on')
+                new_note_on.note = k
+                new_note_on.velocity = 100
+                devices.output_messages.append(new_note_on)       
+
+
+        # Send note off messages for all the notes in the music
+        for k in music_notes_off:
+            new_note_off = Message('note_off')
+            new_note_off.note = k
+            devices.output_messages.append(new_note_off)
+            midi_notes.pop(k)
 
         # Pull the scoring box alpha down to 0
         for i in range(num_notes):
