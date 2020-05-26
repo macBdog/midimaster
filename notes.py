@@ -147,11 +147,11 @@ class Notes:
         Return a dictionary keyed on note numbers with value of the end music time note length
         """
         for i in range(self.num_barlines):
-            self.barlines[i].rect.x = self.origin_note_x + self.bartimes[i] - music_time
+            self.barlines[i].rect.x = self.origin_note_x - 24 + self.bartimes[i] - music_time
             self.barlines[i].rect.y = self.pos[1] - self.pixels_per_pitch * 12
             self.barlines[i].dirty = 1
             if self.bartimes[i] < music_time:
-                self.bartimes[i] += self.pixels_per_32nd * 32
+                self.bartimes[i] += self.pixels_per_32nd * 32 * i
                               
         # Draw all the notes in the pool
         for i in range(len(self.note_pool)):

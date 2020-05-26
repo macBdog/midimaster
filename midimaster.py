@@ -13,6 +13,7 @@ from collections import deque
 from sprite_string import SpriteString
 from texture import SpriteShape
 import time
+import math
 import os.path
 
 def main():
@@ -63,8 +64,6 @@ def main():
     staff_pos_x = 150
     staff_pos_y = window_height // 2
     staff_lines = []
-    note_box = []
-    note_highlight = []
     note_spacing = 20
     note_base_alpha = 0.15
     staff_spacing = note_spacing * 2
@@ -83,7 +82,15 @@ def main():
         staff_body_black = SpriteShape((window_width - 100, 4), (0, 0, 0))
         staff_lines.append(gui_game.add_widget(staff_body_white, staff_pos_x, staff_pos_y - i * staff_spacing))
         staff_lines.append(gui_game.add_widget(staff_body_black, staff_pos_x, staff_pos_y - i * staff_spacing))
-    
+   
+    # Note box and highlights are the boxes that light up indicating what note should be played
+    note_box = []
+    note_highlight = []
+
+    # Score box and highlights are the boxes that light up indicating which notes the player is hitting
+    score_box = []
+    score_highlight = []
+
     tone_count = 0
     incidental_count = 0
     for i in range(num_notes):
@@ -95,10 +102,17 @@ def main():
         note_highlight.append(note_base_alpha)
         note = SpriteShape((note_spacing, note_height), note_colours[i])
         note.set_alpha(note_highlight[i] * 255)
+
+        score_highlight.append(0)
+        score = SpriteShape((note_spacing, note_height), note_colours[i])
+        score.set_alpha(score_highlight[i] * 255)
+        
         if is_incidental:
             note_box.append(gui_game.add_widget(note, staff_pos_x - note_spacing - 12, note_start + 16 - (20 * tone_count)))
+            score_box.append(gui_game.add_widget(score, staff_pos_x + 3, note_start + 16 - (20 * tone_count)))
         else:
             note_box.append(gui_game.add_widget(note, staff_pos_x - note_spacing, note_start - (20 * tone_count)))
+            score_box.append(gui_game.add_widget(score, staff_pos_x + 3, note_start - (20 * tone_count)))
 
         note_positions.append(20 * tone_count)
 
@@ -106,7 +120,6 @@ def main():
             incidental_count += 1
         else:
             tone_count += 1
-
         
     # Connect midi inputs and outputs
     devices = MidiDevices()
@@ -141,9 +154,9 @@ def main():
         for message in devices.input_messages:
             if message.type == 'note_on' or message.type == 'note_off':
                 score += 100
-                highlight_id = message.note - staff_pitch_origin
-                if highlight_id >= 0 and highlight_id < num_notes:
-                    note_highlight[highlight_id] = 1.0
+                score_id = message.note - staff_pitch_origin
+                if score_id >= 0 and score_id < num_notes:
+                    score_highlight[score_id] = 1.0
                 devices.output_messages.append(message)
 
         devices.input_messages = []
@@ -155,12 +168,13 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                elif event.key == pygame.K_c:
-                    score += 1
-                    note_highlight[0] = 1.0
-                    text_score.set_text("{0} XP".format(score))
+                elif event.key >= pygame.K_a and event.key <= pygame.K_g:
+                    key_note_value = event.key - pygame.K_c
+                    if key_note_value < 0:
+                        key_note_value += 6
+                    score_highlight[key_note_value] = 1.0
                     new_note = Message('note_on')
-                    new_note.note = 60
+                    new_note.note = key_note_value + staff_pitch_origin
                     new_note.velocity = 100
                     devices.output_messages.append(new_note)
                 elif event.key == pygame.K_p:
@@ -199,11 +213,14 @@ def main():
             devices.output_messages.append(new_note_off)
             midi_notes.pop(k)
 
-        # Pull the scoring box alpha down to 0
+        # Pull the note and scoring box alpha down to 0
         for i in range(num_notes):
             note_box[i].texture.set_alpha(note_highlight[i] * 255)
+            score_box[i].texture.set_alpha(score_highlight[i] * 255)
             if note_highlight[i] > note_base_alpha:
                 note_highlight[i] -= 2.0 * dt
+            if score_highlight[i] > 0.1:
+                score_highlight[i] -= 1.0 * dt
 
         # Update and draw the cached dirty rect list
         sprites.update()

@@ -22,7 +22,9 @@ class Music:
         self.time_signature = (4,4)
         self.notes = Notes(devices, textures, sprites, staff_pos, note_positions, incidentals)
         self.keys = {}
-        accumulated_time = 0
+        absolute_time = 0
+        last_note_off_time = 0
+        rest_time = 0
         for i, track in enumerate(self.mid.tracks):
             for msg in track:
                 if isinstance(msg, MetaMessage):
@@ -33,13 +35,17 @@ class Music:
                 elif isinstance(msg, Message):
                     # note_on with velocity of 0 is interpreted as note_off
                     if msg.type == 'note_on' and msg.velocity > 0:
-                        self.keys[msg.note] = msg.time
+                        absolute_time += msg.time
+                        self.keys[msg.note] = absolute_time
                     elif msg.type == 'note_off' or msg.type == 'note_on' and msg.velocity <= 0:
                         if msg.note in self.keys:
-                            time_in_32s = math.ceil(accumulated_time / self.clocks_per_tick)
-                            accumulated_time += msg.time + self.keys[msg.note]
-                            num_32nd_notes = math.ceil(msg.time / self.clocks_per_tick)
-                            self.notes.add(msg.note, time_in_32s, num_32nd_notes)
+                            note_length = absolute_time + msg.time - self.keys[msg.note]
+                            length_in_32s = math.ceil(note_length / self.clocks_per_tick)
+                            time_in_32s = math.ceil(self.keys[msg.note] / self.clocks_per_tick)                        
+                            
+                            absolute_time += msg.time
+
+                            self.notes.add(msg.note, time_in_32s, length_in_32s)
                             self.keys.pop(msg.note)
 
     def draw(self, dt: float) -> dict:
