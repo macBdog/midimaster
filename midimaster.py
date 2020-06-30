@@ -47,18 +47,15 @@ def main():
  
     glfw.make_context_current(window)
     
-    subsystems = "gui", "mesh"
     graphics = Graphics()
-    textures = TextureManager("tex", subsystems)
+    textures = TextureManager("tex", graphics)
 
     font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
     font_music_path = os.path.join("ext", "Musisync.ttf")
 
-    texLogo = textures.get("logo.png")
-
     running = True 
 
-    testSprite = SpriteTexture("tex/logo.png")
+    testSprite = textures.create_sprite("logo.png", (0.0, 0.0), (0.25, 0.25))
 
     # Connect midi inputs and outputs
     devices = MidiDevices()
