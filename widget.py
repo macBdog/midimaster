@@ -1,5 +1,4 @@
 import enum
-from pygame import Surface
 from animation import Animation
 from texture import SpriteTexture
 
@@ -19,10 +18,8 @@ class Widget:
         Base class can display and animate alpha, width, height. 
         Child classes are expected to handle input and other functionality."""
 
-    def __init__(self, texture: SpriteTexture, x: int, y: int):
-        self.texture = texture
-        self.texture.rect.x = x
-        self.texture.rect.y = y
+    def __init__(self, sprite: SpriteTexture):
+        self.sprite = sprite
         self.alignX = AlignX.Left
         self.alignY = AlignY.Top
         self.animation = None
@@ -32,14 +29,17 @@ class Widget:
 
     def align(self, x: AlignX, y: AlignY):
         if x == AlignX.Centre:
-            self.texture.rect.move_ip(-self.texture.rect.width // 2, 0)
+            pass
+            #self.texture.rect.move_ip(-self.texture.rect.width // 2, 0)
         elif x == AlignX.Right:
-            self.texture.rect.move_ip(-self.texture.rect.width, 0)
+            pass
+            #self.texture.rect.move_ip(-self.texture.rect.width, 0)
         if y == AlignY.Middle:
-            self.texture.rect.move_ip(0, -self.texture.rect.height // 2)
+            pass
+            #self.texture.rect.move_ip(0, -self.texture.rect.height // 2)
         elif y == AlignY.Bottom:
-            self.texture.rect.move_ip(0, -self.texture.rect.height)
-        self.texture.dirty = 1
+            pass
+            #self.texture.rect.move_ip(0, -self.texture.rect.height)
 
     def draw(self, dt: float):
         """Apply any changes to the widget rect
@@ -48,7 +48,9 @@ class Widget:
 
         # Apply any active animation
         if self.animation and self.animation.active:
-            self.texture.image.set_alpha(int(self.animation.val * 255.0))
-            self.texture.dirty = 1
+            #self.texture.image.set_alpha(int(self.animation.val * 255.0))
+            #self.texture.dirty = 1
             self.animation.tick(dt)
+
+        self.sprite.draw()
 

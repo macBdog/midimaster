@@ -1,25 +1,20 @@
 from widget import Widget
-from pygame import Surface
-from pygame import sprite
+from texture import SpriteTexture
 
 class Gui:
     """Manager style functionality for a collection of widget classes. 
         Also convenience functions for window handling."""
-    def __init__(self, sprites: sprite.LayeredDirty, window_width: int, window_height: int):
-        self.sprites = sprites
+    def __init__(self, window_width: int, window_height: int):
         self.width = window_width
         self.height = window_height
         self.widgets = []
 
-    def add_widget(self, texture: Surface, x: int, y: int) -> Widget:
+    def add_widget(self, sprite: SpriteTexture) -> Widget:
         """Add to the list of widgets to draw for this gui collection
         :param texture: The pygame surface to blit when the widget is drawn
-        :param x: Screen horizontal position to display the widget
-        :param y: Screen vertical position display the widget
         """
-        widget = Widget(texture, x, y)
+        widget = Widget(sprite)
         self.widgets.append(widget)
-        self.sprites.add(widget.texture)
         return widget
 
     def draw(self, dt: float):

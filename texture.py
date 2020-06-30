@@ -18,7 +18,7 @@ class Texture:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self.image.width, self.image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, self.img_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.image.width, self.image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.img_data)
 
 class SpriteShape():
     def __init__(self, graphics: Graphics, pos: tuple, size: tuple):
@@ -60,6 +60,7 @@ class SpriteShape():
         glEnableVertexAttribArray(self.texCoords)
 
     def draw(self):
+        glBindVertexArray(self.VAO)       
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,  None)
 
 class SpriteTexture(SpriteShape):

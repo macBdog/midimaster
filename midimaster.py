@@ -53,9 +53,18 @@ def main():
     font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
     font_music_path = os.path.join("ext", "Musisync.ttf")
 
+    # Create the holder UI for the game play elements
+    gui_game = Gui(window_width, window_height)
+
+    game_bg = textures.create_sprite("game_background.tga", (0.0, 0.0), (1.0, 1.0))
+    gui_game.add_widget(game_bg)
+
+    bg_score = gui_game.add_widget(textures.create_sprite("score_bg.tga", (0.0, -0.5), (0.25, 0.125)))
+    bg_score.align(AlignX.Centre, AlignY.Bottom)
+
     running = True 
 
-    testSprite = textures.create_sprite("logo.png", (0.0, 0.0), (0.25, 0.25))
+    testSprite = textures.create_sprite("particle_lightning.tga", (-0.2, 0.5), (0.25, 0.25))
 
     # Connect midi inputs and outputs
     devices = MidiDevices()
@@ -111,7 +120,7 @@ def main():
                     music_running = not music_running
 
         music_notes = {}
-        # gui_game.draw(dt)
+        
         # music_notes = music.draw(music_time)
 
         if music_running:
@@ -153,6 +162,8 @@ def main():
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
         glUseProgram(graphics.shader)
+
+        gui_game.draw(dt)
 
         testSprite.draw()
 
