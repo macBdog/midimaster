@@ -10,7 +10,12 @@ setup(name='midimaster',
       packages=['midimaster'],
       install_requires=[
           'pygame',
+          'glfw',
+          'pillow',
+          'numpy',
           'mido',
           'python-rtmidi',
+          'PyOpenGL',
+          'PyOpenGL-accelerate',
       ],
       zip_safe=True)

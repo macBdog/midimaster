@@ -1,50 +1,42 @@
-import pygame
-from pygame import Surface
+from OpenGL.GL import *
 import os.path
+from PIL import Image
+import numpy
 
-class SpriteShape(pygame.sprite.DirtySprite):
-    def __init__(self, size: tuple, colour: tuple):
-        pygame.sprite.DirtySprite.__init__(self)
-        self.image = pygame.Surface(size)
-        self.image.fill(colour)
-        self.rect = self.image.get_rect()
-        self.dirty = 1
+class SpriteShape():
+    def __init__(self, pos: tuple, size: tuple, colour: tuple):
+        self.pos = pos
+        self.size = size
+        self.colour = colour
 
-    def set_alpha(self, alpha: int):
-        self.image.set_alpha(alpha)
-        self.dirty = 1
+    def draw(self):
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,  None)
 
-class SpriteTexture(pygame.sprite.DirtySprite):
+class SpriteTexture(SpriteShape):
     def __init__(self, texture_path: str):
-        pygame.sprite.DirtySprite.__init__(self)
-        self.image = pygame.image.load(texture_path)
-        self.image.convert_alpha()
-        self.rect = self.image.get_rect()
-        self.dirty = 1
+        SpriteShape.__init__(self, (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0, 1.,0))
+        self.texture = Texture(texture_path)
 
-    def tint(self, colour: tuple): 
-        """ Modifies the supplied texture by adding colour onto surface.
-        :param surface: The surface to be modified
-        :param colour: The RGB colour value to be added
-		""" 
-        self.image.fill((255, 255, 255, 255), None, pygame.BLEND_RGBA_MULT)
-        self.image.fill(colour[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)
-        self.dirty = 1
+    def draw(self):
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.texture.texture_id)
+        super().draw()
 
-    def resize(self, width: int, height: int):
-        x_cache = self.rect.x
-        y_cache = self.rect.y
-        self.image = pygame.transform.scale(self.image, (width, height))
-        self.rect = self.image.get_rect()
-        self.rect.x = x_cache
-        self.rect.y = y_cache
-        self.rect.width = width
-        self.rect.height = height
-        self.dirty = 1
+class Texture:
+    """Encapsulates the resources required to render a sprite with 
+        an image mapped onto it. Keeps hold of the image data and the
+        ID represetnation in OpenGL."""
+    def __init__(self, texture_path: str):
+        self.image = Image.open(texture_path)
+        self.img_data = numpy.array(list(self.image.getdata()), numpy.uint8)
+        self.texture_id = glGenTextures(1)
 
-    def set_alpha(self, alpha: int):
-        self.image.set_alpha(alpha)
-        self.dirty = 1
+        glBindTexture(GL_TEXTURE_2D, self.texture_id)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self.image.width, self.image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, self.img_data)
 
 class TextureManager:
     """The textures class handles loading and management of 
@@ -58,7 +50,7 @@ class TextureManager:
 
     def get(self, texture_name: str) -> SpriteTexture:
         texture_path = os.path.join(self.base_path, texture_name)
-        return SpriteTexture(texture_path)
+        return Texture(texture_path)
 
     def get_sub(self, sub_name: str, texture_name:str) -> SpriteTexture:
         if sub_name in self.sub_paths:

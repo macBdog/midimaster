@@ -26,6 +26,9 @@
     <Compile Include="animation.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="graphics.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="gui.py">
       <SubType>Code</SubType>
     </Compile>
