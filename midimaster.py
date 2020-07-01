@@ -56,24 +56,76 @@ def main():
     # Create the holder UI for the game play elements
     gui_game = Gui(window_width, window_height)
 
-    game_bg = textures.create_sprite("game_background.tga", (0.0, 0.0), (1.0, 1.0))
+    game_bg = textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (1.0, 1.0))
     gui_game.add_widget(game_bg)
 
-    bg_score = gui_game.add_widget(textures.create_sprite("score_bg.tga", (0.0, -0.5), (0.25, 0.125)))
+    bg_score = gui_game.add_widget(textures.create_sprite_texture("score_bg.tga", (0.0, -0.5), (0.25, 0.125)))
     bg_score.align(AlignX.Centre, AlignY.Bottom)
 
-    running = True 
+    # Draw the 12 note lines with the staff lines of the treble clef highlighted
+    staff_pos_x = 150
+    staff_pos_y = window_height // 2
+    staff_lines = []
+    note_box = []
+    note_highlight = []
+    note_spacing = 20
+    note_base_alpha = 0.15
+    staff_spacing = note_spacing * 2
+    num_staff_lines = 4
+    num_notes = 20
+    staff_pitch_origin = 60 # Using middle C4 as the reference note
+    note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) + 2
+    incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
+    note_positions = []
+    note_colours = [(252, 64, 58), (255, 84, 78), (205, 153, 254), (225, 173, 255), (255, 235, 63), (101, 101, 153), (121, 121, 173),  # C4, Db4, D4, Eb4, E4, F4, Gb4
+                    (227, 251, 255), (247, 255, 255), (172, 28, 2), (192, 48, 22), (0, 204, 255), (255, 101, 1), (255, 121, 21),       # G4, Ab4, A4, Bb4, B4, C5, Db5
+                    (255, 96, 236), (255, 116, 255), (50, 205, 51), (140, 138, 141), (140, 138, 141), (75, 75, 252)]                   # D5, Eb5, E5, F5, Gb5, G5
+    
+    for i in range(num_staff_lines):
+        staff_body_white = textures.create_sprite_shape((0.78, 0.78, 0.78), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.1))
+        staff_body_black = textures.create_sprite_shape((0.0, 0.0, 0.0), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.05))
+        staff_lines.append(gui_game.add_widget(staff_body_white))
+        staff_lines.append(gui_game.add_widget(staff_body_black))
+    
+    tone_count = 0
+    incidental_count = 0
+    for i in range(num_notes):
+        note_height = note_spacing
+        is_incidental = i in incidentals
+        if is_incidental:
+            note_height = 8
+            
+        note_highlight.append(note_base_alpha)
+        note_pos_x = staff_pos_x - note_spacing
+        note_pos_y = note_start - (20 * tone_count)
+        if is_incidental:
+            note_pos_x = staff_pos_x - note_spacing - 12
+            note_pos_y = note_start + 16 - (20 * tone_count)
+        note = textures.create_sprite_shape(note_colours[i], (note_pos_x, note_pos_y), (note_spacing, note_height))
+        note.set_alpha(note_highlight[i] * 255)
+        note_box.append(gui_game.add_widget(note))
+        note_positions.append(20 * tone_count)
 
-    testSprite = textures.create_sprite("particle_lightning.tga", (-0.2, 0.5), (0.25, 0.25))
+        if is_incidental:
+            incidental_count += 1
+        else:
+            tone_count += 1
+
+    running = True 
 
     # Connect midi inputs and outputs
     devices = MidiDevices()
     devices.open_input_default()
     devices.open_output_default()
 
-    glViewport(0, 0, window_width, window_height);
-    glClearColor(0.0, 0.0, 0.0, 1.0)
-    glfw.swap_interval(1);
+    glViewport(0, 0, window_width, window_height)
+    glClearColor(0.0, 0.0, 0.0, 1.0)    
+    glShadeModel(GL_SMOOTH) 
+    glEnable(GL_DEPTH_TEST)
+    glDepthFunc(GL_LEQUAL)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glfw.swap_interval(1)
 
     music_time = 0.0
     music_running = True
@@ -154,18 +206,14 @@ def main():
             midi_notes.pop(k)
 
         # Pull the scoring box alpha down to 0
-        # for i in range(num_notes):
-            #note_box[i].texture.set_alpha(note_highlight[i] * 255)
-            #if note_highlight[i] > note_base_alpha:
-            #    note_highlight[i] -= 2.0 * dt
+        for i in range(num_notes):
+            note_box[i].sprite.set_alpha(note_highlight[i] * 255)
+            if note_highlight[i] > note_base_alpha:
+                note_highlight[i] -= 2.0 * dt
 
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
-        glUseProgram(graphics.shader)
-
         gui_game.draw(dt)
-
-        testSprite.draw()
 
         glfw.swap_buffers(window)
 
