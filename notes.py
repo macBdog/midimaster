@@ -1,7 +1,5 @@
 import pygame
-from pygame import Surface
-from texture import TextureManager
-from texture import SpriteShape
+from texture import *
 from midi_devices import MidiDevices
 import os.path
 import math
@@ -14,19 +12,17 @@ class Note():
         self.time = time
         self.length = length
 
-class NoteSprite(pygame.sprite.DirtySprite):
+class NoteSprite():
     """NoteSprite ais the visual representation of a note using the DirtySprite parent class. 
         It owns an index into the Notes class note array of  note data for scoring and timing.
     """
 
-    def __init__(self, default_texture: Surface):
+    def __init__(self, ):
         pygame.sprite.DirtySprite.__init__(self)
         self.dirty = 0
         self.note_id = -1
-        self.image = default_texture
-        self.rect = self.image.get_rect()
 
-    def assign(self, note_id: int, texture: Surface, note: int, time: int, length: int, pitch_pos: int):
+    def assign(self, note_id: int, texture: Texture, note: int, time: int, length: int, pitch_pos: int):
         self.note = note
         self.time = time
         self.length = length
@@ -58,7 +54,7 @@ class Notes:
     of onscreen notes that recycled when they reach the playhead.
     """
 
-    def __init__(self, devices: MidiDevices, textures: TextureManager, sprites: pygame.sprite.LayeredDirty, staff_pos: tuple, note_positions: list, incidentals: dict):
+    def __init__(self, devices: MidiDevices, textures: TextureManager, staff_pos: tuple, note_positions: list, incidentals: dict):
         self.notes = []
         self.note_pool = []
         self.note_pool_offset = 0

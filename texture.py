@@ -21,8 +21,9 @@ class Texture:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.image.width, self.image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.img_data)
 
 class SpriteShape():
-    def __init__(self, graphics: Graphics, colour:tuple, pos: tuple, size: tuple):
+    def __init__(self, graphics: Graphics, colour: tuple, pos: tuple, size: tuple):
         self.graphics = graphics
+        self.pos = pos
 
         # Create array object
         self.VAO = glGenVertexArrays(1)
@@ -31,10 +32,10 @@ class SpriteShape():
         # Create Buffer object in gpu
         self.VBO = glGenBuffers(1)
 
-        self.rectangle = [  pos[0]-size[0], pos[1]-size[1], 0.0,        1.0, 1.0, 1.0, 1.0,
-                            pos[0]+size[0], pos[1]-size[1], 0.0,        1.0, 1.0, 1.0, 1.0,
-                            pos[0]+size[0], pos[1]+size[1], 0.0,        1.0, 1.0, 1.0, 1.0,
-                            pos[0]-size[0], pos[1]+size[1], 0.0,        1.0, 1.0, 1.0, 1.0]
+        self.rectangle = [  pos[0]-size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],
+                            pos[0]+size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],
+                            pos[0]+size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],
+                            pos[0]-size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3]]
 
         self.rectangle = numpy.array(self.rectangle, dtype = numpy.float32)
         self.indices = numpy.array([0,1,2,2,3,0], dtype = numpy.uint32)
@@ -69,8 +70,10 @@ class SpriteShape():
 
 class SpriteTexture(SpriteShape):
     def __init__(self, graphics: Graphics, tex: Texture, pos: tuple, size: tuple):
+        colour = (1.0, 1.0, 1.0, 1.0)
         self.graphics = graphics
         self.texture = tex
+        self.pos = pos
 
         # Create array object
         self.VAO = glGenVertexArrays(1)
@@ -79,10 +82,10 @@ class SpriteTexture(SpriteShape):
         # Create Buffer object in gpu
         self.VBO = glGenBuffers(1)
 
-        self.rectangle = [  pos[0]-size[0], pos[1]-size[1], 0.0,        1.0, 1.0, 1.0, 1.0,     0.0, 1.0,
-                            pos[0]+size[0], pos[1]-size[1], 0.0,        1.0, 1.0, 1.0, 1.0,     1.0, 1.0,
-                            pos[0]+size[0], pos[1]+size[1], 0.0,        1.0, 1.0, 1.0, 1.0,     1.0, 0.0,
-                            pos[0]-size[0], pos[1]+size[1], 0.0,        1.0, 1.0, 1.0, 1.0,     0.0, 0.0]
+        self.rectangle = [  pos[0]-size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     0.0, 1.0,
+                            pos[0]+size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     1.0, 1.0,
+                            pos[0]+size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     1.0, 0.0,
+                            pos[0]-size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     0.0, 0.0]
 
         self.rectangle = numpy.array(self.rectangle, dtype = numpy.float32)
         self.indices = numpy.array([0,1,2,2,3,0], dtype = numpy.uint32)

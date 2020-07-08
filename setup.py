@@ -17,5 +17,6 @@ setup(name='midimaster',
           'python-rtmidi',
           'PyOpenGL',
           'PyOpenGL-accelerate',
+          'freetype-py',
       ],
       zip_safe=True)

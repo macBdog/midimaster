@@ -13,8 +13,7 @@ from animation import AnimType
 from music import Music
 from mido import Message
 from midi_devices import MidiDevices
-from collections import deque 
-from sprite_string import SpriteString
+from font import Font
 from texture import SpriteShape
 from graphics import Graphics
 import time
@@ -52,6 +51,10 @@ def main():
 
     font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
     font_music_path = os.path.join("ext", "Musisync.ttf")
+    font_game_h1 = Font(font_game_path, graphics, 50)
+    font_game_h2 = Font(font_game_path, graphics, 38)
+    font_game_body = Font(font_game_path, graphics, 22)
+    font_game_music_large = Font(font_music_path, graphics, 250)
 
     # Create the holder UI for the game play elements
     gui_game = Gui(window_width, window_height)
@@ -63,12 +66,12 @@ def main():
     bg_score.align(AlignX.Centre, AlignY.Bottom)
 
     # Draw the 12 note lines with the staff lines of the treble clef highlighted
-    staff_pos_x = 150
-    staff_pos_y = window_height // 2
+    staff_pos_x = -0.85
+    staff_pos_y = 0.0
     staff_lines = []
     note_box = []
     note_highlight = []
-    note_spacing = 20
+    note_spacing = 0.015
     note_base_alpha = 0.15
     staff_spacing = note_spacing * 2
     num_staff_lines = 4
@@ -77,13 +80,13 @@ def main():
     note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) + 2
     incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
     note_positions = []
-    note_colours = [(252, 64, 58), (255, 84, 78), (205, 153, 254), (225, 173, 255), (255, 235, 63), (101, 101, 153), (121, 121, 173),  # C4, Db4, D4, Eb4, E4, F4, Gb4
-                    (227, 251, 255), (247, 255, 255), (172, 28, 2), (192, 48, 22), (0, 204, 255), (255, 101, 1), (255, 121, 21),       # G4, Ab4, A4, Bb4, B4, C5, Db5
-                    (255, 96, 236), (255, 116, 255), (50, 205, 51), (140, 138, 141), (140, 138, 141), (75, 75, 252)]                   # D5, Eb5, E5, F5, Gb5, G5
+    note_colours = [(252, 64, 58, 1.0), (255, 84, 78, 1.0), (205, 153, 254, 1.0), (225, 173, 255, 1.0), (1.0, 235, 63, 1.0), (101, 101, 153, 1.0), (121, 121, 173, 1.0),  # C4, Db4, D4, Eb4, E4, F4, Gb4
+                    (227, 251, 255, 1.0), (247, 255, 1.0, 1.0), (172, 28, 2, 1.0), (192, 48, 22, 1.0), (0, 204, 1.0, 1.0), (1.0, 101, 1, 1.0), (1.0, 121, 21, 1.0),       # G4, Ab4, A4, Bb4, B4, C5, Db5
+                    (255, 96, 236, 1.0), (1.0, 116, 1.0, 1.0), (50, 205, 51, 1.0), (140, 138, 141, 1.0), (140, 138, 141, 1.0), (75, 75, 252, 1.0)]                   # D5, Eb5, E5, F5, Gb5, G5
     
     for i in range(num_staff_lines):
-        staff_body_white = textures.create_sprite_shape((0.78, 0.78, 0.78), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.1))
-        staff_body_black = textures.create_sprite_shape((0.0, 0.0, 0.0), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.05))
+        staff_body_white = textures.create_sprite_shape((0.78, 0.78, 0.78, 0.75), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.1))
+        staff_body_black = textures.create_sprite_shape((0.0, 0.0, 0.0, 0.75), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.05))
         staff_lines.append(gui_game.add_widget(staff_body_white))
         staff_lines.append(gui_game.add_widget(staff_body_black))
     
@@ -102,7 +105,7 @@ def main():
             note_pos_x = staff_pos_x - note_spacing - 12
             note_pos_y = note_start + 16 - (20 * tone_count)
         note = textures.create_sprite_shape(note_colours[i], (note_pos_x, note_pos_y), (note_spacing, note_height))
-        note.set_alpha(note_highlight[i] * 255)
+        note.set_alpha(note_highlight[i])
         note_box.append(gui_game.add_widget(note))
         note_positions.append(20 * tone_count)
 
@@ -113,6 +116,9 @@ def main():
 
     running = True 
 
+    # Read a midi file and load the notes
+    # music = Music(devices, textures, (staff_pos_x, staff_pos_y), note_positions, incidentals, os.path.join("music", "test.mid"))
+    
     # Connect midi inputs and outputs
     devices = MidiDevices()
     devices.open_input_default()
@@ -127,6 +133,7 @@ def main():
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     glfw.swap_interval(1)
 
+    score = 0
     music_time = 0.0
     music_running = True
     dt_cur = time.time()
@@ -207,13 +214,19 @@ def main():
 
         # Pull the scoring box alpha down to 0
         for i in range(num_notes):
-            note_box[i].sprite.set_alpha(note_highlight[i] * 255)
+            note_box[i].sprite.set_alpha(note_highlight[i])
             if note_highlight[i] > note_base_alpha:
                 note_highlight[i] -= 2.0 * dt
 
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
         gui_game.draw(dt)
+
+        # Show the score
+        font_game_h1.draw("{0} XP".format(score), (bg_score.sprite.pos[0] + 0.2, bg_score.sprite.pos[1] + 0.05), (0.1, 0.1, 0.1, 1.0))
+
+        # Show a large treble clef to be animated
+        font_game_music_large.draw("G", (staff_pos_x - 0.01, staff_pos_y - 0.01), (0,0,0))
 
         glfw.swap_buffers(window)
 
