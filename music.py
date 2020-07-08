@@ -3,9 +3,8 @@ from mido import MetaMessage
 from mido import Message
 from notes import Note
 from notes import Notes
-from pygame import Surface
+from graphics import Graphics
 from texture import TextureManager
-from midi_devices import MidiDevices
 import math
 
 class Music:
@@ -13,14 +12,14 @@ class Music:
         self.notes is a list of all the notes in the file for rendering and scoring
         self.keys is a dictionary keyed by note number to keep track on note on and note off events.
     """
-    def __init__(self, devices: MidiDevices, textures: TextureManager, staff_pos, note_positions: list, incidentals: dict, filename: str):
-        self.devices = devices
+    def __init__(self, graphics: Graphics, textures: TextureManager, staff_pos, note_positions: list, incidentals: dict, filename: str):
+        self.graphics = graphics
         self.textures = textures
         self.mid = MidiFile(filename)
         self.clocks_per_tick = 24
         self.num_32nd_notes_per_beat = 8
         self.time_signature = (4,4)
-        self.notes = Notes(devices, textures, staff_pos, note_positions, incidentals)
+        self.notes = Notes(graphics, textures, staff_pos, note_positions, incidentals)
         self.keys = {}
         absolute_time = 0
         last_note_off_time = 0
