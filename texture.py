@@ -24,6 +24,8 @@ class SpriteShape():
     def __init__(self, graphics: Graphics, colour: tuple, pos: tuple, size: tuple):
         self.graphics = graphics
         self.pos = pos
+        self.colour = colour
+        self.size = size
 
         # Create array object
         self.VAO = glGenVertexArrays(1)
@@ -32,10 +34,10 @@ class SpriteShape():
         # Create Buffer object in gpu
         self.VBO = glGenBuffers(1)
 
-        self.rectangle = [  pos[0]-size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],
-                            pos[0]+size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],
-                            pos[0]+size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],
-                            pos[0]-size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3]]
+        self.rectangle = [  self.pos[0]-self.size[0], self.pos[1]-self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],
+                            self.pos[0]+self.size[0], self.pos[1]-self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],
+                            self.pos[0]+self.size[0], self.pos[1]+self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],
+                            self.pos[0]-self.size[0], self.pos[1]+self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3]]
 
         self.rectangle = numpy.array(self.rectangle, dtype = numpy.float32)
         self.indices = numpy.array([0,1,2,2,3,0], dtype = numpy.uint32)
@@ -49,15 +51,16 @@ class SpriteShape():
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices, GL_STATIC_DRAW)
 
-        self.position = glGetAttribLocation(graphics.shader_colour, "position")
-        glVertexAttribPointer(self.position, 3, GL_FLOAT, GL_FALSE, 28, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(self.position)
+        self.pos_id = glGetAttribLocation(graphics.shader_colour, "position")
+        glVertexAttribPointer(self.pos_id, 3, GL_FLOAT, GL_FALSE, 28, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(self.pos_id)
 
-        self.colour = glGetAttribLocation(graphics.shader_colour, "colour")
-        glVertexAttribPointer(self.colour, 4, GL_FLOAT, GL_FALSE, 28, ctypes.c_void_p(12))
-        glEnableVertexAttribArray(self.colour)
+        self.colour_id = glGetAttribLocation(graphics.shader_colour, "colour")
+        glVertexAttribPointer(self.colour_id, 4, GL_FLOAT, GL_FALSE, 28, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(self.colour_id)
 
     def set_alpha(self, new_alpha: float):
+        self.colour = (self.colour[0], self.colour[1], self.colour[2], new_alpha)
         self.rectangle[6] = new_alpha
         self.rectangle[13] = new_alpha
         self.rectangle[20] = new_alpha
@@ -70,10 +73,11 @@ class SpriteShape():
 
 class SpriteTexture(SpriteShape):
     def __init__(self, graphics: Graphics, tex: Texture, pos: tuple, size: tuple):
-        colour = (1.0, 1.0, 1.0, 1.0)
+        self.colour = (1.0, 1.0, 1.0, 1.0)
         self.graphics = graphics
         self.texture = tex
         self.pos = pos
+        self.size = size
 
         # Create array object
         self.VAO = glGenVertexArrays(1)
@@ -82,10 +86,10 @@ class SpriteTexture(SpriteShape):
         # Create Buffer object in gpu
         self.VBO = glGenBuffers(1)
 
-        self.rectangle = [  pos[0]-size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     0.0, 1.0,
-                            pos[0]+size[0], pos[1]-size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     1.0, 1.0,
-                            pos[0]+size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     1.0, 0.0,
-                            pos[0]-size[0], pos[1]+size[1], 0.0,        colour[0], colour[1], colour[2], colour[3],     0.0, 0.0]
+        self.rectangle = [  self.pos[0]-self.size[0], self.pos[1]-self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],     0.0, 1.0,
+                            self.pos[0]+self.size[0], self.pos[1]-self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],     1.0, 1.0,
+                            self.pos[0]+self.size[0], self.pos[1]+self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],     1.0, 0.0,
+                            self.pos[0]-self.size[0], self.pos[1]+self.size[1], 0.0,        self.colour[0], self.colour[1], self.colour[2], self.colour[3],     0.0, 0.0]
 
         self.rectangle = numpy.array(self.rectangle, dtype = numpy.float32)
         self.indices = numpy.array([0,1,2,2,3,0], dtype = numpy.uint32)
@@ -99,17 +103,17 @@ class SpriteTexture(SpriteShape):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.indices, GL_STATIC_DRAW)
 
-        self.position = glGetAttribLocation(graphics.shader_texture, "position")
-        glVertexAttribPointer(self.position, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(self.position)
+        self.pos_id = glGetAttribLocation(graphics.shader_texture, "position")
+        glVertexAttribPointer(self.pos_id, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(self.pos_id)
 
-        self.colour = glGetAttribLocation(graphics.shader_texture, "colour")
-        glVertexAttribPointer(self.colour, 4, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(12))
-        glEnableVertexAttribArray(self.colour)
+        self.colour_id = glGetAttribLocation(graphics.shader_texture, "colour")
+        glVertexAttribPointer(self.colour_id, 4, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(self.colour_id)
  
-        self.texCoords = glGetAttribLocation(graphics.shader_texture, "texcoord")
-        glVertexAttribPointer(self.texCoords, 2, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(28))
-        glEnableVertexAttribArray(self.texCoords)
+        self.tex_coord_id = glGetAttribLocation(graphics.shader_texture, "texcoord")
+        glVertexAttribPointer(self.tex_coord_id, 2, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(28))
+        glEnableVertexAttribArray(self.tex_coord_id)
 
     def draw(self):
         glUseProgram(self.graphics.shader_texture)

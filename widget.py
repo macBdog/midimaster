@@ -20,26 +20,26 @@ class Widget:
 
     def __init__(self, sprite: SpriteTexture):
         self.sprite = sprite
-        self.alignX = AlignX.Left
-        self.alignY = AlignY.Top
+        self.alignX = AlignX.Centre
+        self.alignY = AlignY.Middle
         self.animation = None
 
     def animate(self, animation: Animation):
         self.animation = animation
 
     def align(self, x: AlignX, y: AlignY):
-        if x == AlignX.Centre:
-            pass
-            #self.texture.rect.move_ip(-self.texture.rect.width // 2, 0)
+        if x == AlignX.Left:
+            self.sprite.pos = (self.sprite.pos[0] - self.sprite.size[0] * 0.5, self.sprite.pos[1])
+        elif x == AlignX.Centre:
+            pass;
         elif x == AlignX.Right:
-            pass
-            #self.texture.rect.move_ip(-self.texture.rect.width, 0)
-        if y == AlignY.Middle:
-            pass
-            #self.texture.rect.move_ip(0, -self.texture.rect.height // 2)
+            self.sprite.pos = (self.sprite.pos[0] + self.sprite.size[0] * 0.5, self.sprite.pos[1])
+        if y == AlignY.Top:
+            self.sprite.pos = (self.sprite.pos[0], self.sprite.pos[1] - self.sprite.size[1] * 0.5)
+        elif y == AlignY.Middle:
+            pass;
         elif y == AlignY.Bottom:
-            pass
-            #self.texture.rect.move_ip(0, -self.texture.rect.height)
+            self.sprite.pos = (self.sprite.pos[0], self.sprite.pos[1] + self.sprite.size[1] * 0.5)
 
     def draw(self, dt: float):
         """Apply any changes to the widget rect
@@ -48,8 +48,7 @@ class Widget:
 
         # Apply any active animation
         if self.animation and self.animation.active:
-            #self.texture.image.set_alpha(int(self.animation.val * 255.0))
-            #self.texture.dirty = 1
+            self.sprite.set_alpha(self.animation.val)
             self.animation.tick(dt)
 
         self.sprite.draw()

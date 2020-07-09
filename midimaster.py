@@ -71,7 +71,7 @@ def main():
     staff_lines = []
     note_box = []
     note_highlight = []
-    note_spacing = 0.055
+    note_spacing = 0.1
     note_base_alpha = 0.15
     staff_spacing = note_spacing * 2
     num_staff_lines = 4
@@ -93,10 +93,10 @@ def main():
     tone_count = 0
     incidental_count = 0
     for i in range(num_notes):
-        note_height = note_spacing
+        note_height = note_spacing * window_ratio
         is_incidental = i in incidentals
         if is_incidental:
-            note_height = 0.05
+            note_height = note_height * 0.5
             
         note_highlight.append(note_base_alpha)
         note_pos_x = staff_pos_x - note_spacing
@@ -106,7 +106,9 @@ def main():
             note_pos_y = note_start + 0.01 - (0.02 * tone_count)
         note = textures.create_sprite_shape(note_colours[i], (note_pos_x, note_pos_y), (note_spacing, note_height))
         note.set_alpha(note_highlight[i])
-        note_box.append(gui_game.add_widget(note))
+        note_widget = gui_game.add_widget(note)
+        note_widget.align(AlignX.Left, AlignY.Top)
+        note_box.append(note_widget)
         note_positions.append(0.01 * tone_count)
 
         if is_incidental:
@@ -216,7 +218,7 @@ def main():
         for i in range(num_notes):
             note_box[i].sprite.set_alpha(note_highlight[i])
             if note_highlight[i] > note_base_alpha:
-                note_highlight[i] -= 2.0 * dt
+                note_highlight[i] -= 0.1 * dt
 
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
