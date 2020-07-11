@@ -82,7 +82,7 @@ def main():
     note_positions = []
     note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
                     [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 21, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
-                    [1.0, 96, 0.89, 1.0], [1.0, 116, 1.0, 1.0], [50, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
+                    [1.0, 0.375, 0.89, 1.0], [1.0, 0.48, 1.0, 1.0], [0.19, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
     
     for i in range(num_staff_lines):
         staff_body_white = textures.create_sprite_shape([0.78, 0.78, 0.78, 0.75], [staff_pos_x, staff_pos_y - i * staff_spacing], [0.85, note_spacing])
@@ -131,7 +131,7 @@ def main():
     devices.open_output_default()
 
     # Read a midi file and load the notes
-    music = Music(graphics, textures, (staff_pos_x, staff_pos_y), note_positions, incidentals, os.path.join("music", "test.mid"))
+    music = Music(graphics, textures, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
 
     glViewport(0, 0, window_width, window_height)
     glClearColor(0.0, 0.0, 0.0, 1.0)    
@@ -187,9 +187,7 @@ def main():
                 elif event.key == pygame.K_p:
                     music_running = not music_running
 
-        music_notes = {}
-        
-        # music_notes = music.draw(music_time)
+        music_notes = music.draw(music_time)
 
         if music_running:
             music_time += dt * 120.0
@@ -211,7 +209,7 @@ def main():
                 new_note_on = Message('note_on')
                 new_note_on.note = k
                 new_note_on.velocity = 100
-                devices.output_messages.append(new_note_on)       
+                devices.output_messages.append(new_note_on)
 
         # Send note off messages for all the notes in the music
         for k in music_notes_off:

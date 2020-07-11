@@ -46,7 +46,7 @@ class Graphics():
  
         void main() 
         {
-            gl_Position = vec4(VertexPosition.x + Position.x, VertexPosition.y + Position.y, 0.0, 1.0);
+            gl_Position = vec4(Position.x + Size.x * VertexPosition.x, Position.y + Size.y * VertexPosition.y, 0.0, 1.0);
         }
         """
 

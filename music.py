@@ -12,7 +12,7 @@ class Music:
         self.notes is a list of all the notes in the file for rendering and scoring
         self.keys is a dictionary keyed by note number to keep track on note on and note off events.
     """
-    def __init__(self, graphics: Graphics, textures: TextureManager, staff_pos, note_positions: list, incidentals: dict, filename: str):
+    def __init__(self, graphics: Graphics, textures: TextureManager, staff_pos: list, note_positions: list, incidentals: dict, filename: str):
         self.graphics = graphics
         self.textures = textures
         self.mid = MidiFile(filename)

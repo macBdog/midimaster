@@ -18,7 +18,6 @@ class NoteSprite():
     """
 
     def __init__(self, graphics: Graphics):
-        self.dirty = 0
         self.note_id = -1
         self.graphics = graphics
 
@@ -51,7 +50,7 @@ class Notes:
     of onscreen notes that recycled when they reach the playhead.
     """
 
-    def __init__(self, graphics:Graphics, textures: TextureManager, staff_pos: tuple, note_positions: list, incidentals: dict):
+    def __init__(self, graphics:Graphics, textures: TextureManager, staff_pos: list, note_positions: list, incidentals: dict):
         self.notes = []
         self.graphics = graphics
         self.note_pool = []
@@ -85,7 +84,7 @@ class Notes:
         self.barlines = []
         self.bartimes = []
         for i in range(self.num_barlines):
-            barline = SpriteShape(self.graphics, (0.0, 0.0, 0.0, 1.0), (0.0, self.pixels_per_pitch * 16), (0.1, 0.1))
+            barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, self.pixels_per_pitch * 16], [0.1, 0.1])
             self.barlines.append(barline)
             self.bartimes.append(i * self.pixels_per_32nd * 32);
             
