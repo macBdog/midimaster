@@ -46,6 +46,8 @@ def main():
  
     glfw.make_context_current(window)
     
+    running = True 
+
     graphics = Graphics()
     textures = TextureManager("tex", graphics)
 
@@ -67,10 +69,8 @@ def main():
 
     # Draw the 12 note lines with the staff lines of the treble clef highlighted
     staff_pos_x = 0.0
-    staff_pos_y = 0.25
+    staff_pos_y = 0.33
     staff_lines = []
-    note_box = []
-    note_highlight = []
     note_spacing = 0.1
     note_base_alpha = 0.15
     staff_spacing = note_spacing * 2
@@ -80,16 +80,24 @@ def main():
     note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) + 0.01
     incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
     note_positions = []
-    note_colours = [(0.98, 0.25, 0.22, 1.0), (1.0, 84, 0.30, 1.0), (205, 153, 0.99, 1.0), (225, 173, 255, 1.0), (1.0, 235, 63, 1.0), (0.39, 0.39, 0.55, 1.0), (0.47, 0.47, 173, 1.0),  # C4, Db4, D4, Eb4, E4, F4, Gb4
-                    (227, 251, 1.0, 1.0), (0.95, 1.0, 1.0, 1.0), (172, 28, 0.01, 1.0), (192, 48, 22, 1.0), (0, 204, 1.0, 1.0), (1.0, 101, 1, 1.0), (1.0, 0.47, 21, 1.0),       # G4, Ab4, A4, Bb4, B4, C5, Db5
-                    (1.0, 96, 236, 1.0), (1.0, 116, 1.0, 1.0), (50, 205, 51, 1.0), (0.54, 138, 0.55, 1.0), (0.54, 0.53, 0.55, 1.0), (0.29, 0.29, 0.98, 1.0)]                   # D5, Eb5, E5, F5, Gb5, G5
+    note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
+                    [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 21, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
+                    [1.0, 96, 0.89, 1.0], [1.0, 116, 1.0, 1.0], [50, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
     
     for i in range(num_staff_lines):
-        staff_body_white = textures.create_sprite_shape((0.78, 0.78, 0.78, 0.75), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.1))
-        staff_body_black = textures.create_sprite_shape((0.0, 0.0, 0.0, 0.75), (staff_pos_x, staff_pos_y - i * staff_spacing), (0.85, 0.05))
+        staff_body_white = textures.create_sprite_shape([0.78, 0.78, 0.78, 0.75], [staff_pos_x, staff_pos_y - i * staff_spacing], [0.85, note_spacing])
+        staff_body_black = textures.create_sprite_shape([0.0, 0.0, 0.0, 0.75], [staff_pos_x, staff_pos_y - i * staff_spacing], [0.85, 0.02])
         staff_lines.append(gui_game.add_widget(staff_body_white))
         staff_lines.append(gui_game.add_widget(staff_body_black))
     
+    # Note box and highlights are the boxes that light up indicating what note should be played
+    note_box = []
+    note_highlight = []
+    
+    # Score box and highlights are the boxes that light up indicating which notes the player is hitting
+    score_box = []
+    score_highlight = []
+
     tone_count = 0
     incidental_count = 0
     for i in range(num_notes):
@@ -99,24 +107,23 @@ def main():
             note_height = note_height * 0.5
             
         note_highlight.append(note_base_alpha)
-        note_pos_x = staff_pos_x - note_spacing
-        note_pos_y = note_start - (0.01 * tone_count)
-        if is_incidental:
-            note_pos_x = staff_pos_x - note_spacing - 0.01
-            note_pos_y = note_start + 0.01 - (0.02 * tone_count)
-        note = textures.create_sprite_shape(note_colours[i], (note_pos_x, note_pos_y), (note_spacing, note_height))
-        note.set_alpha(note_highlight[i])
-        note_widget = gui_game.add_widget(note)
-        note_widget.align(AlignX.Left, AlignY.Top)
-        note_box.append(note_widget)
-        note_positions.append(0.01 * tone_count)
+        score_highlight.append(0.1)
+        note_offset = note_start - tone_count * 0.12
+        note_size = [note_spacing, note_height]
 
+        if is_incidental:
+            note_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x - note_spacing - 0.01, note_offset + 0.13], note_size)))
+            score_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x + 0.01, note_offset + 0.13], note_size)))
+        else:
+            note_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x, note_offset], note_size)))
+            score_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x + 0.01, note_offset], note_size)))
+        
+        note_positions.append(0.01 * tone_count)
+        
         if is_incidental:
             incidental_count += 1
         else:
             tone_count += 1
-
-    running = True 
 
     # Connect midi inputs and outputs
     devices = MidiDevices()
@@ -206,7 +213,6 @@ def main():
                 new_note_on.velocity = 100
                 devices.output_messages.append(new_note_on)       
 
-
         # Send note off messages for all the notes in the music
         for k in music_notes_off:
             new_note_off = Message('note_off')
@@ -217,11 +223,14 @@ def main():
         # Pull the scoring box alpha down to 0
         for i in range(num_notes):
             note_box[i].sprite.set_alpha(note_highlight[i])
+            score_box[i].sprite.set_alpha(score_highlight[i])
             if note_highlight[i] > note_base_alpha:
-                note_highlight[i] -= 0.1 * dt
+                note_highlight[i] -= 0.6 * dt
+            if score_highlight[i] > 0.1:
+                score_highlight[i] -= 0.4 * dt
 
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-
+        
         gui_game.draw(dt)
 
         # Show the score

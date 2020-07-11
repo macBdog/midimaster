@@ -40,28 +40,25 @@ class Graphics():
         vertex_shader_colour = """
         #version 330
  
-        in vec3 position;
-        in vec4 colour;
-           
-        out vec4 newColour;
+        in vec2 VertexPosition;
+        uniform vec2 Position;
+        uniform vec2 Size;
  
         void main() 
         {
-            gl_Position = vec4(position, 1.0);
-            newColour = colour;
+            gl_Position = vec4(VertexPosition.x + Position.x, VertexPosition.y + Position.y, 0.0, 1.0);
         }
         """
 
         pixel_shader_colour = """
         #version 330
  
-        in vec4 newColour;
-         
+        uniform vec4 Colour;
         out vec4 outColour;
  
         void main() 
         {
-           outColour = newColour;
+           outColour = Colour;
         }
         """
 
