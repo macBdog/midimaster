@@ -3,37 +3,35 @@ import numpy
 
 class Graphics():
     def __init__(self):
+        self.indices = numpy.array([0,1,2,2,3,0], dtype = numpy.uint32)
 
         vertex_shader_texture = """
         #version 330
  
-        in vec3 position;
-        in vec4 colour;
-        in vec2 texcoord;
-           
-        out vec4 newColour;
-        out vec2 OutTexCoords;
- 
+        in vec2 VertexPosition;
+        in vec2 TexCoord;
+        uniform vec2 Position;
+        uniform vec2 Size;
+        out vec2 OutTexCoord;
+
         void main() 
         {
-            gl_Position = vec4(position, 1.0);
-            newColour = colour;
-            OutTexCoords = texcoord;
+            gl_Position = vec4(Position.x + Size.x * VertexPosition.x, Position.y + Size.y * VertexPosition.y, 0.0, 1.0);
+            OutTexCoord = TexCoord;
         }
         """
 
         pixel_shader_texture = """
         #version 330
  
-        in vec4 newColour;
-        in vec2 OutTexCoords;
-         
+        in vec2 OutTexCoord;     
+        uniform sampler2D SamplerTex;
+        uniform vec4 Colour;
         out vec4 outColour;
-        uniform sampler2D samplerTex;
  
         void main() 
         {
-           outColour = texture(samplerTex, OutTexCoords) * newColour;
+           outColour = texture(SamplerTex, OutTexCoord) * Colour;
         }
         """
 

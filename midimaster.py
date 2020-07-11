@@ -61,10 +61,10 @@ def main():
     # Create the holder UI for the game play elements
     gui_game = Gui(window_width, window_height)
 
-    game_bg = textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (1.0, 1.0))
+    game_bg = textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
     gui_game.add_widget(game_bg)
 
-    bg_score = gui_game.add_widget(textures.create_sprite_texture("score_bg.tga", (0.0, -0.5), (0.25, 0.125)))
+    bg_score = gui_game.add_widget(textures.create_sprite_texture("score_bg.tga", (0.0, -0.5), (0.5, 0.25)))
     bg_score.align(AlignX.Centre, AlignY.Bottom)
 
     # Draw the 12 note lines with the staff lines of the treble clef highlighted
