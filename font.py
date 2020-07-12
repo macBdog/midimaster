@@ -48,25 +48,30 @@ class Font():
         self.rectangle = numpy.array([-0.5, -0.5, 
                                        0.5, -0.5, 
                                        0.5, 0.5, 
-                                      -0.5, 0.5], dtype = numpy.float32)
+                                      -0.5, 0.5, 0.0, 1.0, 1.0, 1.0,1.0, 0.0, 0.0, 0.0], dtype = numpy.float32)
 
         # Bind the buffer
         glBindBuffer(GL_ARRAY_BUFFER, self.VBO)
-        glBufferData(GL_ARRAY_BUFFER, 32, self.rectangle, GL_STATIC_DRAW) 
+        glBufferData(GL_ARRAY_BUFFER, 64, self.rectangle, GL_STATIC_DRAW) 
 
         # Create EBO
         self.EBO = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.indices, GL_STATIC_DRAW)
 
-        self.vertex_pos_id = glGetAttribLocation(graphics.shader_texture, "VertexPosition")
+        self.vertex_pos_id = glGetAttribLocation(graphics.shader_font, "VertexPosition")
         glVertexAttribPointer(self.vertex_pos_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
         glEnableVertexAttribArray(self.vertex_pos_id)
  
-        self.tex_coord_id = glGetUniformLocation(graphics.shader_texture, "TexCoord")
-        self.colour_id = glGetUniformLocation(graphics.shader_texture, "Colour")
-        self.pos_id = glGetUniformLocation(graphics.shader_texture, "Position")
-        self.size_id = glGetUniformLocation(graphics.shader_texture, "Size")
+        self.tex_coord_id = glGetAttribLocation(graphics.shader_font, "TexCoord")
+        glVertexAttribPointer(self.tex_coord_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(32))
+        glEnableVertexAttribArray(self.tex_coord_id)
+ 
+        self.char_coord_id = glGetUniformLocation(graphics.shader_font, "CharCoord")
+        self.char_size_id = glGetUniformLocation(graphics.shader_font, "CharSize")
+        self.colour_id = glGetUniformLocation(graphics.shader_font, "Colour")
+        self.pos_id = glGetUniformLocation(graphics.shader_font, "Position")
+        self.size_id = glGetUniformLocation(graphics.shader_font, "Size")
 
         depr = """
         some comment
@@ -102,9 +107,14 @@ class Font():
         glBindVertexArray(self.VAO)
         char_pos = pos
         char_size = self.size
+        tex_coord = [0.0, 0.0]
+        tex_size = [1.0, 1.0]
+
         for i in range(len(string)):
             glUniform2f(self.pos_id, char_pos[0], char_pos[1]) 
             glUniform2f(self.size_id, char_size[0], char_size[1]) 
+            glUniform2f(self.char_coord_id, tex_coord[0], tex_coord[1]) 
+            glUniform2f(self.char_size_id, tex_size[0], tex_size[1]) 
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
             char_pos[0] = char_pos[0] + i * 0.05
 
