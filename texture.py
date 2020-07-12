@@ -116,7 +116,7 @@ class SpriteTexture(Sprite):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.texture.texture_id)
         glBindVertexArray(self.VAO)       
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,  None)
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
 class TextureManager:
     """The textures class handles loading and management of 

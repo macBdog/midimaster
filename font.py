@@ -18,6 +18,7 @@ class Font():
             ascender  = max( ascender, self.face.glyph.bitmap_top )
             descender = max( descender, bitmap.rows - self.face.glyph.bitmap_top )
         height = ascender+descender
+        self.size = [width * 0.1, height * 0.1]
 
         # Generate texture data
         Z = numpy.zeros((height*6, width*16), dtype=numpy.ubyte)
@@ -29,14 +30,44 @@ class Font():
                 y = j*height + ascender - self.face.glyph.bitmap_top
                 Z[y:y+bitmap.rows,x:x+bitmap.width].flat = bitmap.buffer
 
-        # Bound texture
+        # Create OpenGL texture
         self.texture_id = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, self.texture_id )
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR )
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR )
-        # glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Z.shape[1], Z.shape[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, Z )
+        glBindTexture(GL_TEXTURE_2D, self.texture_id)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Z.shape[1], Z.shape[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, Z)
 
-        # Generate display lists
+        # Create array object
+        self.VAO = glGenVertexArrays(1)
+        glBindVertexArray(self.VAO)
+
+        # Create Buffer object in gpu
+        self.VBO = glGenBuffers(1)
+        self.rectangle = numpy.array([-0.5, -0.5, 
+                                       0.5, -0.5, 
+                                       0.5, 0.5, 
+                                      -0.5, 0.5], dtype = numpy.float32)
+
+        # Bind the buffer
+        glBindBuffer(GL_ARRAY_BUFFER, self.VBO)
+        glBufferData(GL_ARRAY_BUFFER, 32, self.rectangle, GL_STATIC_DRAW) 
+
+        # Create EBO
+        self.EBO = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.indices, GL_STATIC_DRAW)
+
+        self.vertex_pos_id = glGetAttribLocation(graphics.shader_texture, "VertexPosition")
+        glVertexAttribPointer(self.vertex_pos_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(self.vertex_pos_id)
+ 
+        self.tex_coord_id = glGetUniformLocation(graphics.shader_texture, "TexCoord")
+        self.colour_id = glGetUniformLocation(graphics.shader_texture, "Colour")
+        self.pos_id = glGetUniformLocation(graphics.shader_texture, "Position")
+        self.size_id = glGetUniformLocation(graphics.shader_texture, "Size")
+
         depr = """
         some comment
         dx, dy = width/float(Z.shape[1]), height/float(Z.shape[0])
@@ -63,6 +94,17 @@ class Font():
             glEndList( )
         """
 
-    def draw(self, pos: tuple, colour: tuple, string: str):
-        glUseProgram(self.graphics.shader_texture)
+    def draw(self, string: str, pos: list, colour: list):
+        glUseProgram(self.graphics.shader_font)
+        glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3]) 
         glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.texture_id)
+        glBindVertexArray(self.VAO)
+        char_pos = pos
+        char_size = self.size
+        for i in range(len(string)):
+            glUniform2f(self.pos_id, char_pos[0], char_pos[1]) 
+            glUniform2f(self.size_id, char_size[0], char_size[1]) 
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+            char_pos[0] = char_pos[0] + i * 0.05
+

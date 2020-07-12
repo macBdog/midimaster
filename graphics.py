@@ -60,10 +60,40 @@ class Graphics():
         }
         """
 
+        vertex_shader_font = """
+        #version 330
+ 
+        in vec2 VertexPosition;
+        uniform vec2 Position;
+        uniform vec2 Size;
+
+        void main() 
+        {
+            gl_Position = vec4(Position.x + Size.x * VertexPosition.x, Position.y + Size.y * VertexPosition.y, 0.0, 1.0);
+        }
+        """
+
+        pixel_shader_font = """
+        #version 330
+ 
+        uniform sampler2D SamplerTex;
+        uniform vec4 Colour;
+        uniform vec2 TexCoord;
+        out vec4 outColour;
+ 
+        void main() 
+        {
+           outColour = texture(SamplerTex, TexCoord) * Colour;
+        }
+        """
+
         # Compile multiple shaders for different purposes
         self.shader_texture = OpenGL.GL.shaders.compileProgram( OpenGL.GL.shaders.compileShader(vertex_shader_texture, GL_VERTEX_SHADER),
                                                                 OpenGL.GL.shaders.compileShader(pixel_shader_texture, GL_FRAGMENT_SHADER))
 
         self.shader_colour = OpenGL.GL.shaders.compileProgram( OpenGL.GL.shaders.compileShader(vertex_shader_colour, GL_VERTEX_SHADER),
                                                         OpenGL.GL.shaders.compileShader(pixel_shader_colour, GL_FRAGMENT_SHADER))
+
+        self.shader_font = OpenGL.GL.shaders.compileProgram( OpenGL.GL.shaders.compileShader(vertex_shader_font, GL_VERTEX_SHADER),
+                                                                OpenGL.GL.shaders.compileShader(pixel_shader_font, GL_FRAGMENT_SHADER))
 

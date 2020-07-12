@@ -56,7 +56,18 @@ def main():
     font_game_h1 = Font(font_game_path, graphics, 50)
     font_game_h2 = Font(font_game_path, graphics, 38)
     font_game_body = Font(font_game_path, graphics, 22)
-    font_game_music_large = Font(font_music_path, graphics, 250)
+    font_game_music_large = Font(font_music_path, graphics, 32)
+
+    show_intro = False
+
+    if show_intro:
+        # Create a background image stretched to the size of the window
+        gui_splash = Gui(screen, sprites, window_width, window_height)
+        bg_splash = gui_splash.add_widget(textures.get("menu_background.tga"), 0, 0)
+
+        # Create a title image and fade it in
+        title = gui_splash.add_widget(textures.get_sub("gui", "imgtitle.tga"), gui_splash.width / 2, gui_splash.height / 2)
+        title.animation = Animation(AnimType.FadeIn, 0.25)
 
     # Create the holder UI for the game play elements
     gui_game = Gui(window_width, window_height)
@@ -64,29 +75,31 @@ def main():
     game_bg = textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
     gui_game.add_widget(game_bg)
 
-    bg_score = gui_game.add_widget(textures.create_sprite_texture("score_bg.tga", (0.0, -0.5), (0.5, 0.25)))
+    bg_score = gui_game.add_widget(textures.create_sprite_texture("score_bg.tga", (0.0, -0.75), (0.5, 0.25)))
     bg_score.align(AlignX.Centre, AlignY.Bottom)
 
     # Draw the 12 note lines with the staff lines of the treble clef highlighted
-    staff_pos_x = 0.0
-    staff_pos_y = 0.33
+    staff_pos_x = 0.15
+    staff_pos_y = 0.0
+    staff_width = 1.85
     staff_lines = []
-    note_spacing = 0.1
-    note_base_alpha = 0.15
+    note_spacing = 0.085
     staff_spacing = note_spacing * 2
+    note_base_alpha = 0.25
+    score_base_alpha = 0.33
     num_staff_lines = 4
-    num_notes = 20
     staff_pitch_origin = 60 # Using middle C4 as the reference note
-    note_start = staff_pos_y + (note_spacing * 3) + (note_spacing // 2) + 0.01
     incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
-    note_positions = []
     note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
                     [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 21, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
                     [1.0, 0.375, 0.89, 1.0], [1.0, 0.48, 1.0, 1.0], [0.19, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
     
+    barline_height = 0.02
+    barline_colour = [0.075, 0.075, 0.075, 0.8]
+    staff_lines.append(gui_game.add_widget(textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + 4 * staff_spacing], [staff_width, barline_height])))
     for i in range(num_staff_lines):
-        staff_body_white = textures.create_sprite_shape([0.78, 0.78, 0.78, 0.75], [staff_pos_x, staff_pos_y - i * staff_spacing], [0.85, note_spacing])
-        staff_body_black = textures.create_sprite_shape([0.0, 0.0, 0.0, 0.75], [staff_pos_x, staff_pos_y - i * staff_spacing], [0.85, 0.02])
+        staff_body_white = textures.create_sprite_shape([0.78, 0.78, 0.78, 0.75], [staff_pos_x, staff_pos_y + i * staff_spacing], [staff_width, staff_spacing - barline_height])
+        staff_body_black = textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + i * staff_spacing], [staff_width, barline_height])
         staff_lines.append(gui_game.add_widget(staff_body_white))
         staff_lines.append(gui_game.add_widget(staff_body_black))
     
@@ -98,25 +111,31 @@ def main():
     score_box = []
     score_highlight = []
 
+    num_notes = 20
     tone_count = 0
     incidental_count = 0
+    note_positions = []
+    note_start_x = staff_pos_x - (staff_width * 0.5) - 0.1
+    note_start_y = staff_pos_y - note_spacing * 3
+    score_start_x = note_start_x + 0.2
     for i in range(num_notes):
-        note_height = note_spacing * window_ratio
+        note_height = note_spacing
         is_incidental = i in incidentals
         if is_incidental:
             note_height = note_height * 0.5
             
         note_highlight.append(note_base_alpha)
-        score_highlight.append(0.1)
-        note_offset = note_start - tone_count * 0.12
+        score_highlight.append(score_base_alpha)
+        note_offset = note_start_y + tone_count * note_spacing
         note_size = [note_spacing, note_height]
+        score_size = [0.06, note_spacing * 0.84]
 
         if is_incidental:
-            note_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x - note_spacing - 0.01, note_offset + 0.13], note_size)))
-            score_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x + 0.01, note_offset + 0.13], note_size)))
+            note_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [note_start_x - note_spacing - 0.005, note_offset - note_spacing * 0.5], note_size)))
         else:
-            note_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x, note_offset], note_size)))
-            score_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [staff_pos_x + 0.01, note_offset], note_size)))
+            note_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [note_start_x, note_offset], note_size)))
+            
+        score_box.append(gui_game.add_widget(textures.create_sprite_shape(note_colours[i], [score_start_x, note_offset], score_size)))
         
         note_positions.append(0.01 * tone_count)
         
@@ -223,19 +242,19 @@ def main():
             note_box[i].sprite.set_alpha(note_highlight[i])
             score_box[i].sprite.set_alpha(score_highlight[i])
             if note_highlight[i] > note_base_alpha:
-                note_highlight[i] -= 0.6 * dt
-            if score_highlight[i] > 0.1:
-                score_highlight[i] -= 0.4 * dt
+                note_highlight[i] -= 0.9 * dt
+            if score_highlight[i] > score_base_alpha:
+                score_highlight[i] -= 0.8 * dt
 
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         
         gui_game.draw(dt)
 
         # Show the score
-        font_game_h1.draw("{0} XP".format(score), (bg_score.sprite.pos[0] + 0.2, bg_score.sprite.pos[1] + 0.05), (0.1, 0.1, 0.1, 1.0))
+        font_game_h1.draw("{0} XP".format(score), [bg_score.sprite.pos[0] + 0.2, bg_score.sprite.pos[1] + 0.05], [0.1, 0.1, 0.1, 1.0])
 
         # Show a large treble clef to be animated
-        font_game_music_large.draw("G", (staff_pos_x - 0.01, staff_pos_y - 0.01), (0,0,0))
+        font_game_music_large.draw("G", [staff_pos_x - 0.01, staff_pos_y - 0.01], [0,0,0,1.0])
 
         glfw.swap_buffers(window)
 
