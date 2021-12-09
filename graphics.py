@@ -74,7 +74,8 @@ class Graphics():
         void main() 
         {
             gl_Position = vec4(Position.x + Size.x * VertexPosition.x, Position.y + Size.y * VertexPosition.y, 0.0, 1.0);
-            OutTexCoord = vec2(CharCoord.x + TexCoord.x * CharSize.x, CharCoord.y + TexCoord.y * CharSize.y);
+            //OutTexCoord = vec2(CharCoord.x + TexCoord.x * CharSize.x, CharCoord.y + TexCoord.y * CharSize.y);
+            OutTexCoord = TexCoord;
         }
         """
 
@@ -88,7 +89,9 @@ class Graphics():
  
         void main() 
         {
-           outColour = texture(SamplerTex, OutTexCoord) * Colour;
+           vec4 char_col = Colour;
+           char_col.a = texture(SamplerTex, OutTexCoord).r;
+           outColour = char_col;
         }
         """
 

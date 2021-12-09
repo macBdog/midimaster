@@ -17,26 +17,35 @@ class MidiDevices:
         if self.input_port is None:
             self.input_device_name = input_name
             if input_name in self.input_devices:
-                self.input_port = mido.open_input(input_name)
+                try:
+                    self.input_port = mido.open_input(input_name)
+                except Exception as excpt:
+                    print(f"Could not open MIDI input port: {input_name}")
+                    print(excpt)
 
     def open_output(self, output_name):
         if self.output_port is None:
             self.output_device_name = output_name
             if output_name in self.output_devices:
-                self.output_port = mido.open_output(output_name)
+                try:
+                    self.output_port = mido.open_output(output_name)
+                except Exception as excpt:
+                    print(f"Could not open MIDI ouput port: {output_name}")
+                    print(excpt)
 
     def open_input_default(self):
-        if len(self.input_devices) > 0:
-            self.open_input(self.input_devices[0])
+        try:
+            self.input_port = mido.open_input()
+        except Exception as excpt:
+            print(f"Could not open default MIDI input port.")
+            print(excpt)
 
     def open_output_default(self):
-        if len(self.output_devices) > 0:
-            preferred_device_id = 0
-            for i in range(len(self.output_devices)):
-                if self.output_devices[i].find("Synth") >= 0:
-                    preferred_device_id = i
-                    break
-            self.open_output(self.output_devices[preferred_device_id])
+        try:
+            self.output_port = mido.open_output()
+        except Exception as excpt:
+            print("Could not open default MIDI output port.")
+            print(excpt)
 
     def update(self):
         if self.input_device_name:

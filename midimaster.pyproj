@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>f7446459-710a-4231-a40d-6f8d3d666438</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>midimaster.py</StartupFile>
+    <StartupFile>tests.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -12,7 +12,8 @@
     <Name>midimaster</Name>
     <RootNamespace>midimaster</RootNamespace>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <InterpreterId>Global|PythonCore|3.6</InterpreterId>
+    <InterpreterId>Global|PythonCore|3.8</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -46,13 +47,16 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="font.py" />
+    <Compile Include="tests.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="texture.py" />
     <Compile Include="widget.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <InterpreterReference Include="Global|PythonCore|3.6" />
+    <InterpreterReference Include="Global|PythonCore|3.8" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

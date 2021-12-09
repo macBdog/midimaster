@@ -20,6 +20,9 @@ import time
 import math
 import os.path
 
+# Dependency list:
+# numpy, Pillow, pygame, OpenGL, mido, freetype-py, python-rtmidi
+
 def main():
     """The entry point and controlling loop for the game. 
         Should always be small and concise, calling out to other managing
@@ -53,10 +56,10 @@ def main():
 
     font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
     font_music_path = os.path.join("ext", "Musisync.ttf")
-    font_game_h1 = Font(font_game_path, graphics, 50)
-    font_game_h2 = Font(font_game_path, graphics, 38)
-    font_game_body = Font(font_game_path, graphics, 22)
-    font_game_music_large = Font(font_music_path, graphics, 32)
+    font_game_h1 = Font(font_game_path, graphics, 24)
+    font_game_h2 = Font(font_game_path, graphics, 24)
+    font_game_body = Font(font_game_path, graphics, 24)
+    font_game_music_large = Font(font_music_path, graphics, 24)
 
     show_intro = False
 
@@ -91,7 +94,7 @@ def main():
     staff_pitch_origin = 60 # Using middle C4 as the reference note
     incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
     note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
-                    [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 21, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
+                    [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 0.1, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
                     [1.0, 0.375, 0.89, 1.0], [1.0, 0.48, 1.0, 1.0], [0.19, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
     
     barline_height = 0.02
@@ -110,6 +113,10 @@ def main():
     # Score box and highlights are the boxes that light up indicating which notes the player is hitting
     score_box = []
     score_highlight = []
+
+    font_test = textures.create_sprite_texture("trophy_gold.tga", (0.0, 0.0), (1.0, 1.0))
+    font_test.texture.texture_id = font_game_h1.texture_id
+    gui_game.add_widget(font_test)
 
     num_notes = 20
     tone_count = 0
@@ -251,7 +258,7 @@ def main():
         gui_game.draw(dt)
 
         # Show the score
-        font_game_h1.draw("{0} XP".format(score), [bg_score.sprite.pos[0] + 0.2, bg_score.sprite.pos[1] + 0.05], [0.1, 0.1, 0.1, 1.0])
+        font_game_h1.draw(f"{score} XP", [bg_score.sprite.pos[0] + 0.2, bg_score.sprite.pos[1] + 0.05], [0.1, 0.1, 0.1, 1.0])
 
         # Show a large treble clef to be animated
         font_game_music_large.draw("G", [staff_pos_x - 0.01, staff_pos_y - 0.01], [0,0,0,1.0])
