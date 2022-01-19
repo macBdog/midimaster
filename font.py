@@ -4,53 +4,59 @@ from graphics import *
 from OpenGL.GL import *
 
 class Font():
-    def blit(dest, src, loc):
+    def blit(self, dest, src, loc):
         pos = [i if i >= 0 else None for i in loc]
         neg = [-i if i < 0 else None for i in loc]
         target = dest[[slice(i,None) for i in pos]]
+
         src = src[[slice(i, j) for i,j in zip(neg, target.shape)]]
         target[[slice(None, i) for i in src.shape]] = src
         return dest
 
     def blit_char(self, dest, glyph, loc, char_index: int):
-        pos = [i if i >= 0 else None for i in loc]
-        neg = [-i if i < 0 else None for i in loc]
         bitmap = glyph.bitmap
-        width  = bitmap.width
-        height = bitmap.rows
+        width  = bitmap.rows
+        height = bitmap.width
+
+        if width <= 0 or height <= 0:
+            return loc
+
+        if height > self.largest_glyph_height:
+            self.largest_glyph_height = height
 
         if loc[0] + width >= self.tex_width:
-            loc[0] = 0
-            loc[1] += self.tex_height/8
+            loc = (0, loc[1] + self.largest_glyph_height)
 
-        target = dest[[slice(i, None) for i in pos]]
-        src = bitmap.buffer
-        src = src[[slice(i, j) for i,j in zip(neg, target.shape)]]
-        target[[slice(None, i) for i in src.shape]] = src
+        if loc[0] > self.tex_width or loc[1] > self.tex_width:
+            print(f"Font atlas not large enough for all characters!")
+            return loc
+            
+        src = numpy.reshape(bitmap.buffer, (width, height))
+        self.blit(dest, src, loc)
 
-        self.sizes[char_index] = (width, height)
-        self.positions[char_index] = loc
+        self.sizes[char_index] = (height / self.tex_width, width / self.tex_height)
+        self.positions[char_index] = (loc[1] / self.tex_height, loc[0] / self.tex_width)
         return (loc[0] + width, loc[1])
 
-    def __init__(self, filename: str, graphics: Graphics, size: int):
+    def __init__(self, filename: str, graphics: Graphics):
         self.graphics = graphics
         self.face = Face(filename)
-        self.size = size
-        self.face.set_char_size(size * 200)
+        self.face.set_char_size(4096)
         self.sizes = {}
         self.positions = {}
         self.char_start = 32
-        self.char_end = 128
+        self.char_end = 127
         self.num_chars = self.char_end - self.char_start
 
         # Create one big texture for all the glyphs
-        self.tex_width = 512
-        self.tex_height = 512
+        self.tex_width = 1024
+        self.tex_height = 1024
         self.image_data = numpy.zeros((self.tex_width, self.tex_height), dtype=numpy.uint8)
         print(f"Building font atlas for {filename} (", end='')
 
         # Blit font chars into the texture noting the individual char size and tex coords
         atlas_pos = (0, 0)
+        self.largest_glyph_height = 0
         for c in range(self.char_start, self.char_end):
             self.face.load_char(chr(c), FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT)
             atlas_pos = self.blit_char(self.image_data, self.face.glyph, atlas_pos, c)
@@ -65,7 +71,7 @@ class Font():
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, tex_width, tex_height, 0, GL_RED, GL_UNSIGNED_BYTE, self.image_data_texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, self.tex_width, self.tex_height, 0, GL_RED, GL_UNSIGNED_BYTE, self.image_data_texture)
         
         # Create array object
         self.VAO = glGenVertexArrays(1)
@@ -101,26 +107,32 @@ class Font():
         self.pos_id = glGetUniformLocation(graphics.shader_font, "Position")
         self.size_id = glGetUniformLocation(graphics.shader_font, "Size")
 
-    def draw(self, string: str, pos: list, colour: list):
+    def draw(self, string: str, font_size: int, pos: list, colour: list):
         glUseProgram(self.graphics.shader_font)
         glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3]) 
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glBindVertexArray(self.VAO)
         char_pos = pos
-        tex_coord = [0.0, 0.0]
-        tex_size = [1.0, 1.0]
-        display_ratio = 0.01 #self.size / 64
+        display_ratio = 0.0025
 
         for i in range(len(string)):
             c = ord(string[i])
-            #size = self.sizes[c]
-            size = self.sizes[94]
+
+            # Special case for unsupported or space characters
+            if c not in self.sizes:
+                char_pos = (char_pos[0] + font_size * display_ratio, char_pos[1])
+                continue
+
+            tex_coord = self.positions[c]
+            tex_size = self.sizes[c]
+            char_ratio = tex_size[0] / tex_size[1]
+
             glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3])
             glUniform2f(self.pos_id, char_pos[0], char_pos[1]) 
-            glUniform2f(self.size_id, 0.3, 0.3) 
+            glUniform2f(self.size_id, font_size * display_ratio * char_ratio, font_size * display_ratio) 
             glUniform2f(self.char_coord_id, tex_coord[0], tex_coord[1]) 
-            glUniform2f(self.char_size_id, tex_size[0], tex_size[1]) 
+            glUniform2f(self.char_size_id, tex_size[0], tex_size[1])
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-            char_pos[0] = char_pos[0] + i * size[0] * display_ratio * 2;
+            char_pos = (char_pos[0] + tex_size[0] * 2.0, char_pos[1])
 

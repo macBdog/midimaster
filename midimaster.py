@@ -3,7 +3,6 @@ import pygame.freetype
 import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import OpenGL.GL.shaders
 from texture import *
 from gui import Gui
 from widget import AlignX
@@ -21,7 +20,7 @@ import math
 import os.path
 
 # Dependency list:
-# numpy, Pillow, pygame, OpenGL, mido, freetype-py, python-rtmidi
+# numpy, Pillow, pygame, glfw, PyOpenGL, PyOpenGL_accelerate, mido, freetype-py, python-rtmidi
 
 def main():
     """The entry point and controlling loop for the game. 
@@ -56,10 +55,8 @@ def main():
 
     font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
     font_music_path = os.path.join("ext", "Musisync.ttf")
-    font_game_h1 = Font(font_game_path, graphics, 24)
-    font_game_h2 = Font(font_game_path, graphics, 24)
-    font_game_body = Font(font_game_path, graphics, 24)
-    font_game_music_large = Font(font_music_path, graphics, 24)
+    font_game = Font(font_game_path, graphics)
+    font_music = Font(font_music_path, graphics)
 
     show_intro = False
 
@@ -114,9 +111,7 @@ def main():
     score_box = []
     score_highlight = []
 
-    font_test = textures.create_sprite_texture("trophy_gold.tga", (0.0, 0.0), (1.0, 1.0))
-    font_test.texture.texture_id = font_game_h1.texture_id
-    gui_game.add_widget(font_test)
+    
 
     num_notes = 20
     tone_count = 0
@@ -258,10 +253,10 @@ def main():
         gui_game.draw(dt)
 
         # Show the score
-        font_game_h1.draw(f"{score} XP", [bg_score.sprite.pos[0] + 0.2, bg_score.sprite.pos[1] + 0.05], [0.1, 0.1, 0.1, 1.0])
+        font_game.draw(f"{score} XP", 24, [bg_score.sprite.pos[0], bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
 
         # Show a large treble clef to be animated
-        font_game_music_large.draw("G", [staff_pos_x - 0.01, staff_pos_y - 0.01], [0,0,0,1.0])
+        font_music.draw("G", 128, [staff_pos_x - 0.01, staff_pos_y - 0.01], [0,0,0,1.0])
 
         glfw.swap_buffers(window)
 
