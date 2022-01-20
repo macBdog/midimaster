@@ -1,45 +1,39 @@
 import pygame
 from texture import *
 from graphics import *
+from font import *
 import os.path
 import math
 
 class Note():
     """Note is a POD style container for a note in a piece of music with representation."""
-
     def __init__(self, note: int, time: int, length: int):
         self.note = note
         self.time = time
         self.length = length
 
 class NoteSprite():
-    """NoteSprite is the visual representation of a note that owns a SpriteTexture parent class. 
-        It owns an index into the Notes class note array of  note data for scoring and timing.
+    """NoteSprite is the visual representation of a note that is drawn with a font character. 
+        It owns an index into the Notes class note array of note data for scoring and timing.
     """
-
-    def __init__(self, graphics: Graphics):
+    def __init__(self, font: Font):
         self.note_id = -1
-        self.graphics = graphics
+        self.font = font
 
-    def assign(self, note_id: int, texture: Texture, note: int, time: int, length: int, pitch_pos: int):
+    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: int):
         self.note = note
         self.time = time
         self.length = length
         self.pitch_pos = pitch_pos
-        #self.sprite = SpriteTexture(self.graphics
         self.note_id = note_id
 
     def recycle(self):
-        self.rect.x = 9999
-        self.rect.y = 9999
         self.note_id = -1
         
     def draw(self, music_time: float, pixels_per_32nd: int, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
-            #self.rect.x = origin_note_x + self.time - music_time
-            #self.rect.y = self.pitch_pos
-
             if self.time < music_time:
+                self.font.draw(str(self.note), 24, [origin_note_x + self.time - music_time, self.pitch_pos], [0.2, 0.2, 0.2, 1.0])
                 notes_on[self.note] = self.time + self.length * pixels_per_32nd
                 self.recycle()
 
@@ -49,7 +43,6 @@ class Notes:
     for each piece of music when they should be on-screen. There is a pool
     of onscreen notes that recycled when they reach the playhead.
     """
-
     def __init__(self, graphics:Graphics, textures: TextureManager, staff_pos: list, note_positions: list, incidentals: dict):
         self.notes = []
         self.graphics = graphics
@@ -57,19 +50,16 @@ class Notes:
         self.note_pool_offset = 0
         self.note_pool_size = 32
         self.notes_offset = 0
-        self.textures = textures
         self.incidentals = incidentals
         self.note_positions = note_positions
         self.pos = staff_pos
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
-        self.music_font_size = 190
-        self.pixels_per_pitch = 10
+        self.music_font_size = 64
+        self.pixels_per_pitch = 0.015
         self.pixels_per_32nd = 12
-        self.font_music_path = os.path.join("ext", "Musisync.ttf")
-        # self.font_music = pygame.freetype.Font(self.font_music_path, self.music_font_size)
-        self.origin_note_y = self.pos[1] + self.pixels_per_pitch * 10;
+        self.font = Font(os.path.join("ext", "Musisync.ttf"), graphics)
+        self.origin_note_y = self.pos[1] + self.pixels_per_pitch * 10
         self.origin_note_x = staff_pos[0]
-        self.note_textures = {}
         self.note_offsets = {}
         self.notes_on = {}
         self.add_note_definition(32, "w")
@@ -86,16 +76,14 @@ class Notes:
         for i in range(self.num_barlines):
             barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, self.pixels_per_pitch * 16], [0.1, 0.1])
             self.barlines.append(barline)
-            self.bartimes.append(i * self.pixels_per_32nd * 32);
+            self.bartimes.append(i * self.pixels_per_32nd * 32)
             
         # Fill the note pool with inactive note sprites to be assigned data when drawn
         for i in range(self.note_pool_size):
-            self.note_pool.append(NoteSprite(self.graphics))
+            self.note_pool.append(NoteSprite(self.font))
 
     def add_note_definition(self, num_32nd_notes: int, font_character: str):
-        # note_texture, rect = self.font_music.render(font_character)
-        # self.note_textures[num_32nd_notes] = note_texture
-        self.note_offsets[num_32nd_notes] = 0.0
+        self.note_offsets[num_32nd_notes] = ord(font_character)
 
     def add(self, pitch: int, time: int, length: int):
         self.notes.append(Note(pitch, time, length))
@@ -116,11 +104,10 @@ class Notes:
         if self.note_pool[self.note_pool_offset].note_id >= 0:
             print("Failed to find an inactive note sprite in the pool!")
 
-        if self.notes_offset < len(self.notes) and False:
+        if self.notes_offset < len(self.notes):
             note_sprite = self.note_pool[self.note_pool_offset]
             note = self.notes[self.notes_offset]
 
-            note_texture = self.note_textures.get(note.length) or self.note_textures[min(self.note_textures.keys(), key=lambda k: abs(k-note.length))]
             note_offset = self.note_offsets.get(note.length) or self.note_offsets[min(self.note_offsets.keys(), key=lambda k: abs(k-note.length))]
             note_diff = self.note_positions[note.note % 12]
             num_octaves = (note.note - 60) // 12
@@ -128,7 +115,7 @@ class Notes:
             pitch_diff = -note_diff - (num_octaves * per_octave)
             note_time = note.time * self.pixels_per_32nd
             
-            note_sprite.assign(self.notes_offset, note_texture, note.note, note_time, note.length, self.origin_note_y + pitch_diff - note_offset.height)
+            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y + pitch_diff - note_offset)
             self.notes_offset += 1
             
     def draw(self, music_time) -> dict:

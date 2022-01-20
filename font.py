@@ -41,7 +41,7 @@ class Font():
     def __init__(self, filename: str, graphics: Graphics):
         self.graphics = graphics
         self.face = Face(filename)
-        self.face.set_char_size(4096)
+        self.face.set_char_size(5000)
         self.sizes = {}
         self.positions = {}
         self.char_start = 32
@@ -134,5 +134,5 @@ class Font():
             glUniform2f(self.char_coord_id, tex_coord[0], tex_coord[1]) 
             glUniform2f(self.char_size_id, tex_size[0], tex_size[1])
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-            char_pos = (char_pos[0] + tex_size[0] * 2.0, char_pos[1])
+            char_pos = (char_pos[0] + (font_size * display_ratio * tex_size[0] / char_ratio) * 16.0, char_pos[1])
 
