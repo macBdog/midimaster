@@ -41,7 +41,7 @@ class Font():
     def __init__(self, filename: str, graphics: Graphics):
         self.graphics = graphics
         self.face = Face(filename)
-        self.face.set_char_size(5000)
+        self.face.set_char_size(8000)
         self.sizes = {}
         self.positions = {}
         self.char_start = 32
@@ -49,8 +49,8 @@ class Font():
         self.num_chars = self.char_end - self.char_start
 
         # Create one big texture for all the glyphs
-        self.tex_width = 1024
-        self.tex_height = 1024
+        self.tex_width = 2048
+        self.tex_height = 2048
         self.image_data = numpy.zeros((self.tex_width, self.tex_height), dtype=numpy.uint8)
         print(f"Building font atlas for {filename} (", end='')
 

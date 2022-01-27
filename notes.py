@@ -1,4 +1,3 @@
-import pygame
 from texture import *
 from graphics import *
 from font import *
@@ -20,7 +19,7 @@ class NoteSprite():
         self.note_id = -1
         self.font = font
 
-    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: int):
+    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: float):
         self.note = note
         self.time = time
         self.length = length
@@ -30,11 +29,11 @@ class NoteSprite():
     def recycle(self):
         self.note_id = -1
         
-    def draw(self, music_time: float, pixels_per_32nd: int, origin_note_x: int, notes_on: dict):
+    def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
+            self.font.draw("w", 40, [origin_note_x - 0.92 + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
             if self.time < music_time:
-                self.font.draw(str(self.note), 24, [origin_note_x + self.time - music_time, self.pitch_pos], [0.2, 0.2, 0.2, 1.0])
-                notes_on[self.note] = self.time + self.length * pixels_per_32nd
+                notes_on[self.note] = self.time + self.length
                 self.recycle()
 
 class Notes:
@@ -54,9 +53,8 @@ class Notes:
         self.note_positions = note_positions
         self.pos = staff_pos
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
-        self.music_font_size = 64
         self.pixels_per_pitch = 0.015
-        self.pixels_per_32nd = 12
+        self.pixels_per_32nd = 0.132
         self.font = Font(os.path.join("ext", "Musisync.ttf"), graphics)
         self.origin_note_y = self.pos[1] + self.pixels_per_pitch * 10
         self.origin_note_x = staff_pos[0]
@@ -73,17 +71,18 @@ class Notes:
         self.num_barlines = 8
         self.barlines = []
         self.bartimes = []
+        staff_width = 0.085 * 2 * 4
         for i in range(self.num_barlines):
-            barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, self.pixels_per_pitch * 16], [0.1, 0.1])
+            barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, 0.0], [0.011, staff_width])
             self.barlines.append(barline)
-            self.bartimes.append(i * self.pixels_per_32nd * 32)
+            self.bartimes.append(i * 32.0)
             
         # Fill the note pool with inactive note sprites to be assigned data when drawn
         for i in range(self.note_pool_size):
             self.note_pool.append(NoteSprite(self.font))
 
     def add_note_definition(self, num_32nd_notes: int, font_character: str):
-        self.note_offsets[num_32nd_notes] = ord(font_character)
+        self.note_offsets[num_32nd_notes] = 0
 
     def add(self, pitch: int, time: int, length: int):
         self.notes.append(Note(pitch, time, length))
@@ -113,23 +112,28 @@ class Notes:
             num_octaves = (note.note - 60) // 12
             per_octave = self.note_positions[12]
             pitch_diff = -note_diff - (num_octaves * per_octave)
-            note_time = note.time * self.pixels_per_32nd
+            note_time = note.time * 1.0
             
-            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y + pitch_diff - note_offset)
+            pitch_pos = (pitch_diff - note_offset)
+            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_pos)
             self.notes_offset += 1
             
-    def draw(self, music_time) -> dict:
+    def draw(self, dt: float, music_time: float, note_width: float) -> dict:
         """ Draw and update the bar lines and all notes in the pool.
         Return a dictionary keyed on note numbers with value of the end music time note length
         """
+
+        # Draw a recycled list of barlines moving from right to left
         for i in range(self.num_barlines):
-            self.barlines[i].pos[0] = self.origin_note_x - 24 + self.bartimes[i] - music_time
-            self.barlines[i].pos[1] = self.pos[1] - self.pixels_per_pitch * 12
-            if self.bartimes[i] < music_time:
-                self.bartimes[i] += self.pixels_per_32nd * 32 * i
-                              
+            bar_start = self.origin_note_x - 0.92
+            self.barlines[i].pos[0] = bar_start + ((self.bartimes[i] - music_time) * note_width)
+            self.barlines[i].pos[1] = self.pos[1] + 0.25
+            self.barlines[i].draw()
+            if self.bartimes[i] < music_time:   
+                self.bartimes[i] += self.num_barlines * 32
+                          
         # Draw all the notes in the pool
         for i in range(len(self.note_pool)):
-            self.note_pool[i].draw(music_time, self.pixels_per_32nd, self.origin_note_x, self.notes_on)
+            self.note_pool[i].draw(music_time, note_width, self.origin_note_x, self.notes_on)
 
         return self.notes_on

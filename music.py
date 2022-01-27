@@ -47,7 +47,7 @@ class Music:
                             self.notes.add(msg.note, time_in_32s, length_in_32s)
                             self.keys.pop(msg.note)
 
-    def draw(self, dt: float) -> dict:
-        return self.notes.draw(dt)
+    def draw(self, dt: float, music_time: float, note_width: float) -> dict:
+        return self.notes.draw(dt, music_time, note_width)
 
 

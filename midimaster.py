@@ -28,7 +28,11 @@ class MidiMaster():
         self.music_running = False
         self.window_width = 1280
         self.window_height = 720
+        self.note_width_32nd = 0.03
         self.score_highlight = []
+        self.dt = 0.03
+        self.score = 0
+        self.music_time = 0.0
         self.staff_pitch_origin = 60 # Using middle C4 as the reference note
 
     def begin(self):
@@ -131,7 +135,7 @@ class MidiMaster():
                 
             score_box.append(gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [score_start_x, note_offset], score_size)))
             
-            note_positions.append(0.01 * tone_count)
+            note_positions.append(note_offset)
             
             if is_incidental:
                 incidental_count += 1
@@ -155,9 +159,7 @@ class MidiMaster():
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glfw.swap_interval(1)
 
-        score = 0
-        music_time = 0.0
-        self.music_running = True
+        self.music_running = False
         dt_cur = time.time()
         dt_last = time.time()
         midi_notes = {}
@@ -165,7 +167,7 @@ class MidiMaster():
             glfw.poll_events()
 
             dt_cur = time.time()
-            dt = dt_cur - dt_last
+            self.dt = dt_cur - dt_last
             dt_last = dt_cur
             
             self.devices.update()
@@ -173,7 +175,7 @@ class MidiMaster():
             # Handle all events from MIDI input devices
             for message in self.devices.input_messages:
                 if message.type == 'note_on' or message.type == 'note_off':
-                    score += 100
+                    self.score += 100
                     score_id = message.note - self.staff_pitch_origin
                     if score_id >= 0 and score_id < num_notes:
                         self.score_highlight[score_id] = 1.0
@@ -184,24 +186,28 @@ class MidiMaster():
             # Handle all events from pygame
             glfw.set_key_callback(window, self.handle_input_key)
 
-            music_notes = music.draw(music_time)
+            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+            
+            gui_game.draw(self.dt)
+            music_notes = music.draw(self.dt, self.music_time, self.note_width_32nd)
 
+            tempo_bpm = 60.0
             if self.music_running:
-                music_time += dt * 120.0
+                self.music_time += self.dt
 
             # Process all notes that have hit the play head
             music_notes_off = {}
             for k in music_notes:
                 # Highlight the note box to show this note should be currently played
-                if music_notes[k] >= music_time:
+                if music_notes[k] >= self.music_time:
                     highlight_id = k - self.staff_pitch_origin
                     note_highlight[highlight_id] = 1.0
 
                 # The note value in the dictionary is the time to turn off
                 if k in midi_notes:
-                    if music_notes[k] < music_time:
+                    if music_notes[k] < self.music_time:
                         music_notes_off[k] = True
-                elif music_notes[k] >= music_time:   
+                elif music_notes[k] >= self.music_time:   
                     midi_notes[k] = music_notes[k]
                     new_note_on = Message('note_on')
                     new_note_on.note = k
@@ -220,16 +226,12 @@ class MidiMaster():
                 note_box[i].sprite.set_alpha(note_highlight[i])
                 score_box[i].sprite.set_alpha(self.score_highlight[i])
                 if note_highlight[i] > note_base_alpha:
-                    note_highlight[i] -= 0.9 * dt
+                    note_highlight[i] -= 0.9 * self.dt
                 if self.score_highlight[i] > score_base_alpha:
-                    self.score_highlight[i] -= 0.8 * dt
+                    self.score_highlight[i] -= 0.8 * self.dt
 
-            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-            
-            gui_game.draw(dt)
-
-            # Show the score
-            self.font_game.draw(f"{score} XP", 24, [bg_score.sprite.pos[0], bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
+            # Show the score on top of everything
+            self.font_game.draw(f"{self.score} XP", 24, [bg_score.sprite.pos[0], bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
 
             glfw.swap_buffers(window)
 
@@ -250,8 +252,20 @@ class MidiMaster():
             new_note.note = key_note_value + self.staff_pitch_origin
             new_note.velocity = 100
             self.devices.output_messages.append(new_note)
+        elif key == 61:
+            # + Add more space in a bar
+            self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
+        elif key == 45:
+            # - Add less space in a bar
+            self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
+        elif key == 262:
+            # -> Manually advance forward in time
+            self.music_time += self.dt * 5.0
+        elif key == 263:
+            # <- Manually advance backwards in time
+            self.music_time -= self.dt * 5.0
         elif key == 80: 
-            # p for Pause
+            # p for Pause TODO this needs debouncing
             self.music_running = not self.music_running
 
 def main():
