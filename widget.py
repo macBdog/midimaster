@@ -42,9 +42,7 @@ class Widget:
             self.sprite.pos = (self.sprite.pos[0], self.sprite.pos[1] + self.sprite.size[1] * 0.5)
 
     def draw(self, dt: float):
-        """Apply any changes to the widget rect
-        :param screen: The pygame.screen used to write the pixel data
-        """
+        """Apply any changes to the widget rect."""
 
         # Apply any active animation
         if self.animation and self.animation.active:

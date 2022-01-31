@@ -24,11 +24,14 @@ class Sprite():
     def __init__(self, graphics: Graphics, colour: list, pos: list, size: list):
         self.graphics = graphics
         self.pos = pos
-        self.colour = colour
+        self.colour = colour[:]
         self.size = size
 
     def set_alpha(self, new_alpha: float):
         self.colour[3] = new_alpha
+    
+    def set_colour(self, new_colour: list):
+        self.colour = new_colour[:]
 
 class SpriteShape(Sprite):
     def __init__(self, graphics: Graphics, colour: list, pos: list, size: list):
@@ -72,8 +75,8 @@ class SpriteShape(Sprite):
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,  None)
 
 class SpriteTexture(Sprite):
-    def __init__(self, graphics: Graphics, tex: Texture, pos: tuple, size: tuple):
-        Sprite.__init__(self, graphics, [1.0, 1.0, 1.0, 1.0], pos, size)
+    def __init__(self, graphics: Graphics, tex: Texture, colour: list, pos: tuple, size: tuple):
+        Sprite.__init__(self, graphics, colour, pos, size)
         self.texture = tex
 
         # Create array object
@@ -141,5 +144,8 @@ class TextureManager:
         return SpriteShape(self.graphics, colour, position, size)
 
     def create_sprite_texture(self, texture_name:str, position: tuple, size: tuple):
-        return SpriteTexture(self.graphics, self.get(texture_name), position, size)
+        return SpriteTexture(self.graphics, self.get(texture_name), [1.0, 1.0, 1.0, 1.0], position, size)
+
+    def create_sprite_texture_tinted(self, texture_name:str, colour: list, position: tuple, size: tuple):
+        return SpriteTexture(self.graphics, self.get(texture_name), colour, position, size)
 

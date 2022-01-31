@@ -32,8 +32,8 @@ class NoteSprite():
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
             self.font.draw("w", 40, [origin_note_x - 0.92 + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
-            if self.time < music_time:
-                notes_on[self.note] = self.time + self.length
+            if self.time <= music_time:
+                notes_on[self.note] = music_time + self.length
                 self.recycle()
 
 class Notes:
@@ -112,7 +112,8 @@ class Notes:
             num_octaves = (note.note - 60) // 12
             per_octave = self.note_positions[12]
             pitch_diff = -note_diff - (num_octaves * per_octave)
-            note_time = note.time * 1.0
+            lead_in = 32
+            note_time = lead_in + note.time
             
             pitch_pos = (pitch_diff - note_offset)
             note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_pos)

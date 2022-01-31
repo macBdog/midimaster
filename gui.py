@@ -11,7 +11,7 @@ class Gui:
 
     def add_widget(self, sprite: SpriteTexture) -> Widget:
         """Add to the list of widgets to draw for this gui collection
-        :param texture: The pygame surface to blit when the widget is drawn
+        :param sprite: The underlying sprite OpenGL objectthat is updated when the widget is drawn
         """
         widget = Widget(sprite)
         self.widgets.append(widget)
