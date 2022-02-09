@@ -34,6 +34,7 @@ class MidiMaster():
         self.note_width_32nd = 0.03
         self.score_highlight = []
         self.note_highlight = []
+        self.note_correct_colour = [0.75, 0.75, 0.75, 0.5]
         self.keys_down = {}
         self.cursor = Cursor()
         self.dt = 0.03
@@ -81,12 +82,16 @@ class MidiMaster():
 
         # Create the holder UI for the game play elements
         gui_game = Gui(self.window_width, self.window_height)
-
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         gui_game.add_widget(game_bg)
 
         bg_score = gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (0.0, -0.75), (0.5, 0.25)))
         bg_score.align(AlignX.Centre, AlignY.Bottom)
+
+        note_bg_pos_x = 0.228
+        note_bg_size = (2.0, 0.333)
+        note_bg_btm = gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, -0.24), note_bg_size))
+        note_bg_top = gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, 0.775), (2.0, -0.333)))
 
         # Draw the 12 note lines with the staff lines of the treble clef highlighted
         staff_pos_x = 0.15
@@ -189,7 +194,6 @@ class MidiMaster():
             # Handle all events from MIDI input devices
             for message in self.devices.input_messages:
                 if message.type == 'note_on' or message.type == 'note_off':
-                    self.score += 100
                     score_id = message.note - self.staff_pitch_origin
                     if score_id >= 0 and score_id < num_notes:
                         self.score_highlight[score_id] = 1.0
@@ -215,7 +219,7 @@ class MidiMaster():
                 # Highlight the note box to show this note should be currently played
                 if music_notes[k] >= self.music_time:
                     highlight_id = k - self.staff_pitch_origin
-                    self.score_highlight[highlight_id] = 1.0
+                    self.note_highlight[highlight_id] = 1.0
 
                 # The note value in the dictionary is the time to turn off
                 if k in midi_notes:
@@ -235,15 +239,33 @@ class MidiMaster():
                 self.devices.output_messages.append(new_note_off)
                 midi_notes.pop(k)
 
+            # Score points for any score box that is highlighted while a note is lit up
+            scored_this_frame = False
+            scored_notes = zip(self.note_highlight, self.score_highlight)
+            for n, s in scored_notes:
+                if n >= 1.0 and s >= 1.0:
+                    self.score = self.score + 10 * self.dt
+                    scored_this_frame = True
+            
+            if scored_this_frame:
+                self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
+                
+            # Highlight score boxes
+            note_bg_btm.sprite.set_colour(self.note_correct_colour)
+            note_bg_top.sprite.set_colour(self.note_correct_colour)
+
             # Pull the scoring box alpha down to 0
             for i in range(num_notes):
                 note_box[i].sprite.set_alpha(self.note_highlight[i])
                 score_box[i].sprite.set_alpha(self.score_highlight[i])
                 self.note_highlight[i] = max(note_base_alpha, self.note_highlight[i] - 0.9 * self.dt)
                 self.score_highlight[i] = max(score_base_alpha, self.score_highlight[i] - 0.8 * self.dt)
+            
+            # Same with the note highlight background
+            self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
 
             # Show the score on top of everything
-            self.font_game.draw(f"{self.score} XP", 24, [bg_score.sprite.pos[0], bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
+            self.font_game.draw(f"{math.floor(self.score)} XP", 24, [bg_score.sprite.pos[0], bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
 
             # Show developer stats
             if self.dev_mode:
@@ -267,7 +289,7 @@ class MidiMaster():
             key_note_value = key - 67
             if key_note_value < 0:
                 key_note_value += 6
-            self.note_highlight[key_note_value] = 1.0
+            self.score_highlight[key_note_value] = 1.0
             new_note = Message('note_on')
             new_note.note = key_note_value + self.staff_pitch_origin
             new_note.velocity = 100

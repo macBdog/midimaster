@@ -56,7 +56,7 @@ class Notes:
         self.pixels_per_pitch = 0.015
         self.pixels_per_32nd = 0.132
         self.font = Font(os.path.join("ext", "Musisync.ttf"), graphics)
-        self.origin_note_y = self.pos[1] + self.pixels_per_pitch * 10
+        self.origin_note_y = 0#self.pos[1] + self.pixels_per_pitch * 10
         self.origin_note_x = staff_pos[0]
         self.note_offsets = {}
         self.notes_on = {}
