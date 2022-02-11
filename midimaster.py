@@ -36,6 +36,7 @@ class MidiMaster():
         self.note_highlight = []
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.5]
         self.keys_down = {}
+        self.notes_down = {}
         self.cursor = Cursor()
         self.dt = 0.03
         self.fps = 0
@@ -191,13 +192,24 @@ class MidiMaster():
             
             self.devices.update()
 
-            # Handle all events from MIDI input devices
+            # Handle events from MIDI input, echo to output so player can hear
             for message in self.devices.input_messages:
                 if message.type == 'note_on' or message.type == 'note_off':
-                    score_id = message.note - self.staff_pitch_origin
+                    self.devices.output_messages.append(message)
+
+             # Process any output messages and transfer them to player notes down
+            for message in self.devices.output_messages:
+                if message.type == 'note_on':
+                    self.notes_down[message.note] = 1.0
+                elif message.type == 'note_off':
+                    self.notes_down[message.note] = 0.0
+                
+            # Light up score box for any held note
+            for note, velocity in self.notes_down.items():
+                if velocity > 0.0:
+                    score_id = note - self.staff_pitch_origin
                     if score_id >= 0 and score_id < num_notes:
                         self.score_highlight[score_id] = 1.0
-                    self.devices.output_messages.append(message)
 
             self.devices.input_messages = []
 
@@ -272,6 +284,9 @@ class MidiMaster():
                 self.font_game.draw(f"FPS: {math.floor(self.fps)}", 16, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
                 self.font_game.draw(f"X: {abs(math.floor(self.cursor.pos[0] * 100))}\nY: {abs(math.floor(self.cursor.pos[1] * 100))}", 12, self.cursor.pos, [0.81, 0.81, 0.81, 1.0])
 
+            # Flush out the buffers
+            self.devices.output_messages = []
+
             glfw.swap_buffers(window)
 
         self.devices.quit()
@@ -281,6 +296,19 @@ class MidiMaster():
         self.cursor.pos = [((xpos / self.window_width) * 2.0) -1.0, ((ypos / self.window_height) * -2.0) +1.0]
 
     def handle_input_key(self, window, key: int, scancode: int, action: int, mods: int):
+        if self.dev_mode:
+            print(f"Input event log key[{key}], scancode[{scancode}], action[{action}], mods[{mods}]")
+
+        action_keyup = 0
+        action_keydown = 1
+        action_keyrepeat = 2
+
+        # Update the state of each key
+        if action == action_keydown:
+            self.keys_down[key] = True
+        elif action == action_keyup:
+            self.keys_down[key] = False
+
         if key == 256:
             # Esc means quit
             self.running = False
@@ -289,11 +317,16 @@ class MidiMaster():
             key_note_value = key - 67
             if key_note_value < 0:
                 key_note_value += 6
-            self.score_highlight[key_note_value] = 1.0
-            new_note = Message('note_on')
-            new_note.note = key_note_value + self.staff_pitch_origin
-            new_note.velocity = 100
-            self.devices.output_messages.append(new_note)
+            if action == action_keydown:
+                new_note = Message('note_on')
+                new_note.note = key_note_value + self.staff_pitch_origin
+                new_note.velocity = 100
+                self.devices.input_messages.append(new_note)
+            elif action == action_keyup:
+                new_note = Message('note_off')
+                new_note.note = key_note_value + self.staff_pitch_origin
+                new_note.velocity = 100
+                self.devices.input_messages.append(new_note)
         elif key == 61:
             # + Add more space in a bar
             self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
@@ -308,7 +341,7 @@ class MidiMaster():
             self.music_time -= self.dt * 5.0
         elif key == 80: 
             # p for Pause on keyup
-            if action == 0:
+            if action == action_keyup:
                 self.music_running = not self.music_running
 
 def main():
