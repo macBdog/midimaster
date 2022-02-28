@@ -21,6 +21,10 @@ import os.path
 # Dependency list:
 # numpy, Pillow, glfw, PyOpenGL, PyOpenGL_accelerate, mido, freetype-py, python-rtmidi
 
+action_keyup = 0
+action_keydown = 1
+action_keyrepeat = 2
+
 class MidiMaster():
     """The controlling object and main loop for the game. 
         Should always be small and concise, calling out to other managing
@@ -86,7 +90,26 @@ class MidiMaster():
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         gui_game.add_widget(game_bg)
 
-        bg_score = gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (0.0, -0.75), (0.5, 0.25)))
+        playback_button_size = (0.15, 0.125)
+        btn_play = gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, -0.63), playback_button_size))
+        btn_pause = gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, -0.63), playback_button_size))
+        btn_stop = gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, -0.63), playback_button_size))
+
+        def play(self):
+            self.music_running = True
+
+        def pause(self):
+            self.music_running = False
+
+        def stop(self):
+            self.music_running = False
+            self.music_time = 0
+
+        btn_play.set_action(play, self)
+        btn_pause.set_action(pause, self)
+        btn_stop.set_action(stop, self)
+        
+        bg_score = gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, -0.75), (0.5, 0.25)))
         bg_score.align(AlignX.Centre, AlignY.Bottom)
 
         note_bg_pos_x = 0.228
@@ -215,10 +238,12 @@ class MidiMaster():
 
             # Handle all events from the window system
             glfw.set_key_callback(window, self.handle_input_key)
+            glfw.set_mouse_button_callback(window, self.handle_mouse_button)
             glfw.set_cursor_pos_callback(window, self.handle_cursor_update)
 
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
             
+            gui_game.touch(self.cursor)
             gui_game.draw(self.dt)
             music_notes = music.draw(self.dt, self.music_time, self.note_width_32nd)
 
@@ -295,13 +320,19 @@ class MidiMaster():
     def handle_cursor_update(self, window, xpos, ypos):
         self.cursor.pos = [((xpos / self.window_width) * 2.0) -1.0, ((ypos / self.window_height) * -2.0) +1.0]
 
+    def handle_mouse_button(self, window, button: int, action: int, mods: int):
+        if self.dev_mode:
+            print(f"Mouse event log button[{button}], action[{action}], mods[{mods}]")
+
+        # Update the state of each button
+        if action == action_keydown:
+            self.cursor.buttons[button] = True
+        elif action == action_keyup:
+            self.cursor.buttons[button] = False
+
     def handle_input_key(self, window, key: int, scancode: int, action: int, mods: int):
         if self.dev_mode:
             print(f"Input event log key[{key}], scancode[{scancode}], action[{action}], mods[{mods}]")
-
-        action_keyup = 0
-        action_keydown = 1
-        action_keyrepeat = 2
 
         # Update the state of each key
         if action == action_keydown:
@@ -349,4 +380,5 @@ def main():
     mm = MidiMaster()
     mm.begin()
 
-main()
+if __name__ == '__main__':
+    main()

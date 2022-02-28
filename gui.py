@@ -1,5 +1,6 @@
 from widget import Widget
 from texture import SpriteTexture
+from cursor import Cursor
 
 class Gui:
     """Manager style functionality for a collection of widget classes. 
@@ -16,6 +17,10 @@ class Gui:
         widget = Widget(sprite)
         self.widgets.append(widget)
         return widget
+
+    def touch(self, mouse: Cursor):
+        for i in self.widgets:
+            i.touch(mouse)
 
     def draw(self, dt: float):
         for i in self.widgets:
