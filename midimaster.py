@@ -1,7 +1,3 @@
-import glfw
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from texture import *
 from gui import Gui
 from widget import AlignX
 from widget import AlignY
@@ -11,66 +7,34 @@ from music import Music
 from mido import Message
 from midi_devices import MidiDevices
 from font import Font
-from texture import SpriteShape
-from graphics import Graphics
-from cursor import Cursor
-import time
+from game import Game
 import math
 import os.path
 
-# Dependency list:
-# numpy, Pillow, glfw, PyOpenGL, PyOpenGL_accelerate, mido, freetype-py, python-rtmidi
-
-action_keyup = 0
-action_keydown = 1
-action_keyrepeat = 2
-
-class MidiMaster():
+class MidiMaster(Game):
     """The controlling object and main loop for the game. 
         Should always be small and concise, calling out to other managing
         modules and namespaces where possible."""
+
     def __init__(self):
-        self.running = True
+        super(MidiMaster, self). __init__()
+        self.name = "MidiMaster"
         self.music_running = False
-        self.dev_mode = True
-        self.window_width = 1280
-        self.window_height = 720
         self.note_width_32nd = 0.03
         self.score_highlight = []
         self.note_highlight = []
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.5]
-        self.keys_down = {}
         self.notes_down = {}
-        self.cursor = Cursor()
-        self.dt = 0.03
-        self.fps = 0
-        self.fps_last_update = 0
+        self.num_notes = 20
+        self.midi_notes = {}
         self.score = 0
         self.tempo_bpm = 60.0
         self.music_time = 0.0
         self.staff_pitch_origin = 60 # Using middle C4 as the reference note
-
-    def begin(self):
-        if not glfw.init():
-            return
+        self.music_running = False
     
-        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
-        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
-        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
-        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-        window = glfw.create_window(self.window_width, self.window_height, "MidiMaster", None, None)
-    
-        if not window:
-            glfw.terminate()
-            return
-    
-        glfw.make_context_current(window)
-        
-        self.running = True
-
-        # Now we have an OpenGL context we can compile GPU programs
-        self.graphics = Graphics()
-        self.textures = TextureManager("tex", self.graphics)
+    def prepare(self):
+        super().prepare()
         self.font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
         self.font_game = Font(self.font_game_path, self.graphics)
 
@@ -86,14 +50,14 @@ class MidiMaster():
             title.animation = Animation(AnimType.FadeIn, 0.25)
 
         # Create the holder UI for the game play elements
-        gui_game = Gui(self.window_width, self.window_height)
+        self.gui_game = Gui(self.window_width, self.window_height)
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
-        gui_game.add_widget(game_bg)
+        self.gui_game.add_widget(game_bg)
 
         playback_button_size = (0.15, 0.125)
-        btn_play = gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, -0.63), playback_button_size))
-        btn_pause = gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, -0.63), playback_button_size))
-        btn_stop = gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, -0.63), playback_button_size))
+        btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, -0.63), playback_button_size))
+        btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, -0.63), playback_button_size))
+        btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, -0.63), playback_button_size))
 
         def play(self):
             self.music_running = True
@@ -109,13 +73,13 @@ class MidiMaster():
         btn_pause.set_action(pause, self)
         btn_stop.set_action(stop, self)
         
-        bg_score = gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, -0.75), (0.5, 0.25)))
-        bg_score.align(AlignX.Centre, AlignY.Bottom)
+        self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, -0.75), (0.5, 0.25)))
+        self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
         note_bg_pos_x = 0.228
         note_bg_size = (2.0, 0.333)
-        note_bg_btm = gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, -0.24), note_bg_size))
-        note_bg_top = gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, 0.775), (2.0, -0.333)))
+        self.note_bg_btm = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, -0.24), note_bg_size))
+        self.note_bg_top = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, 0.775), (2.0, -0.333)))
 
         # Draw the 12 note lines with the staff lines of the treble clef highlighted
         staff_pos_x = 0.15
@@ -124,8 +88,8 @@ class MidiMaster():
         staff_lines = []
         note_spacing = 0.085
         staff_spacing = note_spacing * 2
-        note_base_alpha = 0.15
-        score_base_alpha = 0.33
+        self.note_base_alpha = 0.15
+        self.score_base_alpha = 0.33
         num_staff_lines = 4
         incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
         note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
@@ -135,43 +99,42 @@ class MidiMaster():
         
         barline_height = 0.02
         barline_colour = [0.075, 0.075, 0.075, 0.8]
-        staff_lines.append(gui_game.add_widget(self.textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + 4 * staff_spacing], [staff_width, barline_height])))
+        staff_lines.append(self.gui_game.add_widget(self.textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + 4 * staff_spacing], [staff_width, barline_height])))
         for i in range(num_staff_lines):
             staff_body_white = self.textures.create_sprite_shape([0.78, 0.78, 0.78, 0.75], [staff_pos_x, staff_pos_y + i * staff_spacing], [staff_width, staff_spacing - barline_height])
             staff_body_black = self.textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + i * staff_spacing], [staff_width, barline_height])
-            staff_lines.append(gui_game.add_widget(staff_body_white))
-            staff_lines.append(gui_game.add_widget(staff_body_black))
+            staff_lines.append(self.gui_game.add_widget(staff_body_white))
+            staff_lines.append(self.gui_game.add_widget(staff_body_black))
         
         # Note box and highlights are the boxes that light up indicating what note should be played
-        note_box = []
+        self.note_box = []
         
         # Score box and highlights are the boxes that light up indicating which notes the player is hitting
-        score_box = []
-        num_notes = 20
+        self.score_box = []
         tone_count = 0
         incidental_count = 0
         note_positions = []
         note_start_x = staff_pos_x - (staff_width * 0.5) - 0.1
         note_start_y = staff_pos_y - note_spacing * 3
         score_start_x = note_start_x + 0.071
-        for i in range(num_notes):
+        for i in range(self.num_notes):
             note_height = note_spacing
             is_incidental = i in incidentals
             if is_incidental:
                 note_height = note_height * 0.5
                 
-            self.note_highlight.append(note_base_alpha)
-            self.score_highlight.append(score_base_alpha)
+            self.note_highlight.append(self.note_base_alpha)
+            self.score_highlight.append(self.score_base_alpha)
             note_offset = note_start_y + tone_count * note_spacing
             note_size = [note_spacing, note_height]
             score_size = [0.05, note_spacing]
 
             if is_incidental:
-                note_box.append(gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x - note_spacing - 0.005, note_offset - note_spacing * 0.5], note_size)))
+                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x - note_spacing - 0.005, note_offset - note_spacing * 0.5], note_size)))
             else:
-                note_box.append(gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x, note_offset], note_size)))
+                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x, note_offset], note_size)))
                 
-            score_box.append(gui_game.add_widget(self.textures.create_sprite_texture_tinted("score_zone.png", score_colours[i], [score_start_x, note_offset], score_size)))
+            self.score_box.append(self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("score_zone.png", score_colours[i], [score_start_x, note_offset], score_size)))
             
             note_positions.append(note_offset)
             
@@ -186,198 +149,110 @@ class MidiMaster():
         self.devices.open_output_default()
 
         # Read a midi file and load the notes
-        music = Music(self.graphics, self.textures, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
+        self.music = Music(self.graphics, self.textures, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
 
-        glViewport(0, 0, self.window_width, self.window_height)
-        glClearColor(0.0, 0.0, 0.0, 1.0)    
-        glShadeModel(GL_SMOOTH) 
-        glEnable(GL_DEPTH_TEST)
-        glDepthFunc(GL_LEQUAL)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glfw.swap_interval(1)
+    def update(self, dt):
+        self.devices.update()
 
-        self.music_running = False
-        dt_cur = time.time()
-        dt_last = time.time()
-        midi_notes = {}
-        while self.running and not glfw.window_should_close(window):
-            glfw.poll_events()
+        # Handle events from MIDI input, echo to output so player can hear
+        for message in self.devices.input_messages:
+            if message.type == 'note_on' or message.type == 'note_off':
+                self.devices.output_messages.append(message)
 
-            dt_cur = time.time()
-            self.dt = dt_cur - dt_last
-            dt_last = dt_cur
-            self.fps_last_update -= self.dt
-
-            if self.fps_last_update <= 0:
-                self.fps = 1.0 / self.dt
-                self.fps_last_update = 1.0
+            # Process any output messages and transfer them to player notes down
+        for message in self.devices.output_messages:
+            if message.type == 'note_on':
+                self.notes_down[message.note] = 1.0
+            elif message.type == 'note_off':
+                self.notes_down[message.note] = 0.0
             
-            self.devices.update()
+        # Light up score box for any held note
+        for note, velocity in self.notes_down.items():
+            if velocity > 0.0:
+                score_id = note - self.staff_pitch_origin
+                if score_id >= 0 and score_id < self.num_notes:
+                    self.score_highlight[score_id] = 1.0
 
-            # Handle events from MIDI input, echo to output so player can hear
-            for message in self.devices.input_messages:
-                if message.type == 'note_on' or message.type == 'note_off':
-                    self.devices.output_messages.append(message)
+        self.devices.input_messages = []
+        
+        self.gui_game.touch(self.input.cursor)
+        self.gui_game.draw(dt)
+        music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
 
-             # Process any output messages and transfer them to player notes down
-            for message in self.devices.output_messages:
-                if message.type == 'note_on':
-                    self.notes_down[message.note] = 1.0
-                elif message.type == 'note_off':
-                    self.notes_down[message.note] = 0.0
-                
-            # Light up score box for any held note
-            for note, velocity in self.notes_down.items():
-                if velocity > 0.0:
-                    score_id = note - self.staff_pitch_origin
-                    if score_id >= 0 and score_id < num_notes:
-                        self.score_highlight[score_id] = 1.0
+        if self.music_running:
+            self.music_time += dt * (self.tempo_bpm / 60.0) * 10.0
 
-            self.devices.input_messages = []
+        # Process all notes that have hit the play head
+        music_notes_off = {}
+        for k in music_notes:
+            # Highlight the note box to show this note should be currently played
+            if music_notes[k] >= self.music_time:
+                highlight_id = k - self.staff_pitch_origin
+                self.note_highlight[highlight_id] = 1.0
 
-            # Handle all events from the window system
-            glfw.set_key_callback(window, self.handle_input_key)
-            glfw.set_mouse_button_callback(window, self.handle_mouse_button)
-            glfw.set_cursor_pos_callback(window, self.handle_cursor_update)
+            # The note value in the dictionary is the time to turn off
+            if k in self.midi_notes:
+                if music_notes[k] < self.music_time:
+                    music_notes_off[k] = True
+            elif music_notes[k] >= self.music_time:   
+                self.midi_notes[k] = music_notes[k]
+                new_note_on = Message('note_on')
+                new_note_on.note = k
+                new_note_on.velocity = 100
+                self.devices.output_messages.append(new_note_on)
 
-            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        # Send note off messages for all the notes in the music
+        for k in music_notes_off:
+            new_note_off = Message('note_off')
+            new_note_off.note = k
+            self.devices.output_messages.append(new_note_off)
+            self.midi_notes.pop(k)
+
+        # Score points for any score box that is highlighted while a note is lit up
+        scored_this_frame = False
+        scored_notes = zip(self.note_highlight, self.score_highlight)
+        for n, s in scored_notes:
+            if n >= 1.0 and s >= 1.0:
+                self.score = self.score + 10 * self.dt
+                scored_this_frame = True
+        
+        if scored_this_frame:
+            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
             
-            gui_game.touch(self.cursor)
-            gui_game.draw(self.dt)
-            music_notes = music.draw(self.dt, self.music_time, self.note_width_32nd)
+        # Highlight score boxes
+        self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
+        self.note_bg_top.sprite.set_colour(self.note_correct_colour)
 
-            if self.music_running:
-                self.music_time += self.dt * (self.tempo_bpm / 60.0) * 10.0
+        # Pull the scoring box alpha down to 0
+        for i in range(self.num_notes):
+            self.note_box[i].sprite.set_alpha(self.note_highlight[i])
+            self.score_box[i].sprite.set_alpha(self.score_highlight[i])
+            self.note_highlight[i] = max(self.note_base_alpha, self.note_highlight[i] - 0.9 * self.dt)
+            self.score_highlight[i] = max(self.score_base_alpha, self.score_highlight[i] - 0.8 * self.dt)
+        
+        # Same with the note highlight background
+        self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
 
-            # Process all notes that have hit the play head
-            music_notes_off = {}
-            for k in music_notes:
-                # Highlight the note box to show this note should be currently played
-                if music_notes[k] >= self.music_time:
-                    highlight_id = k - self.staff_pitch_origin
-                    self.note_highlight[highlight_id] = 1.0
+        # Show the score on top of everything
+        self.font_game.draw(f"{math.floor(self.score)} XP", 24, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
 
-                # The note value in the dictionary is the time to turn off
-                if k in midi_notes:
-                    if music_notes[k] < self.music_time:
-                        music_notes_off[k] = True
-                elif music_notes[k] >= self.music_time:   
-                    midi_notes[k] = music_notes[k]
-                    new_note_on = Message('note_on')
-                    new_note_on.note = k
-                    new_note_on.velocity = 100
-                    self.devices.output_messages.append(new_note_on)
+        # Show developer stats
+        if self.dev_mode:
+            cursor_pos = self.input.cursor.pos
+            self.font_game.draw(f"FPS: {math.floor(self.fps)}", 16, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
+            self.font_game.draw(f"X: {abs(math.floor(cursor_pos[0] * 100))}\nY: {abs(math.floor(cursor_pos[1] * 100))}", 12, cursor_pos, [0.81, 0.81, 0.81, 1.0])
 
-            # Send note off messages for all the notes in the music
-            for k in music_notes_off:
-                new_note_off = Message('note_off')
-                new_note_off.note = k
-                self.devices.output_messages.append(new_note_off)
-                midi_notes.pop(k)
+        # Flush out the buffers
+        self.devices.output_messages = []
 
-            # Score points for any score box that is highlighted while a note is lit up
-            scored_this_frame = False
-            scored_notes = zip(self.note_highlight, self.score_highlight)
-            for n, s in scored_notes:
-                if n >= 1.0 and s >= 1.0:
-                    self.score = self.score + 10 * self.dt
-                    scored_this_frame = True
-            
-            if scored_this_frame:
-                self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
-                
-            # Highlight score boxes
-            note_bg_btm.sprite.set_colour(self.note_correct_colour)
-            note_bg_top.sprite.set_colour(self.note_correct_colour)
-
-            # Pull the scoring box alpha down to 0
-            for i in range(num_notes):
-                note_box[i].sprite.set_alpha(self.note_highlight[i])
-                score_box[i].sprite.set_alpha(self.score_highlight[i])
-                self.note_highlight[i] = max(note_base_alpha, self.note_highlight[i] - 0.9 * self.dt)
-                self.score_highlight[i] = max(score_base_alpha, self.score_highlight[i] - 0.8 * self.dt)
-            
-            # Same with the note highlight background
-            self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
-
-            # Show the score on top of everything
-            self.font_game.draw(f"{math.floor(self.score)} XP", 24, [bg_score.sprite.pos[0], bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
-
-            # Show developer stats
-            if self.dev_mode:
-                self.font_game.draw(f"FPS: {math.floor(self.fps)}", 16, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-                self.font_game.draw(f"X: {abs(math.floor(self.cursor.pos[0] * 100))}\nY: {abs(math.floor(self.cursor.pos[1] * 100))}", 12, self.cursor.pos, [0.81, 0.81, 0.81, 1.0])
-
-            # Flush out the buffers
-            self.devices.output_messages = []
-
-            glfw.swap_buffers(window)
-
+    def end(self):
+        super.end()
         self.devices.quit()
-        glfw.terminate()
-
-    def handle_cursor_update(self, window, xpos, ypos):
-        self.cursor.pos = [((xpos / self.window_width) * 2.0) -1.0, ((ypos / self.window_height) * -2.0) +1.0]
-
-    def handle_mouse_button(self, window, button: int, action: int, mods: int):
-        if self.dev_mode:
-            print(f"Mouse event log button[{button}], action[{action}], mods[{mods}]")
-
-        # Update the state of each button
-        if action == action_keydown:
-            self.cursor.buttons[button] = True
-        elif action == action_keyup:
-            self.cursor.buttons[button] = False
-
-    def handle_input_key(self, window, key: int, scancode: int, action: int, mods: int):
-        if self.dev_mode:
-            print(f"Input event log key[{key}], scancode[{scancode}], action[{action}], mods[{mods}]")
-
-        # Update the state of each key
-        if action == action_keydown:
-            self.keys_down[key] = True
-        elif action == action_keyup:
-            self.keys_down[key] = False
-
-        if key == 256:
-            # Esc means quit
-            self.running = False
-        elif key >= 67 and key <= 73:
-            # Check the keyboard keys between A and G for notes - TODO handle incidentals
-            key_note_value = key - 67
-            if key_note_value < 0:
-                key_note_value += 6
-            if action == action_keydown:
-                new_note = Message('note_on')
-                new_note.note = key_note_value + self.staff_pitch_origin
-                new_note.velocity = 100
-                self.devices.input_messages.append(new_note)
-            elif action == action_keyup:
-                new_note = Message('note_off')
-                new_note.note = key_note_value + self.staff_pitch_origin
-                new_note.velocity = 100
-                self.devices.input_messages.append(new_note)
-        elif key == 61:
-            # + Add more space in a bar
-            self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
-        elif key == 45:
-            # - Add less space in a bar
-            self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
-        elif key == 262:
-            # -> Manually advance forward in time
-            self.music_time += self.dt * 5.0
-        elif key == 263:
-            # <- Manually advance backwards in time
-            self.music_time -= self.dt * 5.0
-        elif key == 80: 
-            # p for Pause on keyup
-            if action == action_keyup:
-                self.music_running = not self.music_running
 
 def main():
     """Entry point that creates the MidiMaster object only."""
     mm = MidiMaster()
+    mm.prepare()
     mm.begin()
 
 if __name__ == '__main__':

@@ -22,8 +22,6 @@ class Music:
         self.notes = Notes(graphics, textures, staff_pos, note_positions, incidentals)
         self.keys = {}
         absolute_time = 0
-        last_note_off_time = 0
-        rest_time = 0
         for i, track in enumerate(self.mid.tracks):
             for msg in track:
                 if isinstance(msg, MetaMessage):
