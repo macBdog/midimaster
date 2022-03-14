@@ -7,10 +7,10 @@ class Font():
     def blit(self, dest, src, loc):
         pos = [i if i >= 0 else None for i in loc]
         neg = [-i if i < 0 else None for i in loc]
-        target = dest[[slice(i,None) for i in pos]]
+        target = dest[tuple([slice(i,None) for i in pos])]
 
-        src = src[[slice(i, j) for i,j in zip(neg, target.shape)]]
-        target[[slice(None, i) for i in src.shape]] = src
+        src = src[tuple([slice(i, j) for i,j in zip(neg, target.shape)])]
+        target[tuple([slice(None, i) for i in src.shape])] = src
         return dest
 
     def blit_char(self, dest, glyph, loc, char_index: int):

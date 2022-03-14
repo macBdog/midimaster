@@ -19,19 +19,21 @@ class NoteSprite():
         self.note_id = -1
         self.font = font
 
-    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: float):
+    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: float, note_char: str):
         self.note = note
         self.time = time
         self.length = length
         self.pitch_pos = pitch_pos
         self.note_id = note_id
+        self.note_char = note_char
 
     def recycle(self):
         self.note_id = -1
         
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
-            self.font.draw("w", 40, [origin_note_x - 0.92 + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
+            note_time_offset = 0.80 # Beat one of the bar starts after the barline
+            self.font.draw(self.note_char, 50, [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
             if self.time <= music_time:
                 notes_on[self.note] = music_time + self.length
                 self.recycle()
@@ -58,6 +60,7 @@ class Notes:
         self.font = Font(os.path.join("ext", "Musisync.ttf"), graphics)
         self.origin_note_y = 0#self.pos[1] + self.pixels_per_pitch * 10
         self.origin_note_x = staff_pos[0]
+        self.note_characters = {}
         self.note_offsets = {}
         self.notes_on = {}
         self.add_note_definition(32, "w")
@@ -82,6 +85,7 @@ class Notes:
             self.note_pool.append(NoteSprite(self.font))
 
     def add_note_definition(self, num_32nd_notes: int, font_character: str):
+        self.note_characters.update({num_32nd_notes: font_character})
         self.note_offsets[num_32nd_notes] = 0
 
     def add(self, pitch: int, time: int, length: int):
@@ -116,7 +120,7 @@ class Notes:
             note_time = lead_in + note.time
             
             pitch_pos = (pitch_diff - note_offset)
-            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_pos)
+            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_pos, self.note_characters[note.length])
             self.notes_offset += 1
             
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:

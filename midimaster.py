@@ -39,7 +39,7 @@ class MidiMaster(Game):
         self.music_time = 0.0
         self.staff_pitch_origin = 60 # Using middle C4 as the reference note
         self.music_running = False
-        self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
+        self.keyboard_mapping = KeyboardMapping.QWERTY_PIANO
     
     def prepare(self):
         super().prepare()
@@ -175,9 +175,9 @@ class MidiMaster(Game):
         def music_pause():
             self.music_running = not self.music_running
 
-        self.input.add_key_mapping(80, InputActionKey.ACTION_KEYDOWN, music_pause)          # p for Pause on keyup
+        self.input.add_key_mapping(32, InputActionKey.ACTION_KEYDOWN, music_pause)          # space for Pause on keyup
         self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # + Add more space in a bar
-        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # - Add less space in a bar
+        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, note_width_dec)       # - Add less space in a bar
         self.input.add_key_mapping(262, InputActionKey.ACTION_KEYDOWN, music_time_fwd)      # -> Manually advance forward in time
         self.input.add_key_mapping(263, InputActionKey.ACTION_KEYDOWN, music_time_back)     # -> Manually advance backwards in time
 
@@ -203,12 +203,26 @@ class MidiMaster(Game):
         # Playing notes with the keyboard note names. TODO: Shift for one incidental (#) up, Ctrl for flat (b)!
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
             add_note_key_mapping(67, self.staff_pitch_origin)       # C
-            add_note_key_mapping(68, self.staff_pitch_origin + 1)   # D
-            add_note_key_mapping(69, self.staff_pitch_origin + 2)   # E
-            add_note_key_mapping(70, self.staff_pitch_origin + 3)   # F
-            add_note_key_mapping(71, self.staff_pitch_origin + 4)   # G
-            add_note_key_mapping(65, self.staff_pitch_origin + 5)   # A
-            add_note_key_mapping(66, self.staff_pitch_origin + 6)   # B
+            add_note_key_mapping(68, self.staff_pitch_origin + 2)   # D
+            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
+            add_note_key_mapping(70, self.staff_pitch_origin + 5)   # F
+            add_note_key_mapping(71, self.staff_pitch_origin + 7)   # G
+            add_note_key_mapping(65, self.staff_pitch_origin + 9)   # A
+            add_note_key_mapping(66, self.staff_pitch_origin + 11)  # B
+        elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
+            add_note_key_mapping(81, self.staff_pitch_origin)       # C            
+            add_note_key_mapping(50, self.staff_pitch_origin + 1)   # Db
+            add_note_key_mapping(87, self.staff_pitch_origin + 2)   # D
+            add_note_key_mapping(51, self.staff_pitch_origin + 3)   # Eb
+            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
+            add_note_key_mapping(82, self.staff_pitch_origin + 5)   # F
+            add_note_key_mapping(53, self.staff_pitch_origin + 6)   # Gb
+            add_note_key_mapping(84, self.staff_pitch_origin + 7)   # G
+            add_note_key_mapping(54, self.staff_pitch_origin + 8)   # Ab
+            add_note_key_mapping(89, self.staff_pitch_origin + 9)   # A
+            add_note_key_mapping(55, self.staff_pitch_origin + 10)  # Bb
+            add_note_key_mapping(85, self.staff_pitch_origin + 11)  # B
+            add_note_key_mapping(73, self.staff_pitch_origin + 12)  # C
 
     def update(self, dt):
         self.devices.update()
