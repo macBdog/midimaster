@@ -3,9 +3,10 @@ from enum import Enum
 from cursor import Cursor
 from mido import Message
 
-action_keyup = 0
-action_keydown = 1
-action_keyrepeat = 2
+class InputActionKey(Enum):
+    ACTION_KEYUP = 0
+    ACTION_KEYDOWN = 1
+    ACTION_KEYREPEAT = 2
 
 class InputMethod(Enum):
     KEYBOARD = 1
@@ -27,10 +28,16 @@ class Input():
         glfw.set_mouse_button_callback(window, self.handle_mouse_button)
         glfw.set_cursor_pos_callback(window, self.handle_cursor_update)
 
-    def add_key_mapping(self, key: int, val: int):
+    def add_key_mapping(self, key: int, action:InputActionKey, func, args=None):
             self.key_mapping.update({
-                key: val
-            })
+                    (key, action): [func, args]
+                })
+
+    def add_joystick_mapping(self, button: int, func, args=None):
+        pass
+
+    def add_midi_mapping(self, note: int, func, args=None):
+        pass
 
     def handle_cursor_update(self, window, xpos, ypos):
         window_size = glfw.get_framebuffer_size(window)
@@ -41,9 +48,9 @@ class Input():
             print(f"Mouse event log button[{button}], action[{action}], mods[{mods}]")
 
         # Update the state of each button
-        if action == action_keydown:
+        if action == InputActionKey.ACTION_KEYDOWN.value:
             self.cursor.buttons[button] = True
-        elif action == action_keyup:
+        elif action == InputActionKey.ACTION_KEYUP.value:
             self.cursor.buttons[button] = False
 
     def handle_input_key(self, window, key: int, scancode: int, action: int, mods: int):
@@ -51,42 +58,20 @@ class Input():
             print(f"Input event log key[{key}], scancode[{scancode}], action[{action}], mods[{mods}]")
 
         # Update the state of each key
-        if action == action_keydown:
+        if action == InputActionKey.ACTION_KEYDOWN.value:
             self.keys_down[key] = True
-        elif action == action_keyup:
+        elif action == InputActionKey.ACTION_KEYUP.value:
             self.keys_down[key] = False
 
-        if key == 256:
-            # Esc means quit
-            self.running = False
-        elif key >= 67 and key <= 73:
-            # Check the keyboard keys between A and G for notes - TODO handle incidentals
-            key_note_value = key - 67
-            if key_note_value < 0:
-                key_note_value += 6
-            if action == action_keydown:
-                new_note = Message('note_on')
-                new_note.note = key_note_value + self.staff_pitch_origin
-                new_note.velocity = 100
-                self.devices.input_messages.append(new_note)
-            elif action == action_keyup:
-                new_note = Message('note_off')
-                new_note.note = key_note_value + self.staff_pitch_origin
-                new_note.velocity = 100
-                self.devices.input_messages.append(new_note)
-        elif key == 61:
-            # + Add more space in a bar
-            self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
-        elif key == 45:
-            # - Add less space in a bar
-            self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
-        elif key == 262:
-            # -> Manually advance forward in time
-            self.music_time += self.dt * 5.0
-        elif key == 263:
-            # <- Manually advance backwards in time
-            self.music_time -= self.dt * 5.0
-        elif key == 80: 
-            # p for Pause on keyup
-            if action == action_keyup:
-                self.music_running = not self.music_running
+        for _, map in enumerate(self.key_mapping.items()):
+            mapping = map[0]
+            map_key = mapping[0]
+            map_action = mapping[1]
+            map_function = map[1]
+            if map_key == key and map_action.value == action:
+                func = map_function[0]
+                args = map_function[1]
+                if args is None:
+                    func()
+                else:
+                    func(args)

@@ -1,4 +1,5 @@
 from gui import Gui
+from input import InputActionKey
 from widget import AlignX
 from widget import AlignY
 from animation import Animation
@@ -8,8 +9,14 @@ from mido import Message
 from midi_devices import MidiDevices
 from font import Font
 from game import Game
+from enum import Enum
+from enum import auto
 import math
 import os.path
+
+class KeyboardMapping(Enum):
+    NOTE_NAMES = 0,
+    QWERTY_PIANO = auto()
 
 class MidiMaster(Game):
     """The controlling object and main loop for the game. 
@@ -32,6 +39,7 @@ class MidiMaster(Game):
         self.music_time = 0.0
         self.staff_pitch_origin = 60 # Using middle C4 as the reference note
         self.music_running = False
+        self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
     
     def prepare(self):
         super().prepare()
@@ -151,6 +159,57 @@ class MidiMaster(Game):
         # Read a midi file and load the notes
         self.music = Music(self.graphics, self.textures, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
 
+        # + Add more space in a bar
+        def note_width_inc():
+            self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
+
+        def note_width_dec():
+            self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
+
+        def music_time_fwd():
+            self.music_time += self.dt * 5.0                
+
+        def music_time_back():
+            self.music_time -= self.dt * 5.0                
+
+        def music_pause():
+            self.music_running = not self.music_running
+
+        self.input.add_key_mapping(80, InputActionKey.ACTION_KEYDOWN, music_pause)          # p for Pause on keyup
+        self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # + Add more space in a bar
+        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # - Add less space in a bar
+        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYDOWN, music_time_fwd)      # -> Manually advance forward in time
+        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYDOWN, music_time_back)     # -> Manually advance backwards in time
+
+        def create_key_note(note_val:int, note_on:bool):
+            note_name = 'note_on'
+            if note_on == False:
+                note_name = 'note_off'
+            new_note = Message(note_name)
+            new_note.note = note_val
+            new_note.velocity = 100
+            self.devices.input_messages.append(new_note)
+
+        def create_key_note_on(note_val:int):
+            create_key_note(note_val, True)
+
+        def create_key_note_off(note_val:int):
+            create_key_note(note_val, False)
+
+        def add_note_key_mapping(key_val, note_val):
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, create_key_note_on, note_val)          
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, create_key_note_off, note_val)
+
+        # Playing notes with the keyboard note names. TODO: Shift for one incidental (#) up, Ctrl for flat (b)!
+        if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
+            add_note_key_mapping(67, self.staff_pitch_origin)       # C
+            add_note_key_mapping(68, self.staff_pitch_origin + 1)   # D
+            add_note_key_mapping(69, self.staff_pitch_origin + 2)   # E
+            add_note_key_mapping(70, self.staff_pitch_origin + 3)   # F
+            add_note_key_mapping(71, self.staff_pitch_origin + 4)   # G
+            add_note_key_mapping(65, self.staff_pitch_origin + 5)   # A
+            add_note_key_mapping(66, self.staff_pitch_origin + 6)   # B
+
     def update(self, dt):
         self.devices.update()
 
@@ -246,7 +305,7 @@ class MidiMaster(Game):
         self.devices.output_messages = []
 
     def end(self):
-        super.end()
+        super().end()
         self.devices.quit()
 
 def main():

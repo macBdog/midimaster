@@ -1,6 +1,6 @@
 import glfw
 from graphics import Graphics
-from input import Input, InputMethod
+from input import Input, InputActionKey, InputMethod
 from texture import *
 import time
 
@@ -18,7 +18,7 @@ class Game:
         self.window_height = 720
         self.dt = 0.03
         self.fps = 0
-        self.fps_last_update = 0
+        self.fps_last_update = 1
         
     def prepare(self, texture_path: str = "tex"):
         if not glfw.init():
@@ -43,6 +43,8 @@ class Game:
         self.textures = TextureManager(texture_path, self.graphics)
         self.input = Input(self.window, InputMethod.KEYBOARD)
 
+        self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, self.end)
+
         glViewport(0, 0, self.window_width, self.window_height)
         glClearColor(0.0, 0.0, 0.0, 1.0)    
         glShadeModel(GL_SMOOTH) 
@@ -56,8 +58,6 @@ class Game:
         dt_cur = dt_last = time.time()
 
         while self.running and not glfw.window_should_close(self.window):
-            glfw.poll_events()
-
             dt_cur = time.time()
             self.dt = dt_cur - dt_last
             dt_last = dt_cur
@@ -72,6 +72,7 @@ class Game:
             self.update(self.dt)
 
             glfw.swap_buffers(self.window)
+            glfw.poll_events()
         self.end()
     
     def update(self, dt):
@@ -79,6 +80,7 @@ class Game:
         pass
 
     def end(self):
+        self.running = False
         glfw.terminate()
 
             
