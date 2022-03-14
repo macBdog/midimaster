@@ -4,9 +4,6 @@ from input import Input, InputActionKey, InputMethod
 from texture import *
 import time
 
-# Dependency list:
-# numpy, Pillow, glfw, PyOpenGL, PyOpenGL_accelerate, mido, freetype-py, python-rtmidi
-
 class Game:
     """ A generic interactive frame interpolation loop without connection to specific logic."""
 

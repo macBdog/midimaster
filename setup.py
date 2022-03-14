@@ -9,7 +9,6 @@ setup(name='midimaster',
       license='MIT',
       packages=['midimaster'],
       install_requires=[
-          'pygame',
           'glfw',
           'pillow',
           'numpy',
