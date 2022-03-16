@@ -1,7 +1,7 @@
 import glfw
 from enum import Enum
 from cursor import Cursor
-from mido import Message
+from settings import GameSettings
 
 class InputActionKey(Enum):
     ACTION_KEYUP = 0
@@ -22,7 +22,6 @@ class Input():
         self.cursor = Cursor()
         self.keys_down = {}
         self.key_mapping = {}
-        self.dev_mode = True
 
         glfw.set_key_callback(window, self.handle_input_key)
         glfw.set_mouse_button_callback(window, self.handle_mouse_button)
@@ -44,7 +43,7 @@ class Input():
         self.cursor.pos = [((xpos / window_size[0]) * 2.0) -1.0, ((ypos / window_size[1]) * -2.0) +1.0]
 
     def handle_mouse_button(self, window, button: int, action: int, mods: int):
-        if self.dev_mode:
+        if GameSettings.dev_mode:
             print(f"Mouse event log button[{button}], action[{action}], mods[{mods}]")
 
         # Update the state of each button
@@ -54,7 +53,7 @@ class Input():
             self.cursor.buttons[button] = False
 
     def handle_input_key(self, window, key: int, scancode: int, action: int, mods: int):
-        if self.dev_mode:
+        if GameSettings.dev_mode:
             print(f"Input event log key[{key}], scancode[{scancode}], action[{action}], mods[{mods}]")
 
         # Update the state of each key

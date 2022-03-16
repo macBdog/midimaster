@@ -1,3 +1,4 @@
+import math
 from gui import Gui
 from input import InputActionKey
 from widget import AlignX
@@ -9,9 +10,9 @@ from mido import Message
 from midi_devices import MidiDevices
 from font import Font
 from game import Game
+from settings import GameSettings
 from enum import Enum
 from enum import auto
-import math
 import os.path
 
 class KeyboardMapping(Enum):
@@ -310,10 +311,11 @@ class MidiMaster(Game):
         self.font_game.draw(f"{math.floor(self.score)} XP", 24, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
 
         # Show developer stats
-        if self.dev_mode:
+        if GameSettings.dev_mode:
             cursor_pos = self.input.cursor.pos
+            self.font_game.draw(f"The quick brown fox jumps over", 32, [-0.7, 0.0], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 16, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"X: {abs(math.floor(cursor_pos[0] * 100))}\nY: {abs(math.floor(cursor_pos[1] * 100))}", 12, cursor_pos, [0.81, 0.81, 0.81, 1.0])
+            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 10) / 10}\nY: {math.floor(cursor_pos[1] * 10) / 10}", 12, cursor_pos, [0.81, 0.81, 0.81, 1.0])
 
         # Flush out the buffers
         self.devices.output_messages = []

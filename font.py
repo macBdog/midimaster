@@ -2,6 +2,7 @@ from texture import *
 from freetype import *
 from graphics import *
 from OpenGL.GL import *
+from settings import GameSettings
 
 class Font():
     def blit(self, dest, src, loc):
@@ -44,6 +45,9 @@ class Font():
         self.face.set_char_size(9000)
         self.sizes = {}
         self.positions = {}
+        self.advance = {}
+        self.offsets = {}
+        self.bearings = {}
         self.char_start = 32
         self.char_end = 127
         self.num_chars = self.char_end - self.char_start
@@ -52,16 +56,32 @@ class Font():
         self.tex_width = 2048
         self.tex_height = 2048
         self.image_data = numpy.zeros((self.tex_width, self.tex_height), dtype=numpy.uint8)
-        print(f"Building font atlas for {filename} (", end='')
+
+        if GameSettings.dev_mode:
+            print(f"Building font atlas for {filename} (", end='')
 
         # Blit font chars into the texture noting the individual char size and tex coords
         atlas_pos = (0, 0)
         self.largest_glyph_height = 0
         for c in range(self.char_start, self.char_end):
-            self.face.load_char(chr(c), FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT)
+            self.face.load_char(chr(c))
             atlas_pos = self.blit_char(self.image_data, self.face.glyph, atlas_pos, c)
-            print(chr(c), end='')
-        print(")")
+            self.advance[c] = self.face.glyph.advance.x
+            bbox = self.face.glyph.outline.get_bbox()
+            self.offsets[c] = (bbox.xMax - bbox.xMin, bbox.yMax - bbox.yMin)
+            metrics = self.face.glyph.metrics
+            self.bearings[c] = (metrics.horiBearingX, metrics.vertBearingY)
+
+            """
+            pos.x() + char_info->bearing().x(), /* left */
+            pos.y() - char_info->bearing().y(), /* top */
+            char_info->glyph_rect().size() /* width, height */
+            """
+            if GameSettings.dev_mode:
+                print(chr(c), end='')
+        
+        if GameSettings.dev_mode:
+            print(")")
 
         # Generate texture data
         self.image_data_texture = self.image_data.flatten()
@@ -127,15 +147,23 @@ class Font():
                     char_pos = (char_pos[0] + (font_size * display_ratio), char_pos[1])
                 continue
 
+            # Size and position in texture
             tex_coord = self.positions[c]
             tex_size = self.sizes[c]
-            char_ratio = tex_size[0] / tex_size[1]
+
+            # Size and position of glyph
+            advance = self.advance[c] * display_ratio * 0.01
+            offset = self.offsets[c]
+            bearing = (self.bearings[c][0] * display_ratio * 0.01, self.bearings[c][1] * display_ratio * 0.01)
+            char_offset = (offset[0] * display_ratio * 0.01, offset[1] * display_ratio * 0.01)
+            rpos = (char_pos[0] + (char_offset[0] * 0.5), char_pos[1] + (char_offset[1] * 0.5))
 
             glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3])
-            glUniform2f(self.pos_id, char_pos[0], char_pos[1]) 
-            glUniform2f(self.size_id, font_size * display_ratio * char_ratio * 0.75, font_size * display_ratio) 
+            glUniform2f(self.pos_id, rpos[0], rpos[1])
+            glUniform2f(self.size_id, char_offset[0], char_offset[1]) 
             glUniform2f(self.char_coord_id, tex_coord[0], tex_coord[1]) 
             glUniform2f(self.char_size_id, tex_size[0], tex_size[1])
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-            char_pos = (char_pos[0] + (font_size * display_ratio * tex_size[0] / char_ratio) * 16.0, char_pos[1])
+
+            char_pos = (char_pos[0] + advance, char_pos[1])
 

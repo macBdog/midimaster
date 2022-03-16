@@ -3,14 +3,15 @@ from graphics import Graphics
 from input import Input, InputActionKey, InputMethod
 from texture import *
 import time
+from settings import GameSettings
 
 class Game:
-    """ A generic interactive frame interpolation loop without connection to specific logic."""
+    """A generic interactive frame interpolation loop without connection to specific logic."""
 
     def __init__(self):
+        GameSettings.dev_mode = True
         self.name = "game"
         self.running = False
-        self.dev_mode = True
         self.window_width = 1280
         self.window_height = 720
         self.dt = 0.03
