@@ -45,7 +45,7 @@ class MidiMaster(Game):
     def prepare(self):
         super().prepare()
         self.font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
-        self.font_game = Font(self.font_game_path, self.graphics)
+        self.font_game = Font(self.font_game_path, self.graphics, self.window)
 
         show_intro = False
 
@@ -158,7 +158,8 @@ class MidiMaster(Game):
         self.devices.open_output_default()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, self.textures, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
+        music_font = Font(os.path.join("ext", "Musisync.ttf"), self.graphics, self.window)
+        self.music = Music(self.graphics, self.textures, music_font, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
 
         # + Add more space in a bar
         def note_width_inc():
@@ -313,9 +314,8 @@ class MidiMaster(Game):
         # Show developer stats
         if GameSettings.dev_mode:
             cursor_pos = self.input.cursor.pos
-            self.font_game.draw(f"The quick brown fox jumps over", 32, [-0.7, 0.0], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"FPS: {math.floor(self.fps)}", 16, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 10) / 10}\nY: {math.floor(cursor_pos[1] * 10) / 10}", 12, cursor_pos, [0.81, 0.81, 0.81, 1.0])
+            self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
+            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 10) / 10}\nY: {math.floor(cursor_pos[1] * 10) / 10}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
 
         # Flush out the buffers
         self.devices.output_messages = []

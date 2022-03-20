@@ -33,7 +33,7 @@ class NoteSprite():
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
             note_time_offset = 0.80 # Beat one of the bar starts after the barline
-            self.font.draw(self.note_char, 50, [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
+            self.font.draw(self.note_char, 98, [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
             if self.time <= music_time:
                 notes_on[self.note] = music_time + self.length
                 self.recycle()
@@ -44,7 +44,7 @@ class Notes:
     for each piece of music when they should be on-screen. There is a pool
     of onscreen notes that recycled when they reach the playhead.
     """
-    def __init__(self, graphics:Graphics, textures: TextureManager, staff_pos: list, note_positions: list, incidentals: dict):
+    def __init__(self, graphics:Graphics, textures: TextureManager, font: Font, staff_pos: list, note_positions: list, incidentals: dict):
         self.notes = []
         self.graphics = graphics
         self.note_pool = []
@@ -57,7 +57,7 @@ class Notes:
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
         self.pixels_per_pitch = 0.015
         self.pixels_per_32nd = 0.132
-        self.font = Font(os.path.join("ext", "Musisync.ttf"), graphics)
+        self.font = font
         self.origin_note_y = 0#self.pos[1] + self.pixels_per_pitch * 10
         self.origin_note_x = staff_pos[0]
         self.note_characters = {}

@@ -1,3 +1,4 @@
+import glfw
 from texture import *
 from freetype import *
 from graphics import *
@@ -39,7 +40,7 @@ class Font():
         self.positions[char_index] = (loc[1] / self.tex_height, loc[0] / self.tex_width)
         return (loc[0] + width, loc[1])
 
-    def __init__(self, filename: str, graphics: Graphics):
+    def __init__(self, filename: str, graphics: Graphics, window):
         self.graphics = graphics
         self.face = Face(filename)
         self.face.set_char_size(9000)
@@ -51,6 +52,9 @@ class Font():
         self.char_start = 32
         self.char_end = 127
         self.num_chars = self.char_end - self.char_start
+        window_size = glfw.get_framebuffer_size(window)
+        self.window_ratio = window_size[0] / window_size[1]
+        self.line_height = 10000.0
 
         # Create one big texture for all the glyphs
         self.tex_width = 2048
@@ -70,13 +74,11 @@ class Font():
             bbox = self.face.glyph.outline.get_bbox()
             self.offsets[c] = (bbox.xMax - bbox.xMin, bbox.yMax - bbox.yMin)
             metrics = self.face.glyph.metrics
-            self.bearings[c] = (metrics.horiBearingX, metrics.vertBearingY)
+            self.bearings[c] = (metrics.horiBearingX, metrics.horiBearingY)
 
-            """
-            pos.x() + char_info->bearing().x(), /* left */
-            pos.y() - char_info->bearing().y(), /* top */
-            char_info->glyph_rect().size() /* width, height */
-            """
+            if c == 32:
+                self.line_height = self.face.height * 2.75
+
             if GameSettings.dev_mode:
                 print(chr(c), end='')
         
@@ -133,8 +135,8 @@ class Font():
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glBindVertexArray(self.VAO)
-        char_pos = pos
-        display_ratio = 0.0025
+        draw_pos = pos
+        display_size = font_size * 0.0000005
 
         for i in range(len(string)):
             c = ord(string[i])
@@ -142,9 +144,9 @@ class Font():
             # Special case for unsupported or whitespace characters
             if c not in self.sizes:
                 if c == 13 or c == 10:
-                    char_pos = (pos[0], pos[1] - (font_size * display_ratio * 2.0))
+                    draw_pos = (pos[0], pos[1] - self.line_height * display_size)
                 else:
-                    char_pos = (char_pos[0] + (font_size * display_ratio), char_pos[1])
+                    draw_pos = (draw_pos[0] + (self.advance[32] * display_size) / self.window_ratio, draw_pos[1])
                 continue
 
             # Size and position in texture
@@ -152,18 +154,17 @@ class Font():
             tex_size = self.sizes[c]
 
             # Size and position of glyph
-            advance = self.advance[c] * display_ratio * 0.01
             offset = self.offsets[c]
-            bearing = (self.bearings[c][0] * display_ratio * 0.01, self.bearings[c][1] * display_ratio * 0.01)
-            char_offset = (offset[0] * display_ratio * 0.01, offset[1] * display_ratio * 0.01)
-            rpos = (char_pos[0] + (char_offset[0] * 0.5), char_pos[1] + (char_offset[1] * 0.5))
+            bearing = ((self.bearings[c][0] * display_size) / self.window_ratio, self.bearings[c][1] * display_size)
+            char_size = (offset[0] * display_size, offset[1] * display_size)
+            char_pos = (draw_pos[0] + bearing[0] + (char_size[0] * 0.5), draw_pos[1] + bearing[1] - (char_size[1] * 0.5))
 
             glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3])
-            glUniform2f(self.pos_id, rpos[0], rpos[1])
-            glUniform2f(self.size_id, char_offset[0], char_offset[1]) 
+            glUniform2f(self.pos_id, char_pos[0], char_pos[1])
+            glUniform2f(self.size_id, char_size[0] / self.window_ratio, char_size[1]) 
             glUniform2f(self.char_coord_id, tex_coord[0], tex_coord[1]) 
             glUniform2f(self.char_size_id, tex_size[0], tex_size[1])
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
-            char_pos = (char_pos[0] + advance, char_pos[1])
+            draw_pos = (draw_pos[0] + ((self.advance[c] * display_size) / self.window_ratio), draw_pos[1])
 

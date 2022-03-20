@@ -1,8 +1,8 @@
 from mido import MidiFile
 from mido import MetaMessage
 from mido import Message
-from notes import Note
 from notes import Notes
+from font import Font
 from graphics import Graphics
 from texture import TextureManager
 import math
@@ -12,14 +12,14 @@ class Music:
         self.notes is a list of all the notes in the file for rendering and scoring
         self.keys is a dictionary keyed by note number to keep track on note on and note off events.
     """
-    def __init__(self, graphics: Graphics, textures: TextureManager, staff_pos: list, note_positions: list, incidentals: dict, filename: str):
+    def __init__(self, graphics: Graphics, textures: TextureManager, font: Font, staff_pos: list, note_positions: list, incidentals: dict, filename: str):
         self.graphics = graphics
         self.textures = textures
         self.mid = MidiFile(filename)
         self.clocks_per_tick = 24
         self.num_32nd_notes_per_beat = 8
         self.time_signature = (4,4)
-        self.notes = Notes(graphics, textures, staff_pos, note_positions, incidentals)
+        self.notes = Notes(graphics, textures, font, staff_pos, note_positions, incidentals)
         self.keys = {}
         absolute_time = 0
         for i, track in enumerate(self.mid.tracks):
