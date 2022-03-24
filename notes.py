@@ -1,8 +1,6 @@
 from texture import *
 from graphics import *
 from font import *
-import os.path
-import math
 
 class Note():
     """Note is a POD style container for a note in a piece of music with representation."""
@@ -33,7 +31,7 @@ class NoteSprite():
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
             note_time_offset = 0.80 # Beat one of the bar starts after the barline
-            self.font.draw(self.note_char, 98, [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos], [0.1, 0.1, 0.1, 1.0])
+            self.font.draw(self.note_char, 158, [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125], [0.1, 0.1, 0.1, 1.0])
             if self.time <= music_time:
                 notes_on[self.note] = music_time + self.length
                 self.recycle()
@@ -55,13 +53,10 @@ class Notes:
         self.note_positions = note_positions
         self.pos = staff_pos
         self.origin_note_pitch = 60 # Using middle C4 as the reference note
-        self.pixels_per_pitch = 0.015
-        self.pixels_per_32nd = 0.132
         self.font = font
-        self.origin_note_y = 0#self.pos[1] + self.pixels_per_pitch * 10
+        self.origin_note_y = -0.33 #self.pos[1] - 0.15
         self.origin_note_x = staff_pos[0]
         self.note_characters = {}
-        self.note_offsets = {}
         self.notes_on = {}
         self.add_note_definition(32, "w")
         self.add_note_definition(16, "h")
@@ -86,7 +81,6 @@ class Notes:
 
     def add_note_definition(self, num_32nd_notes: int, font_character: str):
         self.note_characters.update({num_32nd_notes: font_character})
-        self.note_offsets[num_32nd_notes] = 0
 
     def add(self, pitch: int, time: int, length: int):
         self.notes.append(Note(pitch, time, length))
@@ -111,7 +105,6 @@ class Notes:
             note_sprite = self.note_pool[self.note_pool_offset]
             note = self.notes[self.notes_offset]
 
-            note_offset = self.note_offsets.get(note.length) or self.note_offsets[min(self.note_offsets.keys(), key=lambda k: abs(k-note.length))]
             note_diff = self.note_positions[note.note % 12]
             num_octaves = (note.note - 60) // 12
             per_octave = self.note_positions[12]
@@ -119,8 +112,10 @@ class Notes:
             lead_in = 32
             note_time = lead_in + note.time
             
-            pitch_pos = (pitch_diff - note_offset)
-            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_pos, self.note_characters[note.length])
+            if note.length in self.note_characters:
+                note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_diff, self.note_characters[note.length])
+            elif GameSettings.dev_mode:
+                print(f"Ignoring invalid note of length {note.length}")
             self.notes_offset += 1
             
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:

@@ -130,6 +130,8 @@ class Font():
         self.size_id = glGetUniformLocation(graphics.shader_font, "Size")
 
     def draw(self, string: str, font_size: int, pos: list, colour: list):
+        """ Draw a string of text with the bottom left of the first glyph at the pos coordinate."""
+        
         glUseProgram(self.graphics.shader_font)
         glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3]) 
         glActiveTexture(GL_TEXTURE0)

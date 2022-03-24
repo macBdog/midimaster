@@ -134,7 +134,8 @@ class MidiMaster(Game):
                 
             self.note_highlight.append(self.note_base_alpha)
             self.score_highlight.append(self.score_base_alpha)
-            note_offset = note_start_y + tone_count * note_spacing
+            note_pos = tone_count * note_spacing
+            note_offset = note_start_y + note_pos
             note_size = [note_spacing, note_height]
             score_size = [0.05, note_spacing]
 
@@ -145,7 +146,7 @@ class MidiMaster(Game):
                 
             self.score_box.append(self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("score_zone.png", score_colours[i], [score_start_x, note_offset], score_size)))
             
-            note_positions.append(note_offset)
+            note_positions.append(note_pos)
             
             if is_incidental:
                 incidental_count += 1
@@ -309,13 +310,13 @@ class MidiMaster(Game):
         self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
 
         # Show the score on top of everything
-        self.font_game.draw(f"{math.floor(self.score)} XP", 24, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1]], [0.1, 0.1, 0.1, 1.0])
+        self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.0133], [0.1, 0.1, 0.1, 1.0])
 
         # Show developer stats
         if GameSettings.dev_mode:
             cursor_pos = self.input.cursor.pos
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 10) / 10}\nY: {math.floor(cursor_pos[1] * 10) / 10}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
+            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
 
         # Flush out the buffers
         self.devices.output_messages = []
