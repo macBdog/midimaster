@@ -36,6 +36,7 @@ class MidiDevices:
     def open_input_default(self):
         try:
             self.input_port = mido.open_input()
+            self.input_device_name = self.input_port.name
         except Exception as excpt:
             print(f"Could not open default MIDI input port.")
             print(excpt)
@@ -43,6 +44,7 @@ class MidiDevices:
     def open_output_default(self):
         try:
             self.output_port = mido.open_output()
+            self.output_device_name = self.output_port.name
         except Exception as excpt:
             print("Could not open default MIDI output port.")
             print(excpt)

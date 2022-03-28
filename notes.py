@@ -20,6 +20,13 @@ class Note():
         -1: "b" 
     }
 
+    @staticmethod
+    def get_quantized_length(note_length):
+        for i, k in enumerate(Note.NoteCharacters):
+            if note_length >= k:
+                return k
+        return 1
+
     def __init__(self, note: int, time: int, length: int):
         self.note = note
         self.time = time
@@ -65,7 +72,7 @@ class Notes:
     It is intended to be called by a music manager that creates the notes
     for each piece of music when they should be on-screen. There is a pool
     of onscreen notes that recycled when they reach the playhead."""
-
+            
     def __init__(self, graphics:Graphics, font: Font, staff_pos: list, note_positions: list, accidentals: dict):
         self.notes = []
         self.graphics = graphics
@@ -157,10 +164,8 @@ class Notes:
             lead_in = 32
             note_time = lead_in + note.time
 
-            if note.length in Note.NoteCharacters:
-                note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_diff, Note.NoteCharacters[note.length], accidental)
-            elif GameSettings.dev_mode:
-                print(f"Ignoring invalid note of length {note.length}")
+            quantized_length = Note.get_quantized_length(note.length)
+            note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_diff, Note.NoteCharacters[quantized_length], accidental)
             self.notes_offset += 1
             
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:

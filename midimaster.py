@@ -129,7 +129,7 @@ class MidiMaster(Game):
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, [staff_pos_x, staff_pos_y], note_positions, os.path.join("music", "test.mid"))
+        self.music = Music(self.graphics, music_font, [staff_pos_x, staff_pos_y], note_positions, os.path.join("music", "mary.mid"))
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -137,14 +137,12 @@ class MidiMaster(Game):
         self.devices.open_output_default()
 
     def update(self, dt):
-        self.devices.update()
-
         # Handle events from MIDI input, echo to output so player can hear
         for message in self.devices.input_messages:
             if message.type == 'note_on' or message.type == 'note_off':
                 self.devices.output_messages.append(message)
 
-            # Process any output messages and transfer them to player notes down
+        # Process any output messages and transfer them to player notes down
         for message in self.devices.output_messages:
             if message.type == 'note_on':
                 self.notes_down[message.note] = 1.0
@@ -227,7 +225,8 @@ class MidiMaster(Game):
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
 
-        # Flush out the buffers
+        # Update and flush out the buffers
+        self.devices.update()
         self.devices.output_messages = []
 
     def end(self):
@@ -298,7 +297,7 @@ class MidiMaster(Game):
             self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, create_key_note_on, note_val)          
             self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, create_key_note_off, note_val)
 
-        # Playing notes with the keyboard note names. TODO: Shift for one incidental (#) up, Ctrl for flat (b)!
+        # Playing notes with the keyboard note names. TODO: Shift for one accidental (#) up, Ctrl for flat (b)!
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
             add_note_key_mapping(67, self.staff_pitch_origin)       # C
             add_note_key_mapping(68, self.staff_pitch_origin + 2)   # D
