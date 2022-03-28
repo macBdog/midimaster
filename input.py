@@ -67,7 +67,7 @@ class Input():
             map_key = mapping[0]
             map_action = mapping[1]
             map_function = map[1]
-            if map_key == key and map_action.value == action:
+            if map_key == key and (map_action.value == action or map_action == InputActionKey.ACTION_KEYREPEAT):
                 func = map_function[0]
                 args = map_function[1]
                 if args is None:

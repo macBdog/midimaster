@@ -40,19 +40,18 @@ class MidiMaster(Game):
         self.music_time = 0.0
         self.staff_pitch_origin = 60 # Using middle C4 as the reference note
         self.music_running = False
-        self.keyboard_mapping = KeyboardMapping.QWERTY_PIANO
-    
+        self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
+
     def prepare(self):
         super().prepare()
-        self.font_game_path = os.path.join("ext", "BlackMetalSans.ttf")
-        self.font_game = Font(self.font_game_path, self.graphics, self.window)
+        self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
+        music_font = Font(os.path.join("ext", "Musisync.ttf"), self.graphics, self.window)      
 
         show_intro = False
-
         if show_intro:
             # Create a background image stretched to the size of the window
             gui_splash = Gui(self.window_width, self.window_height)
-            bg_splash = gui_splash.add_widget(self.textures.get("menu_background.tga"), 0, 0)
+            gui_splash.add_widget(self.textures.get("menu_background.tga"), 0, 0)
 
             # Create a title image and fade it in
             title = gui_splash.add_widget(self.textures.get_sub("gui", "imgtitle.tga"), gui_splash.width / 2, gui_splash.height / 2)
@@ -62,28 +61,6 @@ class MidiMaster(Game):
         self.gui_game = Gui(self.window_width, self.window_height)
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         self.gui_game.add_widget(game_bg)
-
-        playback_button_size = (0.15, 0.125)
-        btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, -0.63), playback_button_size))
-        btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, -0.63), playback_button_size))
-        btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, -0.63), playback_button_size))
-
-        def play(self):
-            self.music_running = True
-
-        def pause(self):
-            self.music_running = False
-
-        def stop(self):
-            self.music_running = False
-            self.music_time = 0
-
-        btn_play.set_action(play, self)
-        btn_pause.set_action(pause, self)
-        btn_stop.set_action(stop, self)
-        
-        self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, -0.75), (0.5, 0.25)))
-        self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
         note_bg_pos_x = 0.228
         note_bg_size = (2.0, 0.333)
@@ -100,7 +77,6 @@ class MidiMaster(Game):
         self.note_base_alpha = 0.15
         self.score_base_alpha = 0.33
         num_staff_lines = 4
-        incidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
         note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
                         [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 0.1, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
                         [1.0, 0.375, 0.89, 1.0], [1.0, 0.48, 1.0, 1.0], [0.19, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
@@ -121,15 +97,14 @@ class MidiMaster(Game):
         # Score box and highlights are the boxes that light up indicating which notes the player is hitting
         self.score_box = []
         tone_count = 0
-        incidental_count = 0
         note_positions = []
         note_start_x = staff_pos_x - (staff_width * 0.5) - 0.1
         note_start_y = staff_pos_y - note_spacing * 3
         score_start_x = note_start_x + 0.071
         for i in range(self.num_notes):
             note_height = note_spacing
-            is_incidental = i in incidentals
-            if is_incidental:
+            accidental = i in Music.Accidentals
+            if accidental:
                 note_height = note_height * 0.5
                 
             self.note_highlight.append(self.note_base_alpha)
@@ -139,7 +114,7 @@ class MidiMaster(Game):
             note_size = [note_spacing, note_height]
             score_size = [0.05, note_spacing]
 
-            if is_incidental:
+            if accidental:
                 self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x - note_spacing - 0.005, note_offset - note_spacing * 0.5], note_size)))
             else:
                 self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x, note_offset], note_size)))
@@ -148,84 +123,18 @@ class MidiMaster(Game):
             
             note_positions.append(note_pos)
             
-            if is_incidental:
-                incidental_count += 1
-            else:
+            if not accidental:
                 tone_count += 1
+
+        self.setup_input()
+
+        # Read a midi file and load the notes
+        self.music = Music(self.graphics, music_font, [staff_pos_x, staff_pos_y], note_positions, os.path.join("music", "test.mid"))
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
         self.devices.open_input_default()
         self.devices.open_output_default()
-
-        # Read a midi file and load the notes
-        music_font = Font(os.path.join("ext", "Musisync.ttf"), self.graphics, self.window)
-        self.music = Music(self.graphics, self.textures, music_font, [staff_pos_x, staff_pos_y], note_positions, incidentals, os.path.join("music", "test.mid"))
-
-        # + Add more space in a bar
-        def note_width_inc():
-            self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
-
-        def note_width_dec():
-            self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
-
-        def music_time_fwd():
-            self.music_time += self.dt * 5.0                
-
-        def music_time_back():
-            self.music_time -= self.dt * 5.0                
-
-        def music_pause():
-            self.music_running = not self.music_running
-
-        self.input.add_key_mapping(32, InputActionKey.ACTION_KEYDOWN, music_pause)          # space for Pause on keyup
-        self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # + Add more space in a bar
-        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, note_width_dec)       # - Add less space in a bar
-        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYDOWN, music_time_fwd)      # -> Manually advance forward in time
-        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYDOWN, music_time_back)     # -> Manually advance backwards in time
-
-        def create_key_note(note_val:int, note_on:bool):
-            note_name = 'note_on'
-            if note_on == False:
-                note_name = 'note_off'
-            new_note = Message(note_name)
-            new_note.note = note_val
-            new_note.velocity = 100
-            self.devices.input_messages.append(new_note)
-
-        def create_key_note_on(note_val:int):
-            create_key_note(note_val, True)
-
-        def create_key_note_off(note_val:int):
-            create_key_note(note_val, False)
-
-        def add_note_key_mapping(key_val, note_val):
-            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, create_key_note_on, note_val)          
-            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, create_key_note_off, note_val)
-
-        # Playing notes with the keyboard note names. TODO: Shift for one incidental (#) up, Ctrl for flat (b)!
-        if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
-            add_note_key_mapping(67, self.staff_pitch_origin)       # C
-            add_note_key_mapping(68, self.staff_pitch_origin + 2)   # D
-            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
-            add_note_key_mapping(70, self.staff_pitch_origin + 5)   # F
-            add_note_key_mapping(71, self.staff_pitch_origin + 7)   # G
-            add_note_key_mapping(65, self.staff_pitch_origin + 9)   # A
-            add_note_key_mapping(66, self.staff_pitch_origin + 11)  # B
-        elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
-            add_note_key_mapping(81, self.staff_pitch_origin)       # C            
-            add_note_key_mapping(50, self.staff_pitch_origin + 1)   # Db
-            add_note_key_mapping(87, self.staff_pitch_origin + 2)   # D
-            add_note_key_mapping(51, self.staff_pitch_origin + 3)   # Eb
-            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
-            add_note_key_mapping(82, self.staff_pitch_origin + 5)   # F
-            add_note_key_mapping(53, self.staff_pitch_origin + 6)   # Gb
-            add_note_key_mapping(84, self.staff_pitch_origin + 7)   # G
-            add_note_key_mapping(54, self.staff_pitch_origin + 8)   # Ab
-            add_note_key_mapping(89, self.staff_pitch_origin + 9)   # A
-            add_note_key_mapping(55, self.staff_pitch_origin + 10)  # Bb
-            add_note_key_mapping(85, self.staff_pitch_origin + 11)  # B
-            add_note_key_mapping(73, self.staff_pitch_origin + 12)  # C
 
     def update(self, dt):
         self.devices.update()
@@ -250,7 +159,7 @@ class MidiMaster(Game):
                     self.score_highlight[score_id] = 1.0
 
         self.devices.input_messages = []
-        
+
         self.gui_game.touch(self.input.cursor)
         self.gui_game.draw(dt)
         music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
@@ -310,7 +219,7 @@ class MidiMaster(Game):
         self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
 
         # Show the score on top of everything
-        self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.0133], [0.1, 0.1, 0.1, 1.0])
+        self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
 
         # Show developer stats
         if GameSettings.dev_mode:
@@ -324,6 +233,94 @@ class MidiMaster(Game):
     def end(self):
         super().end()
         self.devices.quit()
+
+    def setup_input(self):
+        def play(self):
+            self.music_running = True
+
+        def pause(self):
+            self.music_running = False
+
+        def stop_rewind(self):
+            self.music_running = False
+            self.music_time = 0
+            self.music.reset()
+
+        playback_button_size = (0.15, 0.125)
+        btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, -0.63), playback_button_size))
+        btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, -0.63), playback_button_size))
+        btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, -0.63), playback_button_size))
+        
+        btn_play.set_action(play, self)
+        btn_pause.set_action(pause, self)
+        btn_stop.set_action(stop_rewind, self)
+        
+        self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, -0.75), (0.5, 0.25)))
+        self.bg_score.align(AlignX.Centre, AlignY.Bottom)
+
+        def note_width_inc():
+            self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
+
+        def note_width_dec():
+            self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
+
+        def music_time_fwd():
+            self.music_time += self.dt * 30.0                
+
+        def music_time_back():
+            self.music_time -= self.dt * 30.0                
+
+        def music_pause():
+            self.music_running = not self.music_running
+
+        self.input.add_key_mapping(32, InputActionKey.ACTION_KEYDOWN, music_pause)          # space for Pause on keyup
+        self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # + Add more space in a bar
+        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, note_width_dec)       # - Add less space in a bar
+        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYREPEAT, music_time_back)   # -> Manually advance forward in time
+        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYREPEAT, music_time_fwd)    # -> Manually advance backwards in time
+
+        def create_key_note(note_val:int, note_on:bool):
+            note_name = 'note_on'
+            if note_on == False:
+                note_name = 'note_off'
+            new_note = Message(note_name)
+            new_note.note = note_val
+            new_note.velocity = 100
+            self.devices.input_messages.append(new_note)
+
+        def create_key_note_on(note_val:int):
+            create_key_note(note_val, True)
+
+        def create_key_note_off(note_val:int):
+            create_key_note(note_val, False)
+
+        def add_note_key_mapping(key_val, note_val):
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, create_key_note_on, note_val)          
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, create_key_note_off, note_val)
+
+        # Playing notes with the keyboard note names. TODO: Shift for one incidental (#) up, Ctrl for flat (b)!
+        if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
+            add_note_key_mapping(67, self.staff_pitch_origin)       # C
+            add_note_key_mapping(68, self.staff_pitch_origin + 2)   # D
+            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
+            add_note_key_mapping(70, self.staff_pitch_origin + 5)   # F
+            add_note_key_mapping(71, self.staff_pitch_origin + 7)   # G
+            add_note_key_mapping(65, self.staff_pitch_origin + 9)   # A
+            add_note_key_mapping(66, self.staff_pitch_origin + 11)  # B
+        elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
+            add_note_key_mapping(81, self.staff_pitch_origin)       # C            
+            add_note_key_mapping(50, self.staff_pitch_origin + 1)   # Db
+            add_note_key_mapping(87, self.staff_pitch_origin + 2)   # D
+            add_note_key_mapping(51, self.staff_pitch_origin + 3)   # Eb
+            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
+            add_note_key_mapping(82, self.staff_pitch_origin + 5)   # F
+            add_note_key_mapping(53, self.staff_pitch_origin + 6)   # Gb
+            add_note_key_mapping(84, self.staff_pitch_origin + 7)   # G
+            add_note_key_mapping(54, self.staff_pitch_origin + 8)   # Ab
+            add_note_key_mapping(89, self.staff_pitch_origin + 9)   # A
+            add_note_key_mapping(55, self.staff_pitch_origin + 10)  # Bb
+            add_note_key_mapping(85, self.staff_pitch_origin + 11)  # B
+            add_note_key_mapping(73, self.staff_pitch_origin + 12)  # C
 
 def main():
     """Entry point that creates the MidiMaster object only."""

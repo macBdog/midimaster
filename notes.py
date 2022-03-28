@@ -4,6 +4,22 @@ from font import *
 
 class Note():
     """Note is a POD style container for a note in a piece of music with representation."""
+
+    NoteCharacters = {
+        32: "w",
+        16: "h",
+        8: "q",
+        4: "e",
+        2: "s",
+        1: "s",
+    }
+
+    AccidentalCharacters = { 
+        1: "B", 
+        0: "½", 
+        -1: "b" 
+    }
+
     def __init__(self, note: int, time: int, length: int):
         self.note = note
         self.time = time
@@ -11,27 +27,35 @@ class Note():
 
 class NoteSprite():
     """NoteSprite is the visual representation of a note that is drawn with a font character. 
-        It owns an index into the Notes class note array of note data for scoring and timing.
-    """
+        It owns an index into the Notes class note array of note data for scoring and timing."""
+
     def __init__(self, font: Font):
         self.note_id = -1
         self.font = font
 
-    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: float, note_char: str):
+    def assign(self, note_id: int, note: int, time: int, length: int, pitch_pos: float, note_char: str, accidental=None):
         self.note = note
         self.time = time
         self.length = length
         self.pitch_pos = pitch_pos
         self.note_id = note_id
         self.note_char = note_char
+        self.accidental = accidental
 
     def recycle(self):
         self.note_id = -1
         
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
         if self.note_id >= 0:
-            note_time_offset = 0.80 # Beat one of the bar starts after the barline
-            self.font.draw(self.note_char, 158, [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125], [0.1, 0.1, 0.1, 1.0])
+            note_time_offset = 0.95 # Beat one of the bar starts after the barline
+            note_pos = [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125]
+            note_col = [0.1, 0.1, 0.1, 1.0]
+            
+            if self.accidental is not None:
+                self.font.draw(Note.AccidentalCharacters[self.accidental], 72, [note_pos[0] - 0.02, note_pos[1]], note_col)
+
+            self.font.draw(self.note_char, 158, note_pos, note_col)
+            
             if self.time <= music_time:
                 notes_on[self.note] = music_time + self.length
                 self.recycle()
@@ -40,30 +64,24 @@ class Notes:
     """Notes manages all the on-screen note representations for a game.
     It is intended to be called by a music manager that creates the notes
     for each piece of music when they should be on-screen. There is a pool
-    of onscreen notes that recycled when they reach the playhead.
-    """
-    def __init__(self, graphics:Graphics, textures: TextureManager, font: Font, staff_pos: list, note_positions: list, incidentals: dict):
+    of onscreen notes that recycled when they reach the playhead."""
+
+    def __init__(self, graphics:Graphics, font: Font, staff_pos: list, note_positions: list, accidentals: dict):
         self.notes = []
         self.graphics = graphics
         self.note_pool = []
         self.note_pool_offset = 0
         self.note_pool_size = 32
         self.notes_offset = 0
-        self.incidentals = incidentals
+        self.prev_note = 0
+        self.accidentals = accidentals
         self.note_positions = note_positions
         self.pos = staff_pos
-        self.origin_note_pitch = 60 # Using middle C4 as the reference note
+        self.origin_note_pitch = 60 # Using C4 as reference note
         self.font = font
-        self.origin_note_y = -0.33 #self.pos[1] - 0.15
+        self.origin_note_y = self.pos[1] - 0.33
         self.origin_note_x = staff_pos[0]
-        self.note_characters = {}
         self.notes_on = {}
-        self.add_note_definition(32, "w")
-        self.add_note_definition(16, "h")
-        self.add_note_definition(8, "q")
-        self.add_note_definition(4, "e")
-        self.add_note_definition(2, "s")
-        self.add_note_definition(1, "s")
 
         # Create the barlines with 0 being the immovable 0 bar
         self.num_barlines = 8
@@ -79,8 +97,22 @@ class Notes:
         for i in range(self.note_pool_size):
             self.note_pool.append(NoteSprite(self.font))
 
-    def add_note_definition(self, num_32nd_notes: int, font_character: str):
-        self.note_characters.update({num_32nd_notes: font_character})
+    def reset(self):
+        """Restore the note pool and barlines to their original state."""
+        
+        for _, note in enumerate(self.note_pool):
+            note.recycle()
+
+        self.notes_offset = 0
+        self.prev_note = 0
+        for _, note in enumerate(self.notes):
+            if self.note_pool_offset < self.note_pool_size - 1:
+                self.assign_note()
+
+        for i in range(self.num_barlines):
+            self.bartimes[i] = i * 32.0
+
+        self.notes_on = {}
 
     def add(self, pitch: int, time: int, length: int):
         self.notes.append(Note(pitch, time, length))
@@ -105,15 +137,28 @@ class Notes:
             note_sprite = self.note_pool[self.note_pool_offset]
             note = self.notes[self.notes_offset]
 
-            note_diff = self.note_positions[note.note % 12]
+            # Handle accidentals, sharp going up, flat coming down
+            note_lookup = note.note
+            accidental = None
+            if note.note % 12 in self.accidentals:
+                melody_dir_up = self.prev_note < note_lookup
+                if melody_dir_up:
+                    accidental = 1
+                    note_lookup -= 1
+                else:
+                    accidental = -1
+                    note_lookup += 1
+            self.prev_note = note_lookup
+
+            note_diff = self.note_positions[note_lookup % 12]
             num_octaves = (note.note - 60) // 12
             per_octave = self.note_positions[12]
             pitch_diff = -note_diff - (num_octaves * per_octave)
             lead_in = 32
             note_time = lead_in + note.time
-            
-            if note.length in self.note_characters:
-                note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_diff, self.note_characters[note.length])
+
+            if note.length in Note.NoteCharacters:
+                note_sprite.assign(self.notes_offset, note.note, note_time, note.length, self.origin_note_y - pitch_diff, Note.NoteCharacters[note.length], accidental)
             elif GameSettings.dev_mode:
                 print(f"Ignoring invalid note of length {note.length}")
             self.notes_offset += 1
