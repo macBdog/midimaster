@@ -13,7 +13,7 @@ class Music:
         self.notes is a list of all the notes in the file for rendering and scoring
         self.keys is a dictionary keyed by note number to keep track on note on and note off events."""
 
-    Accidentals = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
+    SharpsAndFlats = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
 
     def __init__(self, graphics: Graphics, font: Font, staff_pos: list, note_positions: list, filename: str):
         self.graphics = graphics
@@ -24,7 +24,7 @@ class Music:
         self.key_signature = KeySignature()
         self.font = font
         self.note_positions = note_positions
-        self.notes = Notes(graphics, font, staff_pos, note_positions, Music.Accidentals)
+        self.notes = Notes(graphics, font, staff_pos, note_positions, Music.SharpsAndFlats)
         self.keys = {}
         absolute_time = 0
         for _, track in enumerate(self.mid.tracks):
@@ -58,17 +58,9 @@ class Music:
         self.notes.reset()
 
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
-        # Draw the key signature translucent
-        spacing = 0.076
-        acc_size = 90
-        acc_col = [0.33, 0.33, 0.33, 0.5]
-        for i, acc in enumerate(self.key_signature.sharps):
-            acc_pos = [i * spacing, self.note_positions[acc]]
-            self.font.draw(Note.AccidentalCharacters[1], acc_size, acc_pos, acc_col)
-        for i, acc in enumerate(self.key_signature.flats):
-            acc_pos = [i * spacing, self.note_positions[acc]]
-            self.font.draw(Note.AccidentalCharacters[-1], acc_size, acc_pos, acc_col)
+        """Draw any parts of the scene that involve musical notation."""
 
+        self.key_signature.draw(self.font, self.note_positions)
         return self.notes.draw(dt, music_time, note_width)
 
 class KeySignature:
@@ -92,7 +84,30 @@ class KeySignature:
             add_sharps_and_flats(KeySignature.LookupTableMajor[tonic])
         else:
             add_sharps_and_flats(KeySignature.LookupTableMinor[tonic])
-            
+
+    def draw(self, font:Font, note_positions):
+        spacing = 0.056
+        acc_size = 90
+        acc_col = [0.33, 0.33, 0.33, 0.7]
+                
+        def draw_key_table(notes, character):
+            num_notes = len(notes)
+            draw_index = num_notes - 2
+            draw_count = 0
+
+            while draw_index >= 0 and draw_index < num_notes:
+                acc = notes[draw_index]
+                acc_pos = [draw_count * spacing, note_positions[acc]]
+                font.draw(character, acc_size, acc_pos, acc_col)
+                draw_count += 1
+                if draw_count % 2 == 0:
+                    draw_index -= 3
+                else:
+                    draw_index += 1
+
+        draw_key_table(self.sharps, Note.AccidentalCharacters[1])
+        draw_key_table(self.flats, Note.AccidentalCharacters[-1])
+
     def __str__(self):
         return self.key
 

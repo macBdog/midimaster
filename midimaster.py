@@ -103,8 +103,8 @@ class MidiMaster(Game):
         score_start_x = note_start_x + 0.071
         for i in range(self.num_notes):
             note_height = note_spacing
-            accidental = i in Music.Accidentals
-            if accidental:
+            black_key = i in Music.SharpsAndFlats
+            if black_key:
                 note_height = note_height * 0.5
                 
             self.note_highlight.append(self.note_base_alpha)
@@ -114,7 +114,7 @@ class MidiMaster(Game):
             note_size = [note_spacing, note_height]
             score_size = [0.05, note_spacing]
 
-            if accidental:
+            if black_key:
                 self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x - note_spacing - 0.005, note_offset - note_spacing * 0.5], note_size)))
             else:
                 self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x, note_offset], note_size)))
@@ -123,7 +123,7 @@ class MidiMaster(Game):
             
             note_positions.append(note_pos)
             
-            if not accidental:
+            if not black_key:
                 tone_count += 1
 
         self.setup_input()

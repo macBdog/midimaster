@@ -19,6 +19,7 @@ class MidiDevices:
             if input_name in self.input_devices:
                 try:
                     self.input_port = mido.open_input(input_name)
+                    print(f"Opened MIDI input device with name {self.input_device_name}.")
                 except Exception as excpt:
                     print(f"Could not open MIDI input port: {input_name}")
                     print(excpt)
@@ -29,6 +30,7 @@ class MidiDevices:
             if output_name in self.output_devices:
                 try:
                     self.output_port = mido.open_output(output_name)
+                    print(f"Opened MIDI output device with name {self.output_device_name}.")
                 except Exception as excpt:
                     print(f"Could not open MIDI ouput port: {output_name}")
                     print(excpt)
@@ -37,6 +39,7 @@ class MidiDevices:
         try:
             self.input_port = mido.open_input()
             self.input_device_name = self.input_port.name
+            print(f"Opened MIDI input device with name {self.input_device_name}.")
         except Exception as excpt:
             print(f"Could not open default MIDI input port.")
             print(excpt)
@@ -45,6 +48,7 @@ class MidiDevices:
         try:
             self.output_port = mido.open_output()
             self.output_device_name = self.output_port.name
+            print(f"Opened MIDI output device with name {self.output_device_name}.")
         except Exception as excpt:
             print("Could not open default MIDI output port.")
             print(excpt)
@@ -63,7 +67,7 @@ class MidiDevices:
         if self.output_port is not None:
             self.output_port.close()
             if not self.output_port.closed:
-                print ("Unable to close output MIDI port {0}.".format(self.output_device_name))
+                print("Unable to close output MIDI port {0}.".format(self.output_device_name))
 
         if self.input_port is not None:
             self.input_port.close()
