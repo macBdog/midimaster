@@ -51,7 +51,8 @@ class Font():
         self.bearings = {}
         self.char_start = 32
         self.char_end = 127
-        self.num_chars = self.char_end - self.char_start
+        self.special_chars = ['½']
+        self.num_chars = (self.char_end - self.char_start) + len(self.special_chars)
         window_size = glfw.get_framebuffer_size(window)
         self.window_ratio = window_size[0] / window_size[1]
         self.line_height = 10000.0
@@ -62,13 +63,22 @@ class Font():
         self.image_data = numpy.zeros((self.tex_width, self.tex_height), dtype=numpy.uint8)
 
         if GameSettings.dev_mode:
-            print(f"Building font atlas for {filename} (", end='')
+            print(f"Building font atlas for {filename}: ", end='')
 
         # Blit font chars into the texture noting the individual char size and tex coords
-        atlas_pos = (0, 0)
+        atlas_pos = (0, 0)        
         self.largest_glyph_height = 0
+        
+        all_chars = []
         for c in range(self.char_start, self.char_end):
-            self.face.load_char(chr(c))
+            all_chars.append(chr(c))
+
+        for _, c in enumerate(self.special_chars):
+            all_chars.append(c)
+        
+        for _, char in enumerate(all_chars):
+            c = ord(char)
+            self.face.load_char(char)
             atlas_pos = self.blit_char(self.image_data, self.face.glyph, atlas_pos, c)
             self.advance[c] = self.face.glyph.advance.x
             bbox = self.face.glyph.outline.get_bbox()
@@ -81,16 +91,16 @@ class Font():
 
             if GameSettings.dev_mode:
                 print(chr(c), end='')
-        
+
         if GameSettings.dev_mode:
-            print(")")
+            print('')
 
         # Generate texture data
         self.image_data_texture = self.image_data.flatten()
         self.texture_id = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, self.tex_width, self.tex_height, 0, GL_RED, GL_UNSIGNED_BYTE, self.image_data_texture)
@@ -131,7 +141,7 @@ class Font():
 
     def draw(self, string: str, font_size: int, pos: list, colour: list):
         """ Draw a string of text with the bottom left of the first glyph at the pos coordinate."""
-        
+
         glUseProgram(self.graphics.shader_font)
         glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3]) 
         glActiveTexture(GL_TEXTURE0)

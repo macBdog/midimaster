@@ -6,6 +6,8 @@ from widget import AlignY
 from animation import Animation
 from animation import AnimType
 from music import Music
+from staff import Staff
+from key_signature import KeySignature
 from mido import Message
 from midi_devices import MidiDevices
 from font import Font
@@ -67,59 +69,40 @@ class MidiMaster(Game):
         self.note_bg_btm = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, -0.24), note_bg_size))
         self.note_bg_top = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, 0.775), (2.0, -0.333)))
 
-        # Draw the 12 note lines with the staff lines of the treble clef highlighted
-        staff_pos_x = 0.15
-        staff_pos_y = 0.0
-        staff_width = 1.85
-        staff_lines = []
-        note_spacing = 0.085
-        staff_spacing = note_spacing * 2
-        self.note_base_alpha = 0.15
-        self.score_base_alpha = 0.33
-        num_staff_lines = 4
-        note_colours = [[0.98, 0.25, 0.22, 1.0], [1.0, 0.33, 0.30, 1.0], [0.78, 0.55, 0.99, 1.0], [0.89, 173, 255, 1.0], [1.0, 0.89, 63, 1.0], [0.39, 0.39, 0.55, 1.0], [0.47, 0.47, 0.67, 1.0],  # C4, Db4, D4, Eb4, E4, F4, Gb4
-                        [0.89, 0.97, 1.0, 1.0], [0.95, 1.0, 1.0, 1.0], [0.67, 0.1, 0.01, 1.0], [0.78, 0.18, 0.09, 1.0], [0, 0.78, 1.0, 1.0], [1.0, 0.39, 1, 1.0], [1.0, 0.47, 0.1, 1.0],       # G4, Ab4, A4, Bb4, B4, C5, Db5
-                        [1.0, 0.375, 0.89, 1.0], [1.0, 0.48, 1.0, 1.0], [0.19, 0.78, 0.19, 1.0], [0.54, 0.53, 0.55, 1.0], [0.54, 0.53, 0.55, 1.0], [0.29, 0.29, 0.98, 1.0]]                   # D5, Eb5, E5, F5, Gb5, G5
-        score_colours = note_colours[:]
-        
-        barline_height = 0.02
-        barline_colour = [0.075, 0.075, 0.075, 0.8]
-        staff_lines.append(self.gui_game.add_widget(self.textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + 4 * staff_spacing], [staff_width, barline_height])))
-        for i in range(num_staff_lines):
-            staff_body_white = self.textures.create_sprite_shape([0.78, 0.78, 0.78, 0.75], [staff_pos_x, staff_pos_y + i * staff_spacing], [staff_width, staff_spacing - barline_height])
-            staff_body_black = self.textures.create_sprite_shape(barline_colour, [staff_pos_x, staff_pos_y - note_spacing + i * staff_spacing], [staff_width, barline_height])
-            staff_lines.append(self.gui_game.add_widget(staff_body_white))
-            staff_lines.append(self.gui_game.add_widget(staff_body_black))
-        
+        self.staff = Staff()
+        self.staff.prepare(self.gui_game, self.textures)
+
         # Note box and highlights are the boxes that light up indicating what note should be played
         self.note_box = []
         
         # Score box and highlights are the boxes that light up indicating which notes the player is hitting
+        self.note_base_alpha = 0.15
+        self.score_base_alpha = 0.33
         self.score_box = []
         tone_count = 0
         note_positions = []
-        note_start_x = staff_pos_x - (staff_width * 0.5) - 0.1
-        note_start_y = staff_pos_y - note_spacing * 3
+        note_start_x = self.staff.pos[0] - (self.staff.width * 0.5) - 0.1
+        note_start_y = self.staff.pos[1] - self.staff.note_spacing * 3
         score_start_x = note_start_x + 0.071
         for i in range(self.num_notes):
-            note_height = note_spacing
-            black_key = i in Music.SharpsAndFlats
+            note_height = self.staff.note_spacing
+            black_key = i in KeySignature.SharpsAndFlats
             if black_key:
                 note_height = note_height * 0.5
                 
             self.note_highlight.append(self.note_base_alpha)
             self.score_highlight.append(self.score_base_alpha)
-            note_pos = tone_count * note_spacing
+            note_pos = tone_count * self.staff.note_spacing
             note_offset = note_start_y + note_pos
-            note_size = [note_spacing, note_height]
-            score_size = [0.05, note_spacing]
+            note_size = [self.staff.note_spacing, note_height]
+            score_size = [0.05, self.staff.note_spacing]
 
             if black_key:
-                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x - note_spacing - 0.005, note_offset - note_spacing * 0.5], note_size)))
+                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(Staff.NoteColours[i], [note_start_x - self.staff.note_spacing - 0.005, note_offset - self.staff.note_spacing * 0.5], note_size)))
             else:
-                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(note_colours[i], [note_start_x, note_offset], note_size)))
+                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(Staff.NoteColours[i], [note_start_x, note_offset], note_size)))
                 
-            self.score_box.append(self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("score_zone.png", score_colours[i], [score_start_x, note_offset], score_size)))
+            self.score_box.append(self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("score_zone.png", Staff.NoteColours[i], [score_start_x, note_offset], score_size)))
             
             note_positions.append(note_pos)
             
@@ -129,7 +112,7 @@ class MidiMaster(Game):
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, [staff_pos_x, staff_pos_y], note_positions, os.path.join("music", "mary.mid"))
+        self.music = Music(self.graphics, music_font, self.staff, note_positions, os.path.join("music", "chromatic.mid"))
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
