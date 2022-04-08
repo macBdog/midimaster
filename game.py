@@ -4,6 +4,9 @@ from input import Input, InputActionKey, InputMethod
 from texture import *
 import time
 from settings import GameSettings
+from gui import Gui
+import profile
+from profile import Profile
 
 class Game:
     """A generic interactive frame interpolation loop without connection to specific logic."""
@@ -40,8 +43,10 @@ class Game:
         self.graphics = Graphics()
         self.textures = TextureManager(texture_path, self.graphics)
         self.input = Input(self.window, InputMethod.KEYBOARD)
+        self.profile = Profile()
 
         self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, self.end)
+        self.input.add_key_mapping(283, InputActionKey.ACTION_KEYDOWN, self.profile.capture_next_frame)
 
         glViewport(0, 0, self.window_width, self.window_height)
         glClearColor(0.0, 0.0, 0.0, 1.0)    
@@ -50,12 +55,17 @@ class Game:
         glDepthFunc(GL_LEQUAL)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glfw.swap_interval(1)        
+        glfw.swap_interval(1) 
+
+        self.gui = Gui(self.window_width, self.window_height, "gui")
+        self.gui.set_active(False, False)       
 
     def begin(self):
         dt_cur = dt_last = time.time()
 
         while self.running and not glfw.window_should_close(self.window):
+            self.profile.update()
+
             dt_cur = time.time()
             self.dt = dt_cur - dt_last
             dt_last = dt_cur
@@ -66,6 +76,9 @@ class Game:
                 self.fps_last_update = 1.0
 
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+
+            self.gui.touch(self.input.cursor)
+            self.gui.draw(self.dt)
 
             self.update(self.dt)
 

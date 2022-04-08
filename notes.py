@@ -61,7 +61,7 @@ class NoteSprite():
         self.note_id = -1
         
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
-        if self.note_id >= 0:
+        if self.note_id >= 0 and self.time - music_time < 32 * 4:
             note_time_offset = 0.95 # Beat one of the bar starts after the barline
             note_pos = [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125]
             note_col = [0.1, 0.1, 0.1, 1.0]

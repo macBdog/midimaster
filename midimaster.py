@@ -38,7 +38,6 @@ class MidiMaster(Game):
         self.num_notes = 20
         self.midi_notes = {}
         self.score = 0
-        self.tempo_bpm = 60.0
         self.music_time = 0.0
         self.staff_pitch_origin = 60 # Using middle C4 as the reference note
         self.music_running = False
@@ -49,18 +48,26 @@ class MidiMaster(Game):
         self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
         music_font = Font(os.path.join("ext", "Musisync.ttf"), self.graphics, self.window)      
 
-        show_intro = False
-        if show_intro:
-            # Create a background image stretched to the size of the window
-            gui_splash = Gui(self.window_width, self.window_height)
-            gui_splash.add_widget(self.textures.get("menu_background.tga"), 0, 0)
+        # Create a background image stretched to the size of the window
+        gui_splash = Gui(self.window_width, self.window_height, "splash_screen")
+        gui_splash.set_active(True, True)
+        self.gui.add_child(gui_splash)
+        gui_splash.add_widget(self.textures.create_sprite_texture("menu_background.tga", (0,0), (2.0, 2.0)))
 
-            # Create a title image and fade it in
-            title = gui_splash.add_widget(self.textures.get_sub("gui", "imgtitle.tga"), gui_splash.width / 2, gui_splash.height / 2)
-            title.animation = Animation(AnimType.FadeIn, 0.25)
+        # Create a title image and fade it in
+        title = gui_splash.add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", (0, 0), (0.6, 0.6)))
+        title.animation = Animation(AnimType.InOutSmooth, 1.35)
 
         # Create the holder UI for the game play elements
-        self.gui_game = Gui(self.window_width, self.window_height)
+        self.gui_game = Gui(self.window_width, self.window_height, "game_screen")
+        self.gui.add_child(self.gui_game)
+
+        # Move to the game when the splash is over
+        def transition_to_game():
+            gui_splash.set_active(False, False)
+            self.gui_game.set_active(True, True)
+        title.animation.set_action(transition_to_game, None)
+
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         self.gui_game.add_widget(game_bg)
 
@@ -112,7 +119,7 @@ class MidiMaster(Game):
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, self.staff, note_positions, os.path.join("music", "chromatic.mid"))
+        self.music = Music(self.graphics, music_font, self.staff, note_positions, os.path.join("music", "day-tripper.mid"), 3)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -120,6 +127,8 @@ class MidiMaster(Game):
         self.devices.open_output_default()
 
     def update(self, dt):
+        self.profile.begin('midi')
+
         # Handle events from MIDI input, echo to output so player can hear
         for message in self.devices.input_messages:
             if message.type == 'note_on' or message.type == 'note_off':
@@ -139,78 +148,93 @@ class MidiMaster(Game):
                 if score_id >= 0 and score_id < self.num_notes:
                     self.score_highlight[score_id] = 1.0
 
+        self.profile.end()
+
         self.devices.input_messages = []
 
-        self.gui_game.touch(self.input.cursor)
-        self.gui_game.draw(dt)
-        music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
+        game_draw, game_input = self.gui_game.is_active()
+        if game_draw:
+            self.profile.begin('music')
+            music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
+            self.profile.end()
 
-        if self.music_running:
-            self.music_time += dt * (self.tempo_bpm / 60.0) * 10.0
-
-        # Process all notes that have hit the play head
-        music_notes_off = {}
-        for k in music_notes:
-            # Highlight the note box to show this note should be currently played
-            if music_notes[k] >= self.music_time:
-                highlight_id = k - self.staff_pitch_origin
-                self.note_highlight[highlight_id] = 1.0
-
-            # The note value in the dictionary is the time to turn off
-            if k in self.midi_notes:
-                if music_notes[k] < self.music_time:
-                    music_notes_off[k] = True
-            elif music_notes[k] >= self.music_time:   
-                self.midi_notes[k] = music_notes[k]
-                new_note_on = Message('note_on')
-                new_note_on.note = k
-                new_note_on.velocity = 100
-                self.devices.output_messages.append(new_note_on)
-
-        # Send note off messages for all the notes in the music
-        for k in music_notes_off:
-            new_note_off = Message('note_off')
-            new_note_off.note = k
-            self.devices.output_messages.append(new_note_off)
-            self.midi_notes.pop(k)
-
-        # Score points for any score box that is highlighted while a note is lit up
-        scored_this_frame = False
-        scored_notes = zip(self.note_highlight, self.score_highlight)
-        for n, s in scored_notes:
-            if n >= 1.0 and s >= 1.0:
-                self.score = self.score + 10 * self.dt
-                scored_this_frame = True
-        
-        if scored_this_frame:
-            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
+            if self.music_running:
+                self.music_time += dt * (self.music.tempo_bpm / 4.0)
+            self.profile.end()
             
-        # Highlight score boxes
-        self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
-        self.note_bg_top.sprite.set_colour(self.note_correct_colour)
+            # Process all notes that have hit the play head
+            self.profile.begin("note_replay")
+            music_notes_off = {}
+            for k in music_notes:
+                # Highlight the note box to show this note should be currently played
+                if music_notes[k] >= self.music_time:
+                    highlight_id = k - self.staff_pitch_origin
+                    self.note_highlight[highlight_id] = 1.0
 
-        # Pull the scoring box alpha down to 0
-        for i in range(self.num_notes):
-            self.note_box[i].sprite.set_alpha(self.note_highlight[i])
-            self.score_box[i].sprite.set_alpha(self.score_highlight[i])
-            self.note_highlight[i] = max(self.note_base_alpha, self.note_highlight[i] - 0.9 * self.dt)
-            self.score_highlight[i] = max(self.score_base_alpha, self.score_highlight[i] - 0.8 * self.dt)
-        
-        # Same with the note highlight background
-        self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
+                # The note value in the dictionary is the time to turn off
+                if k in self.midi_notes:
+                    if music_notes[k] < self.music_time:
+                        music_notes_off[k] = True
+                elif music_notes[k] >= self.music_time:   
+                    self.midi_notes[k] = music_notes[k]
+                    new_note_on = Message('note_on')
+                    new_note_on.note = k
+                    new_note_on.velocity = 100
+                    self.devices.output_messages.append(new_note_on)
 
-        # Show the score on top of everything
-        self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
+            # Send note off messages for all the notes in the music
+            for k in music_notes_off:
+                new_note_off = Message('note_off')
+                new_note_off.note = k
+                self.devices.output_messages.append(new_note_off)
+                self.midi_notes.pop(k)
+            self.profile.end()
 
+            self.profile.begin("scoring")
+            # Score points for any score box that is highlighted while a note is lit up
+            scored_this_frame = False
+            scored_notes = zip(self.note_highlight, self.score_highlight)
+            for n, s in scored_notes:
+                if n >= 1.0 and s >= 1.0:
+                    self.score = self.score + 10 * self.dt
+                    scored_this_frame = True
+            
+            if scored_this_frame:
+                self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
+                
+            # Highlight score boxes
+            self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
+            self.note_bg_top.sprite.set_colour(self.note_correct_colour)
+
+            # Pull the scoring box alpha down to 0
+            for i in range(self.num_notes):
+                self.note_box[i].sprite.set_alpha(self.note_highlight[i])
+                self.score_box[i].sprite.set_alpha(self.score_highlight[i])
+                self.note_highlight[i] = max(self.note_base_alpha, self.note_highlight[i] - 0.9 * self.dt)
+                self.score_highlight[i] = max(self.score_base_alpha, self.score_highlight[i] - 0.8 * self.dt)
+            self.profile.end()
+            
+            self.profile.begin("gui")
+            # Same with the note highlight background
+            self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
+
+            # Show the score on top of everything
+            self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
+            self.profile.end()
+
+        self.profile.begin("dev_mode")
         # Show developer stats
         if GameSettings.dev_mode:
             cursor_pos = self.input.cursor.pos
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
+        self.profile.end()
 
+        self.profile.begin("devices")
         # Update and flush out the buffers
         self.devices.update()
         self.devices.output_messages = []
+        self.profile.end()
 
     def end(self):
         super().end()

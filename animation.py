@@ -5,6 +5,7 @@ class AnimType(enum.Enum):
     FadeIn = 1
     FadeOut = 2
     Pulse = 3
+    InOutSmooth = 4
 
 class Animation:
     """ Animations store the state and timers for controller
@@ -19,11 +20,22 @@ class Animation:
         self.type = anim_type
         self.val = 0.0
         self.active = True
+        self.action = None
+        self.action_time = -1
+        self.actioned = False
         if self.type is AnimType.FadeOut:
             self.val = 1.0
-        
+    
+    def set_action(self, activation_func, activation_arg, time:float = -1):
+        """Setup an action to be called at a specific time in the animation.
+        :param time for the time in the animation to execute, -1 means when complete.
+        """
+        self.action = activation_func
+        self.action_arg = activation_arg
+        self.action_time = -1
+
     def tick(self, dt: float):
-        """ Update timers and values as per the animation type.
+        """Update timers and values as per the animation type.
         :param dt: The time that has elapsed since the last tick.
         """
         if self.active:
@@ -33,9 +45,24 @@ class Animation:
                 self.val = self.timer / self.time
             elif self.type is AnimType.Pulse:
                 self.val = math.sin(self.timer)
+            elif self.type is AnimType.InOutSmooth:
+                self.val = (math.sin(((self.timer / self.time) * math.pi * 2.0) - math.pi * 0.5) + 1.0) * 0.5
 
             self.timer -= dt
+
+            do_action = self.timer <= self.action_time
+
             if self.timer <= 0.0:
                 self.active = False
+                if self.action_time < 0:
+                    do_action = True
+
+            if do_action and self.action is not None:
+                if not self.actioned:
+                    if self.action_arg is None:
+                        self.action()
+                    else:
+                        self.action(self.action_arg)
+                    self.actioned = True
 
                 
