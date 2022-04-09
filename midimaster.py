@@ -7,7 +7,7 @@ from animation import Animation
 from animation import AnimType
 from music import Music
 from staff import Staff
-from key_signature import KeySignature
+from noteboard import NoteBoard
 from mido import Message
 from midi_devices import MidiDevices
 from font import Font
@@ -31,15 +31,11 @@ class MidiMaster(Game):
         self.name = "MidiMaster"
         self.music_running = False
         self.note_width_32nd = 0.03
-        self.score_highlight = []
-        self.note_highlight = []
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.5]
         self.notes_down = {}
-        self.num_notes = 20
         self.midi_notes = {}
         self.score = 0
         self.music_time = 0.0
-        self.staff_pitch_origin = 60 # Using middle C4 as the reference note
         self.music_running = False
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
 
@@ -66,7 +62,7 @@ class MidiMaster(Game):
         def transition_to_game():
             gui_splash.set_active(False, False)
             self.gui_game.set_active(True, True)
-        title.animation.set_action(transition_to_game, None)
+        title.animation.set_action(-1, transition_to_game)
 
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         self.gui_game.add_widget(game_bg)
@@ -79,47 +75,13 @@ class MidiMaster(Game):
         self.staff = Staff()
         self.staff.prepare(self.gui_game, self.textures)
 
-        # Note box and highlights are the boxes that light up indicating what note should be played
-        self.note_box = []
-        
-        # Score box and highlights are the boxes that light up indicating which notes the player is hitting
-        self.note_base_alpha = 0.15
-        self.score_base_alpha = 0.33
-        self.score_box = []
-        tone_count = 0
-        note_positions = []
-        note_start_x = self.staff.pos[0] - (self.staff.width * 0.5) - 0.1
-        note_start_y = self.staff.pos[1] - self.staff.note_spacing * 3
-        score_start_x = note_start_x + 0.071
-        for i in range(self.num_notes):
-            note_height = self.staff.note_spacing
-            black_key = i in KeySignature.SharpsAndFlats
-            if black_key:
-                note_height = note_height * 0.5
-                
-            self.note_highlight.append(self.note_base_alpha)
-            self.score_highlight.append(self.score_base_alpha)
-            note_pos = tone_count * self.staff.note_spacing
-            note_offset = note_start_y + note_pos
-            note_size = [self.staff.note_spacing, note_height]
-            score_size = [0.05, self.staff.note_spacing]
-
-            if black_key:
-                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(Staff.NoteColours[i], [note_start_x - self.staff.note_spacing - 0.005, note_offset - self.staff.note_spacing * 0.5], note_size)))
-            else:
-                self.note_box.append(self.gui_game.add_widget(self.textures.create_sprite_shape(Staff.NoteColours[i], [note_start_x, note_offset], note_size)))
-                
-            self.score_box.append(self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("score_zone.png", Staff.NoteColours[i], [score_start_x, note_offset], score_size)))
-            
-            note_positions.append(note_pos)
-            
-            if not black_key:
-                tone_count += 1
+        self.noteboard = NoteBoard()
+        self.noteboard.prepare(self.textures, self.gui_game, self.staff)
 
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, self.staff, note_positions, os.path.join("music", "day-tripper.mid"), 3)
+        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "day-tripper.mid"), 3)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -144,10 +106,7 @@ class MidiMaster(Game):
         # Light up score box for any held note
         for note, velocity in self.notes_down.items():
             if velocity > 0.0:
-                score_id = note - self.staff_pitch_origin
-                if score_id >= 0 and score_id < self.num_notes:
-                    self.score_highlight[score_id] = 1.0
-
+                self.noteboard.set_score(note) 
         self.profile.end()
 
         self.devices.input_messages = []
@@ -168,8 +127,7 @@ class MidiMaster(Game):
             for k in music_notes:
                 # Highlight the note box to show this note should be currently played
                 if music_notes[k] >= self.music_time:
-                    highlight_id = k - self.staff_pitch_origin
-                    self.note_highlight[highlight_id] = 1.0
+                    self.noteboard.set_note(k)
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:
@@ -191,27 +149,15 @@ class MidiMaster(Game):
             self.profile.end()
 
             self.profile.begin("scoring")
-            # Score points for any score box that is highlighted while a note is lit up
-            scored_this_frame = False
-            scored_notes = zip(self.note_highlight, self.score_highlight)
-            for n, s in scored_notes:
-                if n >= 1.0 and s >= 1.0:
-                    self.score = self.score + 10 * self.dt
-                    scored_this_frame = True
             
+            scored_notes, scored_this_frame = self.noteboard.get_scored_notes()
             if scored_this_frame:
                 self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
                 
             # Highlight score boxes
             self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
             self.note_bg_top.sprite.set_colour(self.note_correct_colour)
-
-            # Pull the scoring box alpha down to 0
-            for i in range(self.num_notes):
-                self.note_box[i].sprite.set_alpha(self.note_highlight[i])
-                self.score_box[i].sprite.set_alpha(self.score_highlight[i])
-                self.note_highlight[i] = max(self.note_base_alpha, self.note_highlight[i] - 0.9 * self.dt)
-                self.score_highlight[i] = max(self.score_base_alpha, self.score_highlight[i] - 0.8 * self.dt)
+            self.noteboard.draw(dt)
             self.profile.end()
             
             self.profile.begin("gui")
@@ -306,27 +252,27 @@ class MidiMaster(Game):
 
         # Playing notes with the keyboard note names. TODO: Shift for one accidental (#) up, Ctrl for flat (b)!
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
-            add_note_key_mapping(67, self.staff_pitch_origin)       # C
-            add_note_key_mapping(68, self.staff_pitch_origin + 2)   # D
-            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
-            add_note_key_mapping(70, self.staff_pitch_origin + 5)   # F
-            add_note_key_mapping(71, self.staff_pitch_origin + 7)   # G
-            add_note_key_mapping(65, self.staff_pitch_origin + 9)   # A
-            add_note_key_mapping(66, self.staff_pitch_origin + 11)  # B
+            add_note_key_mapping(67, self.noteboard.origin_note)       # C
+            add_note_key_mapping(68, self.noteboard.origin_note + 2)   # D
+            add_note_key_mapping(69, self.noteboard.origin_note + 4)   # E
+            add_note_key_mapping(70, self.noteboard.origin_note + 5)   # F
+            add_note_key_mapping(71, self.noteboard.origin_note + 7)   # G
+            add_note_key_mapping(65, self.noteboard.origin_note + 9)   # A
+            add_note_key_mapping(66, self.noteboard.origin_note + 11)  # B
         elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
-            add_note_key_mapping(81, self.staff_pitch_origin)       # C            
-            add_note_key_mapping(50, self.staff_pitch_origin + 1)   # Db
-            add_note_key_mapping(87, self.staff_pitch_origin + 2)   # D
-            add_note_key_mapping(51, self.staff_pitch_origin + 3)   # Eb
-            add_note_key_mapping(69, self.staff_pitch_origin + 4)   # E
-            add_note_key_mapping(82, self.staff_pitch_origin + 5)   # F
-            add_note_key_mapping(53, self.staff_pitch_origin + 6)   # Gb
-            add_note_key_mapping(84, self.staff_pitch_origin + 7)   # G
-            add_note_key_mapping(54, self.staff_pitch_origin + 8)   # Ab
-            add_note_key_mapping(89, self.staff_pitch_origin + 9)   # A
-            add_note_key_mapping(55, self.staff_pitch_origin + 10)  # Bb
-            add_note_key_mapping(85, self.staff_pitch_origin + 11)  # B
-            add_note_key_mapping(73, self.staff_pitch_origin + 12)  # C
+            add_note_key_mapping(81, self.noteboard.origin_note)       # C            
+            add_note_key_mapping(50, self.noteboard.origin_note + 1)   # Db
+            add_note_key_mapping(87, self.noteboard.origin_note + 2)   # D
+            add_note_key_mapping(51, self.noteboard.origin_note + 3)   # Eb
+            add_note_key_mapping(69, self.noteboard.origin_note + 4)   # E
+            add_note_key_mapping(82, self.noteboard.origin_note + 5)   # F
+            add_note_key_mapping(53, self.noteboard.origin_note + 6)   # Gb
+            add_note_key_mapping(84, self.noteboard.origin_note + 7)   # G
+            add_note_key_mapping(54, self.noteboard.origin_note + 8)   # Ab
+            add_note_key_mapping(89, self.noteboard.origin_note + 9)   # A
+            add_note_key_mapping(55, self.noteboard.origin_note + 10)  # Bb
+            add_note_key_mapping(85, self.noteboard.origin_note + 11)  # B
+            add_note_key_mapping(73, self.noteboard.origin_note + 12)  # C
 
 def main():
     """Entry point that creates the MidiMaster object only."""

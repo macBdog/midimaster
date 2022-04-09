@@ -16,8 +16,8 @@ class Profile:
     @staticmethod
     def dump():
         print("QnD Profile Report:")
-        for _, frame in enumerate(Profile.Frames):
-            print(f'{frame}: {Profile.Frames[frame] * 1000}')
+        for name in Profile.Frames:
+            print(f'{name}: {Profile.Frames[name] * 1000}')
 
     @staticmethod
     def update():    

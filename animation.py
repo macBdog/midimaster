@@ -21,18 +21,20 @@ class Animation:
         self.val = 0.0
         self.active = True
         self.action = None
+        self.action_kwargs = None
         self.action_time = -1
         self.actioned = False
         if self.type is AnimType.FadeOut:
             self.val = 1.0
     
-    def set_action(self, activation_func, activation_arg, time:float = -1):
+    def set_action(self, time: float, activation_func, **kwargs):
         """Setup an action to be called at a specific time in the animation.
         :param time for the time in the animation to execute, -1 means when complete.
         """
         self.action = activation_func
-        self.action_arg = activation_arg
-        self.action_time = -1
+        if len(kwargs) > 0:
+            self.action_kwargs = kwargs
+        self.action_time = time
 
     def tick(self, dt: float):
         """Update timers and values as per the animation type.
@@ -59,10 +61,10 @@ class Animation:
 
             if do_action and self.action is not None:
                 if not self.actioned:
-                    if self.action_arg is None:
+                    if self.action_kwargs is None:
                         self.action()
                     else:
-                        self.action(self.action_arg)
+                        self.action(self.action_kwargs)
                     self.actioned = True
 
                 
