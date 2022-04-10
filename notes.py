@@ -61,31 +61,34 @@ class NoteSprite():
         self.note_id = -1
         
     def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
-        if self.note_id >= 0 and self.time - music_time < 32 * 4:
-            note_time_offset = 0.95 # Beat one of the bar starts after the barline
-            note_pos = [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125]
-            note_col = [0.1, 0.1, 0.1, 1.0]
-            
-            if self.accidental is not None:
-                self.font.draw(self.accidental, 72, [note_pos[0] - 0.02, note_pos[1]], note_col)
+        """Draw a note and it's associated accents, accidentals and dots.
+        :return True if the note can be reassigned after drawning.
+        """
+        if self.note_id >= 0:
+            if self.time - music_time < 32 * 4:
+                note_time_offset = 0.95 # Beat one of the bar starts after the barline
+                note_pos = [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125]
+                note_col = [0.1, 0.1, 0.1, 1.0]
+                
+                if self.accidental is not None:
+                    self.font.draw(self.accidental, 72, [note_pos[0] - 0.02, note_pos[1]], note_col)
 
-            if self.dotted:
-                self.font.draw(Note.DottedChar, 72, [note_pos[0] + 0.12, note_pos[1] + 0.035], note_col)
+                if self.dotted:
+                    self.font.draw(Note.DottedChar, 72, [note_pos[0] + 0.12, note_pos[1] + 0.035], note_col)
 
-            self.font.draw(self.note_char, 158, note_pos, note_col)
-            
-            if self.time <= music_time:
-                notes_on[self.note] = music_time + self.length
-                self.recycle()
+                self.font.draw(self.note_char, 158, note_pos, note_col)
+                
+                if self.time <= music_time:
+                    notes_on[self.note] = music_time + self.length
+                    self.recycle()
 
+        return self.note_id >= 0
 class Notes:
     """Notes manages all the on-screen note representations for a game.
     It is intended to be called by a music manager that creates the notes
     for each piece of music when they should be on-screen. There is a pool
-    of onscreen notes that recycled when they reach the playhead."""
-
-    LeadIn = 32
-            
+    of onscreen notes that recycled when they reach the playhead.
+    """    
     def __init__(self, graphics:Graphics, font: Font, staff: Staff, note_positions: list, key_signature: KeySignature):
         self.notes = []
         self.rests = []
@@ -181,18 +184,18 @@ class Notes:
                     self.rest_pool_offset = i
                     break
 
-        # This will evaluate true when there is a piece of music with 32 notes in 2 bars
+        # This will evaluate true when there is a piece of music with 32 rests
         if self.rest_pool[self.rest_pool_offset].note_id >= 0:
-            print("Failed to find an inactive rest sprite in the pool!")
+            return
 
         if self.rests_offset < len(self.rests):
             rest_sprite = self.rest_pool[self.note_pool_offset]
             rest = self.rests[self.rests_offset]
         
-        quantized_length, dotted = Note.get_quantized_length(rest.length)
-        rest_sprite.assign(self.rests_offset, rest.note, Notes.LeadIn  + rest.time, rest.length, self.staff.pos[1], Note.RestCharacters[quantized_length], None, dotted)
-        self.rests_offset += 1
-            
+            quantized_length, dotted = Note.get_quantized_length(rest.length)
+            rest_sprite.assign(self.rests_offset, rest.note, rest.time, rest.length, self.staff.pos[1], Note.RestCharacters[quantized_length], None, dotted)
+            self.rests_offset += 1
+                
     def assign_note(self):
         """Search for an inactive note in the pool to assign the current notes_offset to"""
 
@@ -202,9 +205,9 @@ class Notes:
                     self.note_pool_offset = i
                     break
 
-        # This will evaluate true when there is a piece of music with 32 notes in 2 bars
+        # This will evaluate true when there is a piece of music with 32 notes
         if self.note_pool[self.note_pool_offset].note_id >= 0:
-            print("Failed to find an inactive note sprite in the pool!")
+            return
 
         if self.notes_offset < len(self.notes):
             note_sprite = self.note_pool[self.note_pool_offset]
@@ -220,7 +223,7 @@ class Notes:
             pitch_diff = -note_diff - (num_octaves * per_octave)
 
             quantized_length, dotted = Note.get_quantized_length(note.length)
-            note_sprite.assign(self.notes_offset, note.note, Notes.LeadIn + note.time, note.length, self.staff.ref_note_pos[1] - pitch_diff, Note.NoteCharacters[quantized_length], accidental, dotted)
+            note_sprite.assign(self.notes_offset, note.note, note.time, note.length, self.staff.ref_note_pos[1] - pitch_diff, Note.NoteCharacters[quantized_length], accidental, dotted)
             self.notes_offset += 1
             
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
@@ -230,17 +233,31 @@ class Notes:
         # Draw a recycled list of barlines moving from right to left
         for i in range(self.num_barlines):
             bar_start = self.staff.ref_note_pos[0] - 0.92
-            self.barlines[i].pos[0] = bar_start + ((self.bartimes[i] - music_time) * note_width)
-            self.barlines[i].pos[1] = self.staff.pos[1] + 0.25
-            self.barlines[i].draw()
+            rel_time = self.bartimes[i] - music_time
+            self.barlines[i].pos[0] = bar_start + (rel_time * note_width)
+            self.barlines[i].pos[1] = self.staff.pos[1] + 0.25           
+            
+            if rel_time > 6:
+                self.barlines[i].draw()
+
             if self.bartimes[i] < music_time:   
                 self.bartimes[i] += self.num_barlines * 32
                           
         # Draw all the notes then rests in the pools
+        free_note_index = -1
         for i in range(len(self.note_pool)):
-            self.note_pool[i].draw(music_time, note_width, self.staff.ref_note_pos[0], self.notes_on)
+            if self.note_pool[i].draw(music_time, note_width, self.staff.ref_note_pos[0], self.notes_on):
+                free_note_index = i
+        
+        if free_note_index >= 0:
+            self.assign_note()
 
+        free_rest_index = -1
         for i in range(len(self.rest_pool)):
-            self.rest_pool[i].draw(music_time, note_width, self.staff.ref_note_pos[0], {})
+            if self.rest_pool[i].draw(music_time, note_width, self.staff.ref_note_pos[0], {}):
+                free_rest_index = i
+
+        if free_rest_index >= 0:
+            self.assign_rest()
 
         return self.notes_on

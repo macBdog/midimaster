@@ -31,7 +31,7 @@ class MidiMaster(Game):
         self.name = "MidiMaster"
         self.music_running = False
         self.note_width_32nd = 0.03
-        self.note_correct_colour = [0.75, 0.75, 0.75, 0.5]
+        self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
         self.notes_down = {}
         self.midi_notes = {}
         self.score = 0
@@ -52,7 +52,7 @@ class MidiMaster(Game):
 
         # Create a title image and fade it in
         title = gui_splash.add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", (0, 0), (0.6, 0.6)))
-        title.animation = Animation(AnimType.InOutSmooth, 1.35)
+        title.animation = Animation(AnimType.InOutSmooth, GameSettings.dev_mode and 0.15 or 2.0)
 
         # Create the holder UI for the game play elements
         self.gui_game = Gui(self.window_width, self.window_height, "game_screen")
@@ -67,21 +67,20 @@ class MidiMaster(Game):
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         self.gui_game.add_widget(game_bg)
 
-        note_bg_pos_x = 0.228
-        note_bg_size = (2.0, 0.333)
-        self.note_bg_btm = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, -0.24), note_bg_size))
-        self.note_bg_top = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, 0.775), (2.0, -0.333)))
-
         self.staff = Staff()
-        self.staff.prepare(self.gui_game, self.textures)
-
         self.noteboard = NoteBoard()
+        
+        note_bg_pos_x = 0.228
+        self.note_bg_top = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] + 0.775), (2.0, -0.35)))
+        self.note_bg_btm = self.gui_game.add_widget(self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] - 0.58), (2.0, 1.0)))
+
+        self.staff.prepare(self.gui_game, self.textures)
         self.noteboard.prepare(self.textures, self.gui_game, self.staff)
 
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "day-tripper.mid"), 3)
+        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "aint-no-sunshine.mid"), 1)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -118,7 +117,7 @@ class MidiMaster(Game):
             self.profile.end()
 
             if self.music_running:
-                self.music_time += dt * (self.music.tempo_bpm / 4.0)
+                self.music_time += dt * (self.music.tempo_bpm / 8.0)
             self.profile.end()
             
             # Process all notes that have hit the play head
@@ -150,9 +149,10 @@ class MidiMaster(Game):
 
             self.profile.begin("scoring")
             
-            scored_notes, scored_this_frame = self.noteboard.get_scored_notes()
+            scored_this_frame, scored_notes = self.noteboard.get_scored_notes()
             if scored_this_frame:
                 self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
+                self.score = self.score + 10 * self.dt
                 
             # Highlight score boxes
             self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
@@ -162,7 +162,7 @@ class MidiMaster(Game):
             
             self.profile.begin("gui")
             # Same with the note highlight background
-            self.note_correct_colour = [max(0.6, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <=3]
+            self.note_correct_colour = [max(0.65, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
 
             # Show the score on top of everything
             self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
@@ -199,15 +199,16 @@ class MidiMaster(Game):
             self.music.reset()
 
         playback_button_size = (0.15, 0.125)
-        btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, -0.63), playback_button_size))
-        btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, -0.63), playback_button_size))
-        btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, -0.63), playback_button_size))
+        controls_height = -0.85
+        btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
+        btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, controls_height), playback_button_size))
+        btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
         
         btn_play.set_action(play, self)
         btn_pause.set_action(pause, self)
         btn_stop.set_action(stop_rewind, self)
         
-        self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, -0.75), (0.5, 0.25)))
+        self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, controls_height - 0.10), (0.5, 0.25)))
         self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
         def note_width_inc():
