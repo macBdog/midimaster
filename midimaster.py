@@ -21,6 +21,10 @@ class KeyboardMapping(Enum):
     NOTE_NAMES = 0,
     QWERTY_PIANO = auto()
 
+class MusicMode(Enum):
+    PAUSE_AND_LEARN = 0,
+    PERFORMANCE = auto()
+
 class MidiMaster(Game):
     """The controlling object and main loop for the game. 
         Should always be small and concise, calling out to other managing
@@ -29,7 +33,6 @@ class MidiMaster(Game):
     def __init__(self):
         super(MidiMaster, self). __init__()
         self.name = "MidiMaster"
-        self.music_running = False
         self.note_width_32nd = 0.03
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
         self.notes_down = {}
@@ -37,6 +40,7 @@ class MidiMaster(Game):
         self.score = 0
         self.music_time = 0.0
         self.music_running = False
+        self.mode = MusicMode.PAUSE_AND_LEARN
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
 
     def prepare(self):
@@ -80,7 +84,7 @@ class MidiMaster(Game):
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "aint-no-sunshine.mid"), 1)
+        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "test.mid"), 1)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -116,8 +120,9 @@ class MidiMaster(Game):
             music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
             self.profile.end()
 
+            music_time_advance = dt * (self.music.tempo_bpm / 8.0)
             if self.music_running:
-                self.music_time += dt * (self.music.tempo_bpm / 8.0)
+                self.music_time += music_time_advance
             self.profile.end()
             
             # Process all notes that have hit the play head
@@ -126,7 +131,7 @@ class MidiMaster(Game):
             for k in music_notes:
                 # Highlight the note box to show this note should be currently played
                 if music_notes[k] >= self.music_time:
-                    self.noteboard.set_note(k)
+                    self.noteboard.note_on(k)
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:
@@ -141,6 +146,7 @@ class MidiMaster(Game):
 
             # Send note off messages for all the notes in the music
             for k in music_notes_off:
+                self.noteboard.note_off(k)
                 new_note_off = Message('note_off')
                 new_note_off.note = k
                 self.devices.output_messages.append(new_note_off)
@@ -149,11 +155,20 @@ class MidiMaster(Game):
 
             self.profile.begin("scoring")
             
-            scored_this_frame, scored_notes = self.noteboard.get_scored_notes()
-            if scored_this_frame:
-                self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
-                self.score = self.score + 10 * self.dt
-                
+            scored_notes = self.noteboard.get_scored_notes()
+            num_scored_notes = len(scored_notes)
+
+            if self.mode == MusicMode.PERFORMANCE:
+                if num_scored_notes > 0:
+                    self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
+                    self.score = self.score + 10 * self.dt
+            elif self.mode == MusicMode.PAUSE_AND_LEARN:
+                playing_notes = self.noteboard.get_playing_notes()
+                num_playing_notes = len(playing_notes)
+                if self.music_running:
+                    if num_playing_notes > num_scored_notes:
+                        self.music_time -= music_time_advance
+
             # Highlight score boxes
             self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
             self.note_bg_top.sprite.set_colour(self.note_correct_colour)
@@ -173,6 +188,7 @@ class MidiMaster(Game):
         if GameSettings.dev_mode:
             cursor_pos = self.input.cursor.pos
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
+            self.font_game.draw(f"music time: {math.floor(self.music_time)}", 14, [0.35, 0.55], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
         self.profile.end()
 
@@ -253,27 +269,27 @@ class MidiMaster(Game):
 
         # Playing notes with the keyboard note names. TODO: Shift for one accidental (#) up, Ctrl for flat (b)!
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
-            add_note_key_mapping(67, self.noteboard.origin_note)       # C
-            add_note_key_mapping(68, self.noteboard.origin_note + 2)   # D
-            add_note_key_mapping(69, self.noteboard.origin_note + 4)   # E
-            add_note_key_mapping(70, self.noteboard.origin_note + 5)   # F
-            add_note_key_mapping(71, self.noteboard.origin_note + 7)   # G
-            add_note_key_mapping(65, self.noteboard.origin_note + 9)   # A
-            add_note_key_mapping(66, self.noteboard.origin_note + 11)  # B
+            add_note_key_mapping(67, NoteBoard.OriginNote)       # C
+            add_note_key_mapping(68, NoteBoard.OriginNote + 2)   # D
+            add_note_key_mapping(69, NoteBoard.OriginNote + 4)   # E
+            add_note_key_mapping(70, NoteBoard.OriginNote + 5)   # F
+            add_note_key_mapping(71, NoteBoard.OriginNote + 7)   # G
+            add_note_key_mapping(65, NoteBoard.OriginNote + 9)   # A
+            add_note_key_mapping(66, NoteBoard.OriginNote + 11)  # B
         elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
-            add_note_key_mapping(81, self.noteboard.origin_note)       # C            
-            add_note_key_mapping(50, self.noteboard.origin_note + 1)   # Db
-            add_note_key_mapping(87, self.noteboard.origin_note + 2)   # D
-            add_note_key_mapping(51, self.noteboard.origin_note + 3)   # Eb
-            add_note_key_mapping(69, self.noteboard.origin_note + 4)   # E
-            add_note_key_mapping(82, self.noteboard.origin_note + 5)   # F
-            add_note_key_mapping(53, self.noteboard.origin_note + 6)   # Gb
-            add_note_key_mapping(84, self.noteboard.origin_note + 7)   # G
-            add_note_key_mapping(54, self.noteboard.origin_note + 8)   # Ab
-            add_note_key_mapping(89, self.noteboard.origin_note + 9)   # A
-            add_note_key_mapping(55, self.noteboard.origin_note + 10)  # Bb
-            add_note_key_mapping(85, self.noteboard.origin_note + 11)  # B
-            add_note_key_mapping(73, self.noteboard.origin_note + 12)  # C
+            add_note_key_mapping(81, NoteBoard.OriginNote)       # C            
+            add_note_key_mapping(50, NoteBoard.OriginNote + 1)   # Db
+            add_note_key_mapping(87, NoteBoard.OriginNote + 2)   # D
+            add_note_key_mapping(51, NoteBoard.OriginNote + 3)   # Eb
+            add_note_key_mapping(69, NoteBoard.OriginNote + 4)   # E
+            add_note_key_mapping(82, NoteBoard.OriginNote + 5)   # F
+            add_note_key_mapping(53, NoteBoard.OriginNote + 6)   # Gb
+            add_note_key_mapping(84, NoteBoard.OriginNote + 7)   # G
+            add_note_key_mapping(54, NoteBoard.OriginNote + 8)   # Ab
+            add_note_key_mapping(89, NoteBoard.OriginNote + 9)   # A
+            add_note_key_mapping(55, NoteBoard.OriginNote + 10)  # Bb
+            add_note_key_mapping(85, NoteBoard.OriginNote + 11)  # B
+            add_note_key_mapping(73, NoteBoard.OriginNote + 12)  # C
 
 def main():
     """Entry point that creates the MidiMaster object only."""

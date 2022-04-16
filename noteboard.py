@@ -8,6 +8,7 @@ class NoteBoard:
        by the player and also by the music notes hitting the playhead.
        """
     ScoreBoxTexture = "score_zone.png"
+    OriginNote = 48 # C3
     BaseAlphaNote = 0.35
     BaseAlphaScore = 0.33
     NoteColours = [[31, 130, 180, 1.0],    [166, 206, 227, 1.0],    [51, 166, 44, 1.0],  [178, 223, 138, 1.0], # C, Db, D, Eb 
@@ -17,7 +18,6 @@ class NoteBoard:
     def __init__(self):
         NoteBoard.NoteColours = [[i / 255 for i in j] for j in NoteBoard.NoteColours]
         self.num_notes = 36
-        self.origin_note = 48 # C3
         
         # Note box and highlights are the boxes that light up indicating what note should be played when a note hits it
         self.note_box = []
@@ -27,17 +27,19 @@ class NoteBoard:
         self.score_box = []
         self.score_highlight = []
         
-        self.note_positions = []
+        self.note_positions = {}
+        self.playing_notes = {}
 
     def prepare(self, textures: TextureManager, gui: Gui, staff: Staff):
         tone_count = 0
         note_start_x = staff.pos[0] - (staff.width * 0.5) - 0.1
-        note_start_y = staff.pos[1] - staff.note_spacing * (12 - 2)
+        note_start_y = staff.pos[1] - Staff.NoteSpacing * (12 - 2)
         score_start_x = note_start_x + 0.071
         for i in range(self.num_notes):
-            note_height = staff.note_spacing
-            score_height = staff.note_spacing
-            note_lookup = i % 12
+            note_height = Staff.NoteSpacing
+            score_height = Staff.NoteSpacing
+            note = NoteBoard.OriginNote + i
+            note_lookup = note % 12
             black_key = note_lookup in KeySignature.SharpsAndFlats
             black_key_height = note_height * 0.5 
             black_key_next = note_lookup + 1 in KeySignature.SharpsAndFlats
@@ -45,9 +47,8 @@ class NoteBoard:
 
             self.note_highlight.append(NoteBoard.BaseAlphaNote)
             self.score_highlight.append(NoteBoard.BaseAlphaScore)
-            note_pos = tone_count * staff.note_spacing
-            note_offset = note_start_y + note_pos
-            score_offset = note_offset
+            note_pos = note_start_y + (tone_count * Staff.NoteSpacing)
+            score_pos = note_pos
 
             # Determine the heights and Y positions of the note and score elements
             if black_key:
@@ -58,51 +59,58 @@ class NoteBoard:
                     score_height -= black_key_height * 0.5
                 elif black_key_next and not black_key_prev:
                     score_height -= black_key_height * 0.25
-                    score_offset -= black_key_height * 0.25
+                    score_pos -= black_key_height * 0.25
                 elif black_key_prev and not black_key_next:
                     score_height -= black_key_height * 0.25
-                    score_offset += black_key_height * 0.25
+                    score_pos += black_key_height * 0.25
 
-            note_size = [staff.note_spacing, note_height]
+            note_size = [Staff.NoteSpacing, note_height]
             score_size = [0.05, score_height]
 
             if black_key:
-                self.note_box.append(gui.add_widget(textures.create_sprite_shape(NoteBoard.NoteColours[note_lookup], [note_start_x - staff.note_spacing - 0.005, note_offset - staff.note_spacing * 0.5], note_size)))
-                self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(NoteBoard.ScoreBoxTexture, NoteBoard.NoteColours[note_lookup], [score_start_x, score_offset - staff.note_spacing * 0.5], score_size)))
+                self.note_box.append(gui.add_widget(textures.create_sprite_shape(NoteBoard.NoteColours[note_lookup], [note_start_x - Staff.NoteSpacing - 0.005, note_pos - Staff.NoteSpacing * 0.5], note_size)))
+                self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(NoteBoard.ScoreBoxTexture, NoteBoard.NoteColours[note_lookup], [score_start_x, score_pos - Staff.NoteSpacing * 0.5], score_size)))
             else:
-                self.note_box.append(gui.add_widget(textures.create_sprite_shape(NoteBoard.NoteColours[note_lookup], [note_start_x, note_offset], note_size)))
-                self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(NoteBoard.ScoreBoxTexture, NoteBoard.NoteColours[note_lookup], [score_start_x, score_offset], score_size)))
+                self.note_box.append(gui.add_widget(textures.create_sprite_shape(NoteBoard.NoteColours[note_lookup], [note_start_x, note_pos], note_size)))
+                self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(NoteBoard.ScoreBoxTexture, NoteBoard.NoteColours[note_lookup], [score_start_x, score_pos], score_size)))
             
-            self.note_positions.append(note_pos)
+            self.note_positions[note] = note_pos
             
             if not black_key:
                 tone_count += 1
 
     def get_note_positions(self):
+        """:return: A dictionary of absolute note Y positions keyed by MIDI note id centered in the staff"""
         return self.note_positions
 
     def set_score(self, note: int):
-        score_id = note - self.origin_note
+        score_id = note - NoteBoard.OriginNote
         if score_id >= 0 and score_id < self.num_notes:
             self.score_highlight[score_id] = 1.0
 
-    def set_note(self, note: int):
-        highlight_id = note - self.origin_note
+    def note_on(self, note: int):
+        self.playing_notes[note] = True
+        highlight_id = note - NoteBoard.OriginNote
         self.note_highlight[highlight_id] = 1.0
+    
+    def note_off(self, note: int):
+        del self.playing_notes[note]
+
+    def get_playing_notes(self):
+        return self.playing_notes
 
     def get_scored_notes(self):
         """Score points for any score box that is highlighted while a note is lit up"""
 
-        scored = False
-        scored_notes = zip(self.note_highlight, self.score_highlight)
-        for n, s in scored_notes:
+        scored_notes = {}
+        for i, (n, s) in enumerate(zip(self.note_highlight, self.score_highlight)):
             if n >= 1.0 and s >= 1.0:
-                scored = True
+                scored_notes[i] = True
 
-        return scored, scored_notes
+        return scored_notes
     
     def draw(self, dt: float):
-        """Pull the scoring box alpha down to 0"""
+        """Pull the playing note and scoring box alpha down to 0"""
 
         for i in range(self.num_notes):
             self.note_box[i].sprite.set_alpha(self.note_highlight[i])

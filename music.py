@@ -29,6 +29,7 @@ class Music:
         self.note_positions = note_positions
         self.notes = Notes(graphics, font, staff, note_positions, self.key_signature)
         self.keys = {}
+        self.backing_track = []
         absolute_time = 0
         for id, track in enumerate(self.mid.tracks):
             for msg in track:
@@ -57,6 +58,8 @@ class Music:
 
                                 self.notes.add(msg.note, time_in_32s, length_in_32s)
                                 self.keys.pop(msg.note)
+                    else: 
+                        self.backing_track.append(msg)
 
         self.notes.add_rests()
 

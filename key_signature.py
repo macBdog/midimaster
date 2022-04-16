@@ -38,12 +38,12 @@ class KeySignature:
         hspacing = 0.056
         acc_size = 90
         acc_col = [0.23, 0.23, 0.23, 0.7]
-        draw_pos = [staff.ref_note_pos[0] - (staff.width * 0.5) + 0.15, staff.ref_note_pos[1] + 0.036]
+        draw_pos_x = staff.pos[0] - (staff.width * 0.5) + 0.15
                         
         def draw_key_table(notes, character):
             num_notes = len(notes)
             draw_count = 0
-            acc_pos = draw_pos
+            acc_pos_x = draw_pos_x
 
             if num_notes == 1:
                 draw_index = 0
@@ -54,12 +54,12 @@ class KeySignature:
                 acc = notes[draw_index]
                 if acc + 12 < len(note_positions) - 1:
                     acc += 12
-                font.draw(character, acc_size, [acc_pos[0], acc_pos[1] + note_positions[acc]], acc_col)
+                font.draw(character, acc_size, [acc_pos_x, note_positions[acc]], acc_col)
                 draw_count += 1
-                acc_pos[0] += hspacing
+                acc_pos_x += hspacing
                 if draw_count % 2 == 0:
                     draw_index -= 3
-                    acc_pos[0] -= hspacing * 1.333
+                    acc_pos_x -= hspacing * 1.333
                 else:
                     draw_index += 1
 

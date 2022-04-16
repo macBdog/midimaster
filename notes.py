@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from texture import *
 from graphics import *
 from font import *
@@ -26,8 +28,33 @@ class Note():
     DottedChar = '.'
 
     @staticmethod
+    def default_note():
+        return 0
+
+    NoteLineLookupUnder = defaultdict(default_note)
+    NoteLineLookupOver = defaultdict(default_note)
+    NoteLineLookupUnder.update({
+        60: 1,
+        59: 1,
+        58: 1,
+        57: 2,
+        56: 2,
+        55: 2,
+        54: 3,
+        53: 3,
+        52: 3,
+        51: 3,
+        50: 4,
+        49: 4, 
+    })
+    NoteLineLookupOver.update({
+        80: 1,
+        81: 1,
+    })
+
+    @staticmethod
     def get_quantized_length(note_length):
-        for i, k in enumerate(Note.NoteCharacters):
+        for _, k in enumerate(Note.NoteCharacters):
             if note_length >= k:
                 remainder = note_length - k
                 dotted = remainder >= k / 2
@@ -60,15 +87,22 @@ class NoteSprite():
     def recycle(self):
         self.note_id = -1
         
-    def draw(self, music_time: float, note_width: float, origin_note_x: int, notes_on: dict):
+    def draw(self, music_time: float, note_width: float, ref_pos: list, notes_on: dict):
         """Draw a note and it's associated accents, accidentals and dots.
         :return True if the note can be reassigned after drawning.
         """
         if self.note_id >= 0:
             if self.time - music_time < 32 * 4:
-                note_time_offset = 0.95 # Beat one of the bar starts after the barline
-                note_pos = [origin_note_x - note_time_offset + ((self.time - music_time) * note_width), self.pitch_pos + 0.0125]
+                note_pos = [ref_pos[0] - ((self.time - music_time) * note_width), self.pitch_pos - 0.063]
                 note_col = [0.1, 0.1, 0.1, 1.0]
+
+                note_lookup = self.note
+
+                for i in range(Note.NoteLineLookupUnder[note_lookup]):
+                    self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + 0.01 - (i * Staff.NoteSpacing * 2)], note_col)
+
+                for i in range(Note.NoteLineLookupOver[note_lookup]):
+                    self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)
                 
                 if self.accidental is not None:
                     self.font.draw(self.accidental, 72, [note_pos[0] - 0.02, note_pos[1]], note_col)
@@ -108,6 +142,7 @@ class Notes:
         self.key_signature = key_signature
         self.note_positions = note_positions
         self.staff = staff
+        self.ref_c4_pos = [staff.pos[0] - (staff.width * 0.5), note_positions[60]]
         self.font = font
         self.notes_on = {}
 
@@ -153,7 +188,11 @@ class Notes:
         self.notes_on = {}
 
     def add(self, pitch: int, time: int, length: int):
-        self.notes.append(Note(pitch, time, length))
+        # Don't display notes that cannot be played
+        if pitch in self.note_positions:
+            self.notes.append(Note(pitch, time, length))
+        elif GameSettings.dev_mode:
+            print(f"Ignoring a note that is out of playable range: {pitch}") 
 
         # Automatically assign the first 32 notes that are added from the music
         if self.note_pool_offset < self.note_pool_size - 1:
@@ -217,28 +256,24 @@ class Notes:
             note_lookup, accidental = self.key_signature.get_accidental(note.note, self.prev_note, [])
             self.prev_note = note_lookup
 
-            note_diff = self.note_positions[note_lookup % 12]
-            num_octaves = (note.note - self.staff.ref_note) // 12
-            per_octave = self.note_positions[12]
-            pitch_diff = -note_diff - (num_octaves * per_octave)
-
+            note_pos = self.note_positions[note_lookup]
             quantized_length, dotted = Note.get_quantized_length(note.length)
-            note_sprite.assign(self.notes_offset, note.note, note.time, note.length, self.staff.ref_note_pos[1] - pitch_diff, Note.NoteCharacters[quantized_length], accidental, dotted)
+            note_sprite.assign(self.notes_offset, note.note, note.time, note.length, note_pos, Note.NoteCharacters[quantized_length], accidental, dotted)
             self.notes_offset += 1
-            
+        
+
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
         """ Draw and update the bar lines and all notes in the pool.
         Return a dictionary keyed on note numbers with value of the end music time note length."""
 
         # Draw a recycled list of barlines moving from right to left
         for i in range(self.num_barlines):
-            bar_start = self.staff.ref_note_pos[0] - 0.92
+            bar_start = self.ref_c4_pos[0]
             rel_time = self.bartimes[i] - music_time
             self.barlines[i].pos[0] = bar_start + (rel_time * note_width)
             self.barlines[i].pos[1] = self.staff.pos[1] + 0.25           
             
-            if rel_time > 6:
-                self.barlines[i].draw()
+            self.barlines[i].draw()
 
             if self.bartimes[i] < music_time:   
                 self.bartimes[i] += self.num_barlines * 32
@@ -246,7 +281,7 @@ class Notes:
         # Draw all the notes then rests in the pools
         free_note_index = -1
         for i in range(len(self.note_pool)):
-            if self.note_pool[i].draw(music_time, note_width, self.staff.ref_note_pos[0], self.notes_on):
+            if self.note_pool[i].draw(music_time, note_width, self.ref_c4_pos, self.notes_on):
                 free_note_index = i
         
         if free_note_index >= 0:
@@ -254,7 +289,7 @@ class Notes:
 
         free_rest_index = -1
         for i in range(len(self.rest_pool)):
-            if self.rest_pool[i].draw(music_time, note_width, self.staff.ref_note_pos[0], {}):
+            if self.rest_pool[i].draw(music_time, note_width, self.ref_c4_pos, {}):
                 free_rest_index = i
 
         if free_rest_index >= 0:
