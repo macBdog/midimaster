@@ -99,15 +99,15 @@ class NoteBoard:
     def get_playing_notes(self):
         return self.playing_notes
 
-    def get_scored_notes(self):
-        """Score points for any score box that is highlighted while a note is lit up"""
+    def is_scoring(self):
+        """Are there notes playing in the music and the input at the same time.
+        :return: bool True if matching noteboard and scoreboard id of simultaneously held notes."""
 
-        scored_notes = {}
-        for i, (n, s) in enumerate(zip(self.note_highlight, self.score_highlight)):
+        for _, (n, s) in enumerate(zip(self.note_highlight, self.score_highlight)):
             if n >= 1.0 and s >= 1.0:
-                scored_notes[i] = True
+                return True
 
-        return scored_notes
+        return False
     
     def draw(self, dt: float):
         """Pull the playing note and scoring box alpha down to 0"""

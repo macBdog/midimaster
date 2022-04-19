@@ -4,6 +4,6 @@
 1. Temporal accidentals
 2. Joining of adjacent semiquavers
 3. Time signatures
-4. Gui hierarchy
-5. Device selection
-6. Note length animation bar
+4. Device selection
+5. Note length animation bar
+6. Song selection

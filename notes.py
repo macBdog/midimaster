@@ -93,7 +93,7 @@ class NoteSprite():
         """
         if self.note_id >= 0:
             if self.time - music_time < 32 * 4:
-                note_pos = [ref_pos[0] - ((self.time - music_time) * note_width), self.pitch_pos - 0.063]
+                note_pos = [ref_pos[0] + ((self.time - music_time) * note_width), self.pitch_pos - 0.063]
                 note_col = [0.1, 0.1, 0.1, 1.0]
 
                 note_lookup = self.note
@@ -105,7 +105,7 @@ class NoteSprite():
                     self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)
                 
                 if self.accidental is not None:
-                    self.font.draw(self.accidental, 72, [note_pos[0] - 0.02, note_pos[1]], note_col)
+                    self.font.draw(self.accidental, 82, [note_pos[0] - 0.02, note_pos[1]], note_col)
 
                 if self.dotted:
                     self.font.draw(Note.DottedChar, 72, [note_pos[0] + 0.12, note_pos[1] + 0.035], note_col)

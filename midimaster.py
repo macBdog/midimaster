@@ -35,13 +35,17 @@ class MidiMaster(Game):
         self.name = "MidiMaster"
         self.note_width_32nd = 0.03
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
-        self.notes_down = {}
-        self.midi_notes = {}
-        self.score = 0
-        self.music_time = 0.0
-        self.music_running = False
         self.mode = MusicMode.PAUSE_AND_LEARN
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
+        self.reset()
+
+    def reset(self):
+        self.score = 0
+        self.music_time = 0.0
+        self.notes_down = {}
+        self.midi_notes = {}
+        self.scored_notes = {}
+        self.music_running = False
 
     def prepare(self):
         super().prepare()
@@ -103,8 +107,15 @@ class MidiMaster(Game):
         for message in self.devices.output_messages:
             if message.type == 'note_on':
                 self.notes_down[message.note] = 1.0
+
+                if self.mode == MusicMode.PAUSE_AND_LEARN:
+                    if message.note in self.scored_notes:
+                        time_diff = self.music_time - self.scored_notes[message.note]
+                        self.score += max(10-time_diff, 0)
+                        del self.scored_notes[message.note]
+
             elif message.type == 'note_off':
-                self.notes_down[message.note] = 0.0
+                del self.notes_down[message.note]
             
         # Light up score box for any held note
         for note, velocity in self.notes_down.items():
@@ -135,10 +146,11 @@ class MidiMaster(Game):
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:
-                    if music_notes[k] < self.music_time:
+                    if self.music_time >= music_notes[k]:
                         music_notes_off[k] = True
-                elif music_notes[k] >= self.music_time:   
+                else:
                     self.midi_notes[k] = music_notes[k]
+                    self.scored_notes[k] = self.music_time
                     new_note_on = Message('note_on')
                     new_note_on.note = k
                     new_note_on.velocity = 100
@@ -146,6 +158,7 @@ class MidiMaster(Game):
 
             # Send note off messages for all the notes in the music
             for k in music_notes_off:
+                del music_notes[k]
                 self.noteboard.note_off(k)
                 new_note_off = Message('note_off')
                 new_note_off.note = k
@@ -154,22 +167,15 @@ class MidiMaster(Game):
             self.profile.end()
 
             self.profile.begin("scoring")
-            
-            scored_notes = self.noteboard.get_scored_notes()
-            num_scored_notes = len(scored_notes)
-
             if self.mode == MusicMode.PERFORMANCE:
-                if num_scored_notes > 0:
+                if self.noteboard.is_scoring():
                     self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <=3]
                     self.score = self.score + 10 * self.dt
             elif self.mode == MusicMode.PAUSE_AND_LEARN:
-                playing_notes = self.noteboard.get_playing_notes()
-                num_playing_notes = len(playing_notes)
-                if self.music_running:
-                    if num_playing_notes > num_scored_notes:
-                        self.music_time -= music_time_advance
+                if len(self.scored_notes) > 0:
+                    self.music_time -= music_time_advance
 
-            # Highlight score boxes
+            # Highlight staff background to show score
             self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
             self.note_bg_top.sprite.set_colour(self.note_correct_colour)
             self.noteboard.draw(dt)
@@ -188,7 +194,6 @@ class MidiMaster(Game):
         if GameSettings.dev_mode:
             cursor_pos = self.input.cursor.pos
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"music time: {math.floor(self.music_time)}", 14, [0.35, 0.55], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
         self.profile.end()
 
@@ -210,8 +215,7 @@ class MidiMaster(Game):
             self.music_running = False
 
         def stop_rewind(self):
-            self.music_running = False
-            self.music_time = 0
+            self.reset()
             self.music.reset()
 
         playback_button_size = (0.15, 0.125)
