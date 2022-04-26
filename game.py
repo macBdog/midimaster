@@ -1,6 +1,6 @@
 import glfw
 from graphics import Graphics
-from input import Input, InputActionKey, InputMethod
+from input import Input, InputActionKey, InputMethod, InputActionModifier
 from texture import *
 import time
 from settings import GameSettings
@@ -45,8 +45,8 @@ class Game:
         self.input = Input(self.window, InputMethod.KEYBOARD)
         self.profile = Profile()
 
-        self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, self.end)
-        self.input.add_key_mapping(283, InputActionKey.ACTION_KEYDOWN, self.profile.capture_next_frame)
+        self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, self.end)
+        self.input.add_key_mapping(283, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, self.profile.capture_next_frame)
 
         glViewport(0, 0, self.window_width, self.window_height)
         glClearColor(0.0, 0.0, 0.0, 1.0)    

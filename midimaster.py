@@ -1,6 +1,7 @@
 import math
 from gui import Gui
-from input import InputActionKey
+from input import InputActionKey, InputActionModifier
+from key_signature import KeySignature
 from widget import AlignX
 from widget import AlignY
 from animation import Animation
@@ -88,7 +89,7 @@ class MidiMaster(Game):
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "test.mid"), 1)
+        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "aint-no-sunshine.mid"), 1)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -246,11 +247,11 @@ class MidiMaster(Game):
         def music_pause():
             self.music_running = not self.music_running
 
-        self.input.add_key_mapping(32, InputActionKey.ACTION_KEYDOWN, music_pause)          # space for Pause on keyup
-        self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, note_width_inc)       # + Add more space in a bar
-        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, note_width_dec)       # - Add less space in a bar
-        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYREPEAT, music_time_back)   # -> Manually advance forward in time
-        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYREPEAT, music_time_fwd)    # -> Manually advance backwards in time
+        self.input.add_key_mapping(32, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, music_pause)          # space for Pause on keyup
+        self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, note_width_inc)       # + Add more space in a bar
+        self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, note_width_dec)       # - Add less space in a bar
+        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_back)   # -> Manually advance forward in time
+        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_fwd)    # -> Manually advance backwards in time
 
         def create_key_note(note_val:int, note_on:bool):
             note_name = 'note_on'
@@ -267,19 +268,24 @@ class MidiMaster(Game):
         def create_key_note_off(note_val:int):
             create_key_note(note_val, False)
 
-        def add_note_key_mapping(key_val, note_val):
-            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, create_key_note_on, note_val)          
-            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, create_key_note_off, note_val)
+        def add_note_key_mapping(key_val, note_val, modifier=InputActionModifier.NONE):
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, modifier, create_key_note_on, note_val)          
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, modifier, create_key_note_off, note_val)
 
-        # Playing notes with the keyboard note names. TODO: Shift for one accidental (#) up, Ctrl for flat (b)!
-        if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES: 
-            add_note_key_mapping(67, NoteBoard.OriginNote)       # C
-            add_note_key_mapping(68, NoteBoard.OriginNote + 2)   # D
-            add_note_key_mapping(69, NoteBoard.OriginNote + 4)   # E
-            add_note_key_mapping(70, NoteBoard.OriginNote + 5)   # F
-            add_note_key_mapping(71, NoteBoard.OriginNote + 7)   # G
-            add_note_key_mapping(65, NoteBoard.OriginNote + 9)   # A
-            add_note_key_mapping(66, NoteBoard.OriginNote + 11)  # B
+        # Playing notes with the keyboard note names
+        if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES:
+            note_keycode = 0
+            keymap = [67, 68, 69, 70, 71, 65, 66] # CDEFGAB
+            for i in range(NoteBoard.NumNotes):
+                note = NoteBoard.OriginNote + i
+                note_lookup = note % 12
+                if note_lookup in KeySignature.SharpsAndFlats:
+                    add_note_key_mapping(keymap[note_keycode % 7], note + 1, InputActionModifier.LCTRL)
+                    add_note_key_mapping(keymap[note_keycode % 7], note - 1, InputActionModifier.LSHIFT)
+                else:
+                    add_note_key_mapping(keymap[note_keycode % 7], note)
+                    note_keycode += 1
+
         elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
             add_note_key_mapping(81, NoteBoard.OriginNote)       # C            
             add_note_key_mapping(50, NoteBoard.OriginNote + 1)   # Db

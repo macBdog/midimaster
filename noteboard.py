@@ -9,6 +9,7 @@ class NoteBoard:
        """
     ScoreBoxTexture = "score_zone.png"
     OriginNote = 48 # C3
+    NumNotes = 36
     BaseAlphaNote = 0.35
     BaseAlphaScore = 0.33
     NoteColours = [[31, 130, 180, 1.0],    [166, 206, 227, 1.0],    [51, 166, 44, 1.0],  [178, 223, 138, 1.0], # C, Db, D, Eb 
@@ -17,7 +18,6 @@ class NoteBoard:
 
     def __init__(self):
         NoteBoard.NoteColours = [[i / 255 for i in j] for j in NoteBoard.NoteColours]
-        self.num_notes = 36
         
         # Note box and highlights are the boxes that light up indicating what note should be played when a note hits it
         self.note_box = []
@@ -35,7 +35,7 @@ class NoteBoard:
         note_start_x = staff.pos[0] - (staff.width * 0.5) - 0.1
         note_start_y = staff.pos[1] - Staff.NoteSpacing * (12 - 2)
         score_start_x = note_start_x + 0.071
-        for i in range(self.num_notes):
+        for i in range(NoteBoard.NumNotes):
             note_height = Staff.NoteSpacing
             score_height = Staff.NoteSpacing
             note = NoteBoard.OriginNote + i
@@ -85,7 +85,7 @@ class NoteBoard:
 
     def set_score(self, note: int):
         score_id = note - NoteBoard.OriginNote
-        if score_id >= 0 and score_id < self.num_notes:
+        if score_id >= 0 and score_id < NoteBoard.NumNotes:
             self.score_highlight[score_id] = 1.0
 
     def note_on(self, note: int):
@@ -112,7 +112,7 @@ class NoteBoard:
     def draw(self, dt: float):
         """Pull the playing note and scoring box alpha down to 0"""
 
-        for i in range(self.num_notes):
+        for i in range(NoteBoard.NumNotes):
             self.note_box[i].sprite.set_alpha(self.note_highlight[i])
             self.score_box[i].sprite.set_alpha(self.score_highlight[i])
             self.note_highlight[i] = max(NoteBoard.BaseAlphaNote, self.note_highlight[i] - 0.9 * dt)

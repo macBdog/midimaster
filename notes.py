@@ -108,7 +108,7 @@ class NoteSprite():
                     self.font.draw(self.accidental, 82, [note_pos[0] - 0.02, note_pos[1]], note_col)
 
                 if self.dotted:
-                    self.font.draw(Note.DottedChar, 72, [note_pos[0] + 0.12, note_pos[1] + 0.035], note_col)
+                    self.font.draw(Note.DottedChar, 72, [note_pos[0] + 0.13, note_pos[1] + 0.035], note_col)
 
                 self.font.draw(self.note_char, 158, note_pos, note_col)
                 

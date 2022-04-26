@@ -8,6 +8,14 @@ class InputActionKey(Enum):
     ACTION_KEYDOWN = 1
     ACTION_KEYREPEAT = 2
 
+class InputActionModifier(Enum):
+    NONE = 0
+    LSHIFT = 340
+    LCTRL = 341
+    LALT = 342
+    RSHIFT = 344
+    RCTRL = 345
+    RALT = 346
 class InputMethod(Enum):
     KEYBOARD = 1
     JOYSTICK = 2
@@ -27,9 +35,13 @@ class Input():
         glfw.set_mouse_button_callback(window, self.handle_mouse_button)
         glfw.set_cursor_pos_callback(window, self.handle_cursor_update)
 
-    def add_key_mapping(self, key: int, action:InputActionKey, func, args=None):
+    def add_key_mapping(self, key: int, action:InputActionKey, modifier: InputActionModifier, func, args=None):
+        key_action_pair = (key, action, modifier)
+        if key_action_pair in self.key_mapping:
+            self.key_mapping[key_action_pair].extend([func, args])
+        else:
             self.key_mapping.update({
-                    (key, action): [func, args]
+                    key_action_pair: [func, args]
                 })
 
     def add_joystick_mapping(self, button: int, func, args=None):
@@ -66,11 +78,16 @@ class Input():
             mapping = map[0]
             map_key = mapping[0]
             map_action = mapping[1]
-            map_function = map[1]
-            if map_key == key and (map_action.value == action or map_action == InputActionKey.ACTION_KEYREPEAT):
-                func = map_function[0]
-                args = map_function[1]
-                if args is None:
-                    func()
-                else:
-                    func(args)
+            map_modifier = mapping[2]
+            func_args = map[1]
+            num_mappings = len(func_args) // 2
+            for i in range(num_mappings):
+                if (map_key == key and 
+                    (map_action.value == action or map_action == InputActionKey.ACTION_KEYREPEAT) and
+                    (map_modifier == InputActionModifier.NONE or InputActionModifier.NONE.value in self.keys_down)):
+                    func = func_args[i * 2]
+                    args = func_args[i * 2 + 1]
+                    if args is None:
+                        func()
+                    else:
+                        func(args)
