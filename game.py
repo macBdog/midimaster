@@ -12,7 +12,6 @@ class Game:
     """A generic interactive frame interpolation loop without connection to specific logic."""
 
     def __init__(self):
-        GameSettings.dev_mode = True
         self.name = "game"
         self.running = False
         self.window_width = 1280
