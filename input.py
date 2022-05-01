@@ -87,7 +87,7 @@ class Input:
             map_action = mapping[1]
             map_modifier = mapping[2]
             matches_action = map_action.value == action or map_action == InputActionKey.ACTION_KEYREPEAT
-            matches_modifier = map_modifier.value in self.keys_down or (map_modifier == InputActionModifier.NONE and no_mods_down)
+            matches_modifier = (map_modifier.value in self.keys_down and self.keys_down[map_modifier.value] == True) or (map_modifier == InputActionModifier.NONE and no_mods_down)
             if map_key == key and matches_action and matches_modifier:
                 func_args = map[1]
                 num_mappings = len(func_args) // 2

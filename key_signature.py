@@ -11,6 +11,7 @@ class KeySignature:
         -1: "b" 
     }
     LookupTableKeyToIndex = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 8, 'A': 9, 'B': 11}
+    OriginNote = 60
 
     def __init__(self):
         self.set('C')
@@ -51,9 +52,7 @@ class KeySignature:
                 draw_index = num_notes - 2
 
             while draw_index >= 0 and draw_index < num_notes:
-                acc = notes[draw_index]
-                if acc + 12 < len(note_positions) - 1:
-                    acc += 12
+                acc = KeySignature.OriginNote + notes[draw_index]
                 font.draw(character, acc_size, [acc_pos_x, note_positions[acc]], acc_col)
                 draw_count += 1
                 acc_pos_x += hspacing

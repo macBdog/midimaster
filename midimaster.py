@@ -200,7 +200,7 @@ class MidiMaster(Game):
             self.note_correct_colour = [max(0.65, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
 
             # Show the score on top of everything
-            self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0], self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
+            self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
             self.profile.end()
 
         self.profile.begin("dev_mode")
@@ -293,8 +293,8 @@ class MidiMaster(Game):
                 note = NoteBoard.OriginNote + i
                 note_lookup = note % 12
                 if note_lookup in KeySignature.SharpsAndFlats:
-                    add_note_key_mapping(keymap[note_keycode % 7], note - 1, InputActionModifier.LCTRL)
-                    add_note_key_mapping(keymap[note_keycode % 7], note + 1, InputActionModifier.LSHIFT)
+                    add_note_key_mapping(keymap[(note_keycode - 1) % 7], note, InputActionModifier.LSHIFT)  # Shift for sharp (#)
+                    add_note_key_mapping(keymap[note_keycode % 7], note, InputActionModifier.LCTRL)  # Ctrl for flat (b)
                 else:
                     add_note_key_mapping(keymap[note_keycode % 7], note)
                     note_keycode += 1

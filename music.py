@@ -34,9 +34,9 @@ class Music:
         self.notes = Notes(graphics, font, staff, note_positions, self.key_signature)
         self.keys = {}
         self.track_names = {}
-        self.backing_track = []
-        self.backing_index = 0
-        self.backing_time = 0
+        self.backing_tracks = {}
+        self.backing_index = {}
+        self.backing_time = {}
 
         absolute_time = 0
         for id, track in enumerate(self.mid.tracks):
@@ -68,7 +68,13 @@ class Music:
                                 absolute_time += msg.time
                 else:
                     if not isinstance(msg, MetaMessage):
-                        self.backing_track.append(msg)
+                        if id in self.backing_tracks:
+                            self.backing_tracks[id].append(msg)
+                        else:
+                            self.backing_tracks[id] = []
+                            self.backing_index[id] = 0
+                            self.backing_time[id] = 0.0
+                            self.backing_tracks[id].append(msg)
 
         self.notes.add_rests()
 
@@ -76,25 +82,36 @@ class Music:
         """Restore all the notes in the music to the state just after loading."""
 
         self.notes.reset()
-        self.backing_index = 0
-        self.backing_time = 0.0
+        for track in self.backing_index:
+            track = 0
+        for track in self.backing_time:
+            track = 0.0
 
     def update(self, dt: float, music_time: float, devices: MidiDevices):
         """Play MIDI messages that are not for interactive scoring by the player."""
 
-        backing_track_len = len(self.backing_track)
-        if backing_track_len == 0:
-            return
-
         music_time_in_ticks = (music_time / Music.SDQNotesPerBeat) * self.ticks_per_beat
-        next_event = self.backing_track[self.backing_index]
-        while self.backing_time <= music_time_in_ticks:
-            devices.output_port.send(next_event)
-            self.backing_index += 1
-            if self.backing_index >= backing_track_len:
-                break
-            next_event = self.backing_track[self.backing_index]
-            self.backing_time += next_event.time
+
+        def update_backing_track(id: int, ticks_time: float):
+            b_len = len(self.backing_tracks[id])
+            b_index = self.backing_index[id]
+            b_time = self.backing_time[id]
+            if b_len == 0 or b_index >= b_len:
+                return
+
+            next_event = self.backing_tracks[id][b_index]
+            while b_time <= ticks_time:
+                devices.output_port.send(next_event)
+                self.backing_index[id] += 1
+                b_index = self.backing_index[id]
+                if b_index >= b_len:
+                    break
+                next_event = self.backing_tracks[id][b_index]
+                self.backing_time[id] += next_event.time
+                b_time = self.backing_time[id]
+
+        for _, id in enumerate(self.backing_tracks):
+            update_backing_track(id, music_time_in_ticks)
 
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
         """Draw any parts of the scene that involve musical notation."""
