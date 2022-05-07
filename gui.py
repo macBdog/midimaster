@@ -2,10 +2,12 @@ from widget import Widget
 from texture import SpriteTexture
 from cursor import Cursor
 
+
 class Gui:
-    """Manager style functionality for a collection of widget classes. 
-        Also convenience functions for window handling."""
-    def __init__(self, window_width: int, window_height: int, name:str):
+    """Manager style functionality for a collection of widget classes.
+    Also convenience functions for window handling."""
+
+    def __init__(self, window_width: int, window_height: int, name: str):
         self.name = name
         self.width = window_width
         self.height = window_height
@@ -17,8 +19,8 @@ class Gui:
 
     def is_active(self):
         return self.active_draw, self.active_input
-        
-    def set_active(self, do_draw:bool, do_input:bool):
+
+    def set_active(self, do_draw: bool, do_input: bool):
         self.active_draw = do_draw
         self.active_input = do_input
 

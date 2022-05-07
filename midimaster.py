@@ -40,7 +40,7 @@ class MidiMaster(Game):
         self.name = "MidiMaster"
         self.note_width_32nd = 0.03
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
-        self.mode = MusicMode.PERFORMANCE
+        self.mode = MusicMode.PAUSE_AND_LEARN
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
         self.reset()
 
@@ -195,7 +195,7 @@ class MidiMaster(Game):
             self.noteboard.draw(dt)
             self.profile.end()
 
-            self.profile.begin("gui")
+            self.profile.begin("text")
             # Same with the note highlight background
             self.note_correct_colour = [max(0.65, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
 

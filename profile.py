@@ -1,6 +1,7 @@
 import functools
 import time
 
+
 class Profile:
     Frames = {}
     Capture = False
@@ -8,19 +9,26 @@ class Profile:
     QueuedFrame = 0
     CurFrameName = None
     CurFrameTime = 0
-    
+
     @staticmethod
     def capture_next_frame():
         Profile.QueuedFrame += 1
 
     @staticmethod
     def dump():
-        print("QnD Profile Report:")
+        title = "Profile Total"
+        pad = len(title) + 4
+        total_time_ms = 0.0
         for name in Profile.Frames:
-            print(f'{name}: {Profile.Frames[name] * 1000}')
+            total_time_ms += float(Profile.Frames[name]) * 1000
+        print(f"{title.ljust(pad)}: 100% - {round(total_time_ms, 3)}ms")
+        for name in Profile.Frames:
+            time_ms = Profile.Frames[name] * 1000
+            pct = (time_ms / total_time_ms) * 100
+            print(f"{name.ljust(pad)}: {round(pct, 0)}% - {round(time_ms, 3)}")
 
     @staticmethod
-    def update():    
+    def update():
         if Profile.QueuedFrame > Profile.CaptureFrame:
             if Profile.Capture:
                 Profile.CaptureFrame += 1
@@ -43,9 +51,11 @@ class Profile:
     def add_frame(name: str, start_time: float, end_time: float):
         if Profile.Capture:
             Profile.Frames[name] = end_time - start_time
-        
+
+
 def profile(func):
     """Store the runtime of a decorated function"""
+
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
         start_time = time.perf_counter()
@@ -53,4 +63,5 @@ def profile(func):
         end_time = time.perf_counter()
         Profile.add_frame(start_time, end_time, func.__name__)
         return value
+
     return wrapper_timer

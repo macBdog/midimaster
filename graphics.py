@@ -1,15 +1,16 @@
 from OpenGL.GL import *
-from OpenGL.GL import shaders;
+from OpenGL.GL import shaders
 
 import numpy
 
-class Graphics():
+
+class Graphics:
     def __init__(self):
-        self.indices = numpy.array([0,1,2,2,3,0], dtype = numpy.uint32)
+        self.indices = numpy.array([0, 1, 2, 2, 3, 0], dtype=numpy.uint32)
 
         vertex_shader_texture = """
-        #version 330
- 
+        #version 430
+
         in vec2 VertexPosition;
         in vec2 TexCoord;
         uniform vec2 Position;
@@ -24,21 +25,21 @@ class Graphics():
         """
 
         pixel_shader_texture = """
-        #version 330
- 
+        #version 430
+
         in vec2 OutTexCoord;     
         uniform sampler2D SamplerTex;
         uniform vec4 Colour;
         out vec4 outColour;
- 
+
         void main() 
         {
-           outColour = texture(SamplerTex, OutTexCoord) * Colour;
+            outColour = texture(SamplerTex, OutTexCoord) * Colour;
         }
         """
 
         vertex_shader_colour = """
-        #version 330
+        #version 430
  
         in vec2 VertexPosition;
         uniform vec2 Position;
@@ -51,7 +52,7 @@ class Graphics():
         """
 
         pixel_shader_colour = """
-        #version 330
+        #version 430
  
         uniform vec4 Colour;
         out vec4 outColour;
@@ -63,7 +64,7 @@ class Graphics():
         """
 
         vertex_shader_font = """
-        #version 330
+        #version 430
  
         in vec2 VertexPosition;
         in vec2 TexCoord;
@@ -81,7 +82,7 @@ class Graphics():
         """
 
         pixel_shader_font = """
-        #version 330
+        #version 430
  
         in vec2 OutTexCoord;     
         uniform sampler2D SamplerTex;
@@ -97,12 +98,14 @@ class Graphics():
         """
 
         # Compile multiple shaders for different purposes
-        self.shader_texture = OpenGL.GL.shaders.compileProgram( OpenGL.GL.shaders.compileShader(vertex_shader_texture, GL_VERTEX_SHADER),
-                                                                OpenGL.GL.shaders.compileShader(pixel_shader_texture, GL_FRAGMENT_SHADER))
+        self.shader_texture = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader_texture, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(pixel_shader_texture, GL_FRAGMENT_SHADER)
+        )
 
-        self.shader_colour = OpenGL.GL.shaders.compileProgram( OpenGL.GL.shaders.compileShader(vertex_shader_colour, GL_VERTEX_SHADER),
-                                                        OpenGL.GL.shaders.compileShader(pixel_shader_colour, GL_FRAGMENT_SHADER))
+        self.shader_colour = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader_colour, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(pixel_shader_colour, GL_FRAGMENT_SHADER)
+        )
 
-        self.shader_font = OpenGL.GL.shaders.compileProgram( OpenGL.GL.shaders.compileShader(vertex_shader_font, GL_VERTEX_SHADER),
-                                                                OpenGL.GL.shaders.compileShader(pixel_shader_font, GL_FRAGMENT_SHADER))
-
+        self.shader_font = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader_font, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(pixel_shader_font, GL_FRAGMENT_SHADER)
+        )
