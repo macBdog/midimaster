@@ -27,12 +27,8 @@ class Note():
     }
     DottedChar = '.'
 
-    @staticmethod
-    def default_note():
-        return 0
-
-    NoteLineLookupUnder = defaultdict(default_note)
-    NoteLineLookupOver = defaultdict(default_note)
+    NoteLineLookupUnder = defaultdict(lambda: 0)
+    NoteLineLookupOver = defaultdict(lambda: 0)
     NoteLineLookupUnder.update({
         60: 1,
         59: 1,

@@ -17,15 +17,20 @@ class Profile:
     @staticmethod
     def dump():
         title = "Profile Total"
-        pad = len(title) + 4
+        pad = len(title) + 8
         total_time_ms = 0.0
+        fill = '█'
         for name in Profile.Frames:
             total_time_ms += float(Profile.Frames[name]) * 1000
-        print(f"{title.ljust(pad)}: 100% - {round(total_time_ms, 3)}ms")
+        bar = fill * 100
+        trace = f"100% - {round(total_time_ms, 3)}ms"
+        print(f"{title.ljust(pad)}: {trace.ljust(pad)} {bar}")
         for name in Profile.Frames:
             time_ms = Profile.Frames[name] * 1000
             pct = (time_ms / total_time_ms) * 100
-            print(f"{name.ljust(pad)}: {round(pct, 0)}% - {round(time_ms, 3)}")
+            trace = f"{round(pct, 0)}% - {round(time_ms, 3)}ms"
+            bar = fill * int(pct)
+            print(f"{name.ljust(pad)}: {trace.ljust(pad)} {bar}")
 
     @staticmethod
     def update():

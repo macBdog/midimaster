@@ -98,7 +98,10 @@ class MidiMaster(Game):
         self.setup_input()
 
         # Read a midi file and load the notes
-        self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), os.path.join("music", "aint-no-sunshine.mid"), 1)
+        level = "test.mid"
+        level_path = os.path.join("music", level)
+        if os.path.exists(level_path):
+            self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), level_path, 1)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -123,6 +126,8 @@ class MidiMaster(Game):
                         time_diff = self.music_time - self.scored_notes[message.note]
                         self.score += max(10 - time_diff, 0)
                         del self.scored_notes[message.note]
+                        spawn_pos = [-0.9, self.noteboard.note_positions[message.note]]
+                        self.particles.spawn(16, 0.05, spawn_pos, [0.37, 0.82, 0.4, 1.0])
 
             elif message.type == "note_off":
                 del self.notes_down[message.note]
@@ -186,7 +191,7 @@ class MidiMaster(Game):
                     self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
                     self.score = self.score + 10 * self.dt
             elif self.mode == MusicMode.PAUSE_AND_LEARN:
-                if len(self.scored_notes) > 0:
+                if len(self.scored_notes) > 0 and self.music_running:
                     self.music_time -= music_time_advance
 
             # Highlight staff background to show score
