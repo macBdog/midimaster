@@ -95,7 +95,7 @@ class NoteSprite():
                 note_lookup = self.note
 
                 for i in range(Note.NoteLineLookupUnder[note_lookup]):
-                    self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + 0.01 - (i * Staff.NoteSpacing * 2)], note_col)
+                    self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + 0.02 - (i * Staff.NoteSpacing * 2)], note_col)
 
                 for i in range(Note.NoteLineLookupOver[note_lookup]):
                     self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)

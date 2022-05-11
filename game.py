@@ -6,7 +6,7 @@ import time
 from gui import Gui
 from profile import Profile
 from particles import Particles
-
+from settings import GameSettings
 
 class Game:
     """A generic interactive frame interpolation loop without connection to specific logic."""
@@ -55,7 +55,8 @@ class Game:
         glDepthFunc(GL_LEQUAL)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glfw.swap_interval(1)
+    
+        glfw.swap_interval(GameSettings.VSYNC)
 
         self.gui = Gui(self.window_width, self.window_height, "gui")
         self.gui.set_active(False, False)
