@@ -26,6 +26,7 @@ class Particles:
     };
 
     uniform float dt;
+    uniform float emitters[32];
     uniform vec2 emitter_positions[32];
     
     highp float rand(vec2 co)
@@ -46,8 +47,17 @@ class Particles:
         vec2 vel = velocities[i];
         float life = lifetimes[i];
 
-        life -= dt * 0.1;
-        pos += vec2(0.0, dt * 0.05);
+        life = max(0.0, life - dt) + emitters[e];
+        if (life <= 0.0)
+        {
+            pos = vec2(-999.0, -999.0);
+        }
+        else
+        {
+            pos = vec2(0.0, 0.0);
+        }
+
+        pos += vec2(0.0, 0.0);
 
         positions[i] = emitter_positions[e] + pos;
         lifetimes[i] = life;
@@ -94,7 +104,7 @@ class Particles:
         )
 
         self.dt_id = glGetUniformLocation(self.compute_shader, "dt")
-        #self.emitters_id = glGetUniformLocation(self.compute_shader, "emitters")
+        self.emitters_id = glGetUniformLocation(self.compute_shader, "emitters")
         self.emitter_positions_id = glGetUniformLocation(self.compute_shader, "emitter_positions")
 
         self.position_buffer = glGenBuffers(1)
@@ -128,8 +138,8 @@ class Particles:
 
         if emitter_id >= 0:
             epos_id = emitter_id * 2
-            self.emitter_positions[epos_id] = pos[0] * 0.01
-            self.emitter_positions[epos_id + 1] = pos[1] * 0.01
+            self.emitter_positions[epos_id] = pos[0]
+            self.emitter_positions[epos_id + 1] = pos[1]
         elif GameSettings.dev_mode:
             print(f"Particle system has run out of emitters!")
             
@@ -139,6 +149,7 @@ class Particles:
 
         glUseProgram(self.compute_shader)
         glUniform1f(self.dt_id, dt)
+        glUniform1fv(self.emitters_id, Particles.NumEmitters, self.emitters)
         glUniform2fv(self.emitter_positions_id, Particles.NumEmitters, self.emitter_positions)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, self.position_buffer)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, self.velocities_buffer)
