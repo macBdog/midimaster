@@ -1,5 +1,5 @@
 class GameSettings:
     """Game subsystems that need to read settings do so from this module."""
 
-    dev_mode = False
+    DEV_MODE = False
     VSYNC = 0

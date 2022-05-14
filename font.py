@@ -62,7 +62,7 @@ class Font():
         self.tex_height = 2048
         self.image_data = numpy.zeros((self.tex_width, self.tex_height), dtype=numpy.uint8)
 
-        if GameSettings.dev_mode:
+        if GameSettings.DEV_MODE:
             print(f"Building font atlas for {filename}: ", end='')
 
         # Blit font chars into the texture noting the individual char size and tex coords
@@ -89,10 +89,10 @@ class Font():
             if c == 32:
                 self.line_height = self.face.height * 2.75
 
-            if GameSettings.dev_mode:
+            if GameSettings.DEV_MODE:
                 print(chr(c), end='')
 
-        if GameSettings.dev_mode:
+        if GameSettings.DEV_MODE:
             print('')
 
         # Generate texture data

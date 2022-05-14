@@ -58,7 +58,7 @@ class Input:
         self.cursor.pos = [((xpos / window_size[0]) * 2.0) - 1.0, ((ypos / window_size[1]) * -2.0) + 1.0]
 
     def handle_mouse_button(self, window, button: int, action: int, mods: int):
-        if GameSettings.dev_mode:
+        if GameSettings.DEV_MODE:
             print(f"Mouse event log button[{button}], action[{action}], mods[{mods}]")
 
         # Update the state of each button
@@ -68,7 +68,7 @@ class Input:
             self.cursor.buttons[button] = False
 
     def handle_input_key(self, window, key: int, scancode: int, action: int, mods: int):
-        if GameSettings.dev_mode:
+        if GameSettings.DEV_MODE:
             print(f"Input event log key[{key}], scancode[{scancode}], action[{action}], mods[{mods}]")
 
         # Update the state of each key

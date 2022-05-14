@@ -42,7 +42,7 @@ class Game:
         self.graphics = Graphics()
         self.textures = TextureManager(texture_path, self.graphics)
         self.input = Input(self.window, InputMethod.KEYBOARD)
-        self.particles = Particles()
+        self.particles = Particles(self.graphics)
         self.profile = Profile()
 
         self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, self.end)
@@ -83,11 +83,11 @@ class Game:
             self.gui.draw(self.dt)
             self.profile.end()
 
+            self.update(self.dt)
+
             self.profile.begin("particles")
             self.particles.draw(self.dt)
             self.profile.end()
-
-            self.update(self.dt)
 
             glfw.swap_buffers(self.window)
             glfw.poll_events()

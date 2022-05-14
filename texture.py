@@ -10,9 +10,18 @@ class Texture:
     an image mapped onto it. Keeps hold of the image data and the
     ID represetnation in OpenGL."""
 
+    IMAGE_RANDOM_32x32 = numpy.array(numpy.random.rand(32 * 32), numpy.uint8)
+
     def __init__(self, texture_path: str):
-        self.image = Image.open(texture_path)
-        self.img_data = numpy.array(list(self.image.getdata()), numpy.uint8)
+        if os.path.exists(texture_path):
+            self.image = Image.open(texture_path)
+            self.width = self.image.width
+            self.height = self.image.height
+            self.img_data = numpy.array(list(self.image.getdata()), numpy.uint8)
+        else:
+            self.img_data = Texture.IMAGE_RANDOM_32x32
+            self.width = 32
+            self.height = 32
         self.texture_id = glGenTextures(1)
 
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
@@ -20,7 +29,7 @@ class Texture:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.image.width, self.image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.img_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.width, self.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.img_data)
 
 
 class Sprite:
@@ -38,7 +47,7 @@ class Sprite:
 
 
 class SpriteShape(Sprite):
-    def __init__(self, graphics: Graphics, colour: list, pos: list, size: list):
+    def __init__(self, graphics: Graphics, colour: list, pos: list, size: list, shader=None):
         Sprite.__init__(self, graphics, colour, pos, size)
 
         # Create array object
@@ -58,25 +67,30 @@ class SpriteShape(Sprite):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.indices, GL_STATIC_DRAW)
 
-        self.vertex_pos_id = glGetAttribLocation(graphics.shader_colour, "VertexPosition")
+        self.shader = self.graphics.shader_colour if shader is None else shader
+
+        self.vertex_pos_id = glGetAttribLocation(self.shader, "VertexPosition")
         glVertexAttribPointer(self.vertex_pos_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
         glEnableVertexAttribArray(self.vertex_pos_id)
 
-        self.colour_id = glGetUniformLocation(graphics.shader_colour, "Colour")
-        self.pos_id = glGetUniformLocation(graphics.shader_colour, "Position")
-        self.size_id = glGetUniformLocation(graphics.shader_colour, "Size")
+        self.colour_id = glGetUniformLocation(self.shader, "Colour")
+        self.pos_id = glGetUniformLocation(self.shader, "Position")
+        self.size_id = glGetUniformLocation(self.shader, "Size")
 
-    def draw(self):
-        glUseProgram(self.graphics.shader_colour)
+
+    def draw(self, custom_uniforms_func=None):
+        glUseProgram(self.shader)
         glUniform4f(self.colour_id, self.colour[0], self.colour[1], self.colour[2], self.colour[3])
         glUniform2f(self.pos_id, self.pos[0], self.pos[1])
         glUniform2f(self.size_id, self.size[0], self.size[1])
+        if custom_uniforms_func is not None:
+            custom_uniforms_func()
         glBindVertexArray(self.VAO)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
 
 class SpriteTexture(Sprite):
-    def __init__(self, graphics: Graphics, tex: Texture, colour: list, pos: tuple, size: tuple):
+    def __init__(self, graphics: Graphics, tex: Texture, colour: list, pos: tuple, size: tuple, shader=None):
         Sprite.__init__(self, graphics, colour, pos, size)
         self.texture = tex
 
@@ -97,23 +111,27 @@ class SpriteTexture(Sprite):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.indices, GL_STATIC_DRAW)
 
-        self.vertex_pos_id = glGetAttribLocation(graphics.shader_texture, "VertexPosition")
+        self.shader = self.graphics.shader_texture if shader is None else shader
+
+        self.vertex_pos_id = glGetAttribLocation(self.shader, "VertexPosition")
         glVertexAttribPointer(self.vertex_pos_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
         glEnableVertexAttribArray(self.vertex_pos_id)
 
-        self.tex_coord_id = glGetAttribLocation(graphics.shader_texture, "TexCoord")
+        self.tex_coord_id = glGetAttribLocation(self.shader, "TexCoord")
         glVertexAttribPointer(self.tex_coord_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(32))
         glEnableVertexAttribArray(self.tex_coord_id)
 
-        self.colour_id = glGetUniformLocation(graphics.shader_texture, "Colour")
-        self.pos_id = glGetUniformLocation(graphics.shader_texture, "Position")
-        self.size_id = glGetUniformLocation(graphics.shader_texture, "Size")
+        self.colour_id = glGetUniformLocation(self.shader, "Colour")
+        self.pos_id = glGetUniformLocation(self.shader, "Position")
+        self.size_id = glGetUniformLocation(self.shader, "Size")
 
-    def draw(self):
-        glUseProgram(self.graphics.shader_texture)
+    def draw(self, custom_uniforms_func=None):
+        glUseProgram(self.shader)
         glUniform4f(self.colour_id, self.colour[0], self.colour[1], self.colour[2], self.colour[3])
         glUniform2f(self.pos_id, self.pos[0], self.pos[1])
         glUniform2f(self.size_id, self.size[0], self.size[1])
+        if custom_uniforms_func is not None:
+            custom_uniforms_func()
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.texture.texture_id)
         glBindVertexArray(self.VAO)

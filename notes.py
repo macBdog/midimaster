@@ -187,7 +187,7 @@ class Notes:
         # Don't display notes that cannot be played
         if pitch in self.note_positions:
             self.notes.append(Note(pitch, time, length))
-        elif GameSettings.dev_mode:
+        elif GameSettings.DEV_MODE:
             print(f"Ignoring a note that is out of playable range: {pitch}") 
 
         # Automatically assign the first 32 notes that are added from the music

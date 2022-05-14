@@ -65,7 +65,7 @@ class MidiMaster(Game):
 
         # Create a title image and fade it in
         title = gui_splash.add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", (0, 0), (0.6, 0.6)))
-        title.animation = Animation(AnimType.InOutSmooth, GameSettings.dev_mode and 0.15 or 2.0)
+        title.animation = Animation(AnimType.InOutSmooth, GameSettings.DEV_MODE and 0.15 or 2.0)
 
         # Create the holder UI for the game play elements
         self.gui_game = Gui(self.window_width, self.window_height, "game_screen")
@@ -126,7 +126,7 @@ class MidiMaster(Game):
                         time_diff = self.music_time - self.scored_notes[message.note]
                         self.score += max(10 - time_diff, 0)
                         del self.scored_notes[message.note]
-                        spawn_pos = [-0.9, self.noteboard.note_positions[message.note]]
+                        spawn_pos = [-0.75, self.noteboard.note_positions[message.note]]
                         self.particles.spawn(16, 0.05, spawn_pos, [0.37, 0.82, 0.4, 1.0])
 
             elif message.type == "note_off":
@@ -210,7 +210,7 @@ class MidiMaster(Game):
 
         self.profile.begin("dev_mode")
         # Show developer stats
-        if GameSettings.dev_mode:
+        if GameSettings.DEV_MODE:
             cursor_pos = self.input.cursor.pos
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
@@ -324,7 +324,7 @@ def main():
     """Entry point that creates the MidiMaster object only."""
 
     if len(sys.argv) > 1:
-        GameSettings.dev_mode = sys.argv[1].find("debug") or sys.argv[1].find("dev")
+        GameSettings.DEV_MODE = sys.argv[1].find("debug") or sys.argv[1].find("dev")
 
     mm = MidiMaster()
     mm.prepare()
