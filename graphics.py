@@ -1,6 +1,7 @@
 import numpy
 from OpenGL.GL import *
 from OpenGL.GL import shaders
+from OpenGL.constant import Constant
 
 class Graphics:
     VERTEX_SHADER_TEXTURE = """
@@ -107,3 +108,10 @@ class Graphics:
         self.shader_font = OpenGL.GL.shaders.compileProgram(
             OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_FONT, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_FONT, GL_FRAGMENT_SHADER)
         )
+
+    @staticmethod
+    def print_all_uniforms(shader: int):
+        num_uniforms = glGetProgramiv(shader, GL_ACTIVE_UNIFORMS)
+        for i in range(num_uniforms):
+            name, size, type = glGetActiveUniform(shader, i)
+            print(f"Shader unfiform dump - Name: {name}, type: {type}, size: {size}")

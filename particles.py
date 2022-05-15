@@ -16,18 +16,36 @@ class Particles:
     in vec2 OutTexCoord;     
     uniform sampler2D SamplerTex;
     uniform vec4 Colour;
+    uniform float Emitters[8];
+    uniform vec2 EmitterPositions[8];
     out vec4 outColour;
 
     #define grav 0.1
+    #define psize 0.35
+
+    float rand(vec2 c) 
+    {
+        return fract(sin(dot(c.xy , vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    float randDir(float val, float seed) 
+    {
+        return cos(val * sin(val * seed) * seed);
+    }
+
+    float hash(in float n ) 
+    {
+        return fract(sin(n) * 43758.5453123);
+    }
 
     vec2 getPos(in vec2 o, in float t, in vec2 d) 
     {
         return vec2(o.x + d.x * t, o.y + d.y * t - grav * t * t);
     }
 
-    vec3 drawParticle(in vec2 p, in float size, in vec3 col) 
+    vec4 drawParticle(in vec2 p, in float size, in vec4 col) 
     {
-        return mix(col, vec3(0.0), smoothstep(0.0, size, dot(p, p) * 90.0));
+        return mix(col, vec4(0.0), smoothstep(0.0, size, dot(p, p) * 90.0));
     }
 
     void main() 
@@ -35,17 +53,22 @@ class Particles:
         vec2 uv = OutTexCoord;
         uv.y /= 1.6667;
 
+        float life = Emitters[0];
+
+        float range = (sin(life * 2.0) + 1.0) * 0.5; 
+        vec2 pos = vec2(range, 0.250);
+
         vec4 rand = texture(SamplerTex, OutTexCoord) * Colour;
 
-        vec3 col = vec3(0.0);
-        col += drawParticle(uv, 2.0, vec3(0.1, 0.92, 0.02));
+        vec4 col = vec4(0.0);
+        col += drawParticle(uv - pos, psize, vec4(0.1, 0.92, 0.02, max(life, 0.25)));
                 
-        outColour = vec4(col.xyz, 1.0) + (rand * 0.001);
+        outColour = col + (rand * 0.001);
     }
     """
 
     def __init__(self, graphics: Graphics):
-        self.emitters = [0.0] * Particles.NumEmitters
+        self.emitters = [1.0] * Particles.NumEmitters
         self.emitter_positions = [0.0] * Particles.NumEmitters * 2
         
         self.shader = OpenGL.GL.shaders.compileProgram(
@@ -55,7 +78,8 @@ class Particles:
         self.texture = Texture("")
         self.sprite = SpriteTexture(graphics, self.texture, [1.0, 1.0, 1.0, 1.0], [0.0, 0.0], [2.0, 2.0], self.shader)
 
-        self.dt_id = glGetUniformLocation(self.shader, "Dt")
+        graphics.print_all_uniforms(self.shader)
+
         self.emitters_id = glGetUniformLocation(self.shader, "Emitters")
         self.emitter_positions_id = glGetUniformLocation(self.shader, "EmitterPositions")
 
@@ -78,16 +102,15 @@ class Particles:
             print(f"Particle system has run out of emitters!")
             
     def draw(self, dt: float):
-        """Uploade the emitters state to the shader every frame."""
+        """Upload the emitters state to the shader every frame."""
 
         self.emitters = [x -dt for x in self.emitters]
         
         def particle_uniforms():
-            glUniform1f(self.dt_id, dt)
             glUniform1fv(self.emitters_id, Particles.NumEmitters, self.emitters)
             glUniform2fv(self.emitter_positions_id, Particles.NumEmitters, self.emitter_positions)
         
-        self.sprite.draw(None)
+        self.sprite.draw(particle_uniforms)
 
     def end(self):
         pass
