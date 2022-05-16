@@ -42,7 +42,7 @@ class Game:
         self.graphics = Graphics()
         self.textures = TextureManager(texture_path, self.graphics)
         self.input = Input(self.window, InputMethod.KEYBOARD)
-        self.particles = Particles(self.graphics)
+        self.particles = Particles(self.graphics, self.window_width / self.window_height)
         self.profile = Profile()
 
         self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, self.end)

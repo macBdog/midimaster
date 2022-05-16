@@ -126,7 +126,7 @@ class MidiMaster(Game):
                         time_diff = self.music_time - self.scored_notes[message.note]
                         self.score += max(10 - time_diff, 0)
                         del self.scored_notes[message.note]
-                        spawn_pos = [-0.75, self.noteboard.note_positions[message.note]]
+                        spawn_pos = [-0.85, self.noteboard.note_positions[message.note]]
                         self.particles.spawn(16, 0.05, spawn_pos, [0.37, 0.82, 0.4, 1.0])
 
             elif message.type == "note_off":
