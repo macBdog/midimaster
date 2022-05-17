@@ -90,9 +90,12 @@ class NoteSprite():
         if self.note_id >= 0:
             if self.time - music_time < 32 * 4:
                 note_pos = [ref_pos[0] + ((self.time - music_time) * note_width), self.pitch_pos - 0.063]
-                note_col = [0.1, 0.1, 0.1, 1.0]
 
                 note_lookup = self.note
+
+                should_be_played = self.time <= music_time
+                should_be_recycled = self.time + 1 < music_time
+                note_col = [0.1, 0.78, 0.1, 1.0] if should_be_played else [0.1, 0.1, 0.1, 1.0]
 
                 for i in range(Note.NoteLineLookupUnder[note_lookup]):
                     self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + 0.02 - (i * Staff.NoteSpacing * 2)], note_col)
@@ -108,8 +111,12 @@ class NoteSprite():
 
                 self.font.draw(self.note_char, 158, note_pos, note_col)
                 
-                if self.time <= music_time:
+                # Note is on as soon as it hits the playhead
+                if should_be_played:
                     notes_on[self.note] = music_time + self.length
+                
+                # Hold the visuals a 32note longer so the player can see which note to play
+                if should_be_recycled:
                     self.recycle()
 
         return self.note_id >= 0

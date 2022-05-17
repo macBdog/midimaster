@@ -23,7 +23,7 @@ class Particles:
     uniform vec3 EmitterColours[NUM_PARTICLE_EMITTERS];
     
     #define num_particles 32
-    #define grav -0.25
+    #define grav -0.1
     #define psize 0.05
 
     float rand(vec2 c) 
@@ -33,7 +33,7 @@ class Particles:
 
     vec2 noise(vec2 tc)
     {
-        return (2.0 * texture(SamplerTex, tc).xy - 1.).xy;
+        return (texture(SamplerTex, tc).xy).xy;
     }
 
     vec2 getPos(in vec2 o, in float time, in vec2 dir) 
@@ -55,16 +55,18 @@ class Particles:
         for (int e = 0; e < NUM_PARTICLE_EMITTERS; ++e)
         {
             float life = max(Emitters[e], 0.0);
-            vec2 pos = EmitterPositions[e] * vec2(0.5, DisplayRatio);
+            vec2 start_pos = (EmitterPositions[e] + vec2(1.0)) * vec2(0.5);
+            start_pos.y = 1.0 - start_pos.y;
+            start_pos.y *= DisplayRatio;
             vec3 col = EmitterColours[e];
 
-            col = vec3(0.11, 0.85, 0.02);
+            col = vec3(0.11, 0.7, 0.02);
 
             for (int i = 0; i < num_particles; ++i)
             {
-                float c = float(i) / float(num_particles);
-                vec2 rdir = noise(vec2(sin(c), cos(c))) * 0.5;
-                vec2 pos = getPos(pos, 1.0 - life, rdir);
+                float c = ((float(i) / float(num_particles)) + 1.0) * 0.5;
+                vec2 rdir = noise(vec2(sin(c), cos(c))) * 0.25;
+                vec2 pos = getPos(start_pos, 1.0 - life, rdir);
                 screen_col += drawParticle(uv - pos, psize, vec4(col.xyz, life));
             }
         }
@@ -105,15 +107,13 @@ class Particles:
                 if GameSettings.DEV_MODE:
                     print(f"Particle system has run out of emitters!")
                 break
+        
         self.emitter = new_emitter
-
         self.emitters[self.emitter] = life
+
         epos_id = self.emitter * 2
         self.emitter_positions[epos_id] = pos[0]
         self.emitter_positions[epos_id + 1] = pos[1]
-
-        self.emitter_positions[epos_id] = 0.5
-        self.emitter_positions[epos_id + 1] = 0.5
 
         ecol_id = self.emitter * 3
         self.emitter_colours[ecol_id] * colour[0]
