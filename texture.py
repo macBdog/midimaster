@@ -10,7 +10,15 @@ class Texture:
     an image mapped onto it. Keeps hold of the image data and the
     ID represetnation in OpenGL."""
 
-    IMAGE_RANDOM_32x32 = numpy.array(numpy.random.rand(32 * 32), numpy.uint8)
+    @staticmethod
+    def get_random_pixel():
+        return [numpy.random.randint(0, 255), numpy.random.randint(0, 255), numpy.random.randint(0, 255), numpy.random.randint(0, 255)]
+
+    def get_random_texture(width:int, height:int):
+        tex = []
+        for _ in range(width * height):
+            tex += Texture.get_random_pixel()
+        return tex
 
     def __init__(self, texture_path: str):
         if os.path.exists(texture_path):
@@ -19,7 +27,7 @@ class Texture:
             self.height = self.image.height
             self.img_data = numpy.array(list(self.image.getdata()), numpy.uint8)
         else:
-            self.img_data = Texture.IMAGE_RANDOM_32x32
+            self.img_data = Texture.get_random_texture(32, 32)
             self.width = 32
             self.height = 32
         self.texture_id = glGenTextures(1)

@@ -23,8 +23,14 @@ class Particles:
     uniform vec3 EmitterColours[NUM_PARTICLE_EMITTERS];
     
     #define num_particles 32
-    #define grav -0.1
-    #define psize 0.05
+    #define grav -0.01
+    #define psize 0.035
+
+    vec2 rand_minus1_to_1(vec2 p)
+    {
+        p = vec2( dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)) );
+        return -1. + 2.*fract(sin(p) * 53758.5453123);
+    }
 
     float rand(vec2 c) 
     {
@@ -33,7 +39,7 @@ class Particles:
 
     vec2 noise(vec2 tc)
     {
-        return (texture(SamplerTex, tc).xy).xy;
+        return (2.0 * texture(SamplerTex, tc).xy - 1.0).xy;
     }
 
     vec2 getPos(in vec2 o, in float time, in vec2 dir) 
@@ -60,17 +66,14 @@ class Particles:
             start_pos.y *= DisplayRatio;
             vec3 col = EmitterColours[e];
 
-            col = vec3(0.11, 0.7, 0.02);
-
             for (int i = 0; i < num_particles; ++i)
             {
-                float c = ((float(i) / float(num_particles)) + 1.0) * 0.5;
-                vec2 rdir = noise(vec2(sin(c), cos(c))) * 0.25;
+                float c = (((float(i) / float(num_particles)) + 1.0) * 0.25) + (sin(float(e) / float(NUM_PARTICLE_EMITTERS)));
+                vec2 rdir = noise(vec2(sin(c), cos(c))) * 0.5;
                 vec2 pos = getPos(start_pos, 1.0 - life, rdir);
-                screen_col += drawParticle(uv - pos, psize, vec4(col.xyz, life));
+                screen_col += drawParticle(uv - pos, psize, vec4(col.xyz, life - 0.15));
             }
         }
-                
         outColour = screen_col;
     }
     """.replace("NUM_PARTICLE_EMITTERS", str(NumEmitters))
@@ -116,9 +119,9 @@ class Particles:
         self.emitter_positions[epos_id + 1] = pos[1]
 
         ecol_id = self.emitter * 3
-        self.emitter_colours[ecol_id] * colour[0]
-        self.emitter_colours[ecol_id + 1] * colour[1]
-        self.emitter_colours[ecol_id + 2] * colour[2]
+        self.emitter_colours[ecol_id] = colour[0]
+        self.emitter_colours[ecol_id + 1] = colour[1]
+        self.emitter_colours[ecol_id + 2] = colour[2]
             
     def draw(self, dt: float):
         """Upload the emitters state to the shader every frame."""
