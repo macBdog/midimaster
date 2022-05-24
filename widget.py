@@ -29,6 +29,8 @@ class Widget:
         self.hover_end = None
         self.action = None
         self.action_arg = None
+        self.colour_func = None
+        self.colour_arg = None
         self.actioned = False
         self.alpha_start = self.sprite.colour[3]
         self.alpha_hover = -0.25
@@ -39,7 +41,13 @@ class Widget:
     def hover_end_default(self):
         self.sprite.set_alpha(self.alpha_start)
 
-    def set_action(self, activation_func, activation_arg):
+    def set_colour_func(self, colour_func, colour_arg = None):
+        """ Set a function that determines the colour of a button."""
+
+        self.colour_func = colour_func
+        self.colour_arg = colour_arg
+
+    def set_action(self, activation_func, activation_arg = None):
         """Set the function to call on activate. Leave the hover functions defaulted."""
 
         self.action = activation_func
@@ -109,6 +117,10 @@ class Widget:
 
     def draw(self, dt: float):
         """Apply any changes to the widget rect."""
+
+        # Apply any colour changes
+        if self.colour_func is not None:
+            self.sprite.set_colour(self.colour_func(self.colour_arg))
 
         # Apply any active animation
         if self.animation and self.animation.active:

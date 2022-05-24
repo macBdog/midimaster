@@ -82,11 +82,10 @@ class Music:
         """Restore all the notes in the music to the state just after loading."""
 
         self.notes.reset()
-        for track in self.backing_index:
-            track = 0
-        for track in self.backing_time:
-            track = 0.0
-
+        self.backing_index = [0 for track in self.backing_index]
+        self.backing_time = [0.0 for track in self.backing_time]
+        
+        
     def update(self, dt: float, music_time: float, devices: MidiDevices):
         """Play MIDI messages that are not for interactive scoring by the player."""
 

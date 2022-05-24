@@ -10,12 +10,12 @@ class Note():
     """Note is a POD style container for a note in a piece of music with representation."""
 
     NoteCharacters = {
-        32: "w",
-        16: "h",
-        8: "q",
-        4: "e",
-        2: "s",
-        1: "s",
+        32: "w",    # Semibreve/Whole-note
+        16: "h",    # Minum/Half-note
+        8: "q",     # Crotchet/Quarter-note
+        4: "e",     # Quaver/Eighth-note
+        2: "s",     # Semi-quaver/Sixteenth-note
+        1: "s",     # Demi-quaver/Thirty-second-note
     }
     RestCharacters = {
         32: "W",
@@ -26,6 +26,14 @@ class Note():
         1: "S",     
     }
     DottedChar = '.'
+
+    NoteOffsets = {
+        "w": -0.08,
+        "h": -0.08, 
+        "q": 0.0,
+        "e": -0.08,
+        "s": 0.0,
+    }
 
     NoteLineLookupUnder = defaultdict(lambda: 0)
     NoteLineLookupOver = defaultdict(lambda: 0)
@@ -89,7 +97,7 @@ class NoteSprite():
         """
         if self.note_id >= 0:
             if self.time - music_time < 32 * 4:
-                note_pos = [ref_pos[0] + ((self.time - music_time) * note_width), self.pitch_pos - 0.063]
+                note_pos = [ref_pos[0] + Note.NoteOffsets[self.note_char] + ((self.time - music_time) * note_width), self.pitch_pos - 0.063]
 
                 note_lookup = self.note
 
@@ -97,11 +105,15 @@ class NoteSprite():
                 should_be_recycled = self.time + 1 < music_time
                 note_col = [0.1, 0.78, 0.1, 1.0] if should_be_played else [0.1, 0.1, 0.1, 1.0]
 
-                for i in range(Note.NoteLineLookupUnder[note_lookup]):
-                    self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + 0.02 - (i * Staff.NoteSpacing * 2)], note_col)
+                num_under = Note.NoteLineLookupUnder[note_lookup]
+                num_over = Note.NoteLineLookupOver[note_lookup]
+                line_y_offset = 0.025 if num_under <= 1 else 0.015
+                line_x_offset = 0.02
+                for i in range(num_under):
+                    self.font.draw('_', 82, [note_pos[0] - line_x_offset, ref_pos[1] + line_y_offset - (i * Staff.NoteSpacing * 2)], note_col)
 
-                for i in range(Note.NoteLineLookupOver[note_lookup]):
-                    self.font.draw('_', 82, [note_pos[0] - 0.02, ref_pos[1] + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)
+                for i in range(num_over):
+                    self.font.draw('_', 82, [note_pos[0] - line_x_offset, ref_pos[1] + line_y_offset + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)
                 
                 if self.accidental is not None:
                     self.font.draw(self.accidental, 82, [note_pos[0] - 0.02, note_pos[1]], note_col)

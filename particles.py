@@ -24,7 +24,7 @@ class Particles:
     
     #define num_particles 32
     #define grav -0.01
-    #define psize 0.035
+    #define psize 0.05
 
     vec2 rand_minus1_to_1(vec2 p)
     {
@@ -69,9 +69,9 @@ class Particles:
             for (int i = 0; i < num_particles; ++i)
             {
                 float c = (((float(i) / float(num_particles)) + 1.0) * 0.25) + (sin(float(e) / float(NUM_PARTICLE_EMITTERS)));
-                vec2 rdir = noise(vec2(sin(c), cos(c))) * 0.5;
+                vec2 rdir = noise(vec2(sin(c), cos(c))) * 0.2;
                 vec2 pos = getPos(start_pos, 1.0 - life, rdir);
-                screen_col += drawParticle(uv - pos, psize, vec4(col.xyz, life - 0.15));
+                screen_col += drawParticle(uv - pos, psize * life, vec4(col.xyz, life));
             }
         }
         outColour = screen_col;
@@ -82,6 +82,7 @@ class Particles:
         self.display_ratio = 1.0 / display_ratio
         self.emitter = -1
         self.emitters = [0.0] * Particles.NumEmitters
+        self.emitter_speeds = [1.0] * Particles.NumEmitters
         self.emitter_positions = [0.0] * Particles.NumEmitters * 2
         self.emitter_colours = [0.0] * Particles.NumEmitters * 3
         
@@ -98,7 +99,7 @@ class Particles:
         self.emitter_colours_id = glGetUniformLocation(self.shader, "EmitterColours")
 
 
-    def spawn(self, num: int, speed: float, pos: list, colour: list, life: float = 1.0):
+    def spawn(self, speed: float, pos: list, colour: list, life: float = 1.0):
         """Create a bunch of particles at a location to be animated until they die."""
 
         search = 0
@@ -113,6 +114,7 @@ class Particles:
         
         self.emitter = new_emitter
         self.emitters[self.emitter] = life
+        self.emitter_speeds[self.emitter] = speed
 
         epos_id = self.emitter * 2
         self.emitter_positions[epos_id] = pos[0]
@@ -126,7 +128,7 @@ class Particles:
     def draw(self, dt: float):
         """Upload the emitters state to the shader every frame."""
 
-        self.emitters = [x -dt for x in self.emitters]
+        self.emitters = [x - (dt * self.emitter_speeds[i]) for i, x in enumerate(self.emitters)]
         
         def particle_uniforms():
             glUniform1f(self.display_ratio_id, self.display_ratio)

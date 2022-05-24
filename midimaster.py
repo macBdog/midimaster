@@ -38,7 +38,7 @@ class MidiMaster(Game):
     def __init__(self):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
-        self.note_width_32nd = 0.03
+        self.note_width_32nd = 0.025
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
         self.mode = MusicMode.PAUSE_AND_LEARN
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
@@ -89,12 +89,13 @@ class MidiMaster(Game):
             self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] + 0.775), (2.0, -0.35))
         )
         self.note_bg_btm = self.gui_game.add_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] - 0.58), (2.0, 1.0))
+            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] - 0.705), (2.0, 1.25))
         )
 
         self.staff.prepare(self.gui_game, self.textures)
         self.noteboard.prepare(self.textures, self.gui_game, self.staff)
 
+        self.score_fade = 0.0
         self.setup_input()
 
         # Read a midi file and load the notes
@@ -111,6 +112,13 @@ class MidiMaster(Game):
     def update(self, dt):
         self.profile.begin("midi")
 
+        def score_vfx(note_id = None):
+            self.score_fade = 1.0
+            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
+            if note_id is not None:
+                spawn_pos = [-0.71, self.noteboard.note_positions[note_id]]
+                self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0])
+
         # Handle events from MIDI input, echo to output so player can hear
         for message in self.devices.input_messages:
             if message.type == "note_on" or message.type == "note_off":
@@ -123,11 +131,10 @@ class MidiMaster(Game):
 
                 if self.mode == MusicMode.PAUSE_AND_LEARN:
                     if message.note in self.scored_notes:
+                        score_vfx(message.note)
                         time_diff = self.music_time - self.scored_notes[message.note]
                         self.score += max(10 - time_diff, 0)
                         del self.scored_notes[message.note]
-                        spawn_pos = [-0.71, self.noteboard.note_positions[message.note]]
-                        self.particles.spawn(16, 0.05, spawn_pos, [0.37, 0.82, 0.4, 1.0])
 
             elif message.type == "note_off":
                 del self.notes_down[message.note]
@@ -188,7 +195,7 @@ class MidiMaster(Game):
             self.profile.begin("scoring")
             if self.mode == MusicMode.PERFORMANCE:
                 if self.noteboard.is_scoring():
-                    self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
+                    score_vfx()
                     self.score = self.score + 10 * self.dt
             elif self.mode == MusicMode.PAUSE_AND_LEARN:
                 if len(self.scored_notes) > 0 and self.music_running:
@@ -202,9 +209,10 @@ class MidiMaster(Game):
 
             self.profile.begin("text")
             # Same with the note highlight background
-            self.note_correct_colour = [max(0.65, i - 1.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
+            self.note_correct_colour = [max(0.65, i - 0.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
 
             # Show the score on top of everything
+            self.score_fade -= dt * 0.5
             self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
             self.profile.end()
 
@@ -237,6 +245,15 @@ class MidiMaster(Game):
             self.reset()
             self.music.reset()
 
+        def play_button_colour(self):
+            return [0.1, 0.87, 0.11, 1.0] if self.music_running else [0.8, 0.8, 0.8, 1.0]
+
+        def pause_button_colour(self):
+            return [0.3, 0.27, 0.81, 1.0] if not self.music_running else [0.8, 0.8, 0.8, 1.0]
+
+        def score_bg_colour(self):
+            return [1.0, 1.0, 1.0, max(self.score_fade, 0.65)]
+
         playback_button_size = (0.15, 0.125)
         controls_height = -0.85
         btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
@@ -244,10 +261,13 @@ class MidiMaster(Game):
         btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
 
         btn_play.set_action(play, self)
+        btn_play.set_colour_func(play_button_colour, self)
         btn_pause.set_action(pause, self)
+        btn_pause.set_colour_func(pause_button_colour, self)
         btn_stop.set_action(stop_rewind, self)
 
         self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, controls_height - 0.10), (0.5, 0.25)))
+        self.bg_score.set_colour_func(score_bg_colour, self)
         self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
         def note_width_inc():
