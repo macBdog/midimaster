@@ -6,8 +6,7 @@ from midi_devices import MidiDevices
 from notes import Notes
 from font import Font
 from graphics import Graphics
-from texture import TextureManager
-from gui import Gui
+from note_render import NoteRender
 from key_signature import KeySignature
 from staff import Staff
 import math
@@ -20,7 +19,7 @@ class Music:
 
     SDQNotesPerBeat = 8  # 32nd notes
 
-    def __init__(self, graphics: Graphics, font: Font, staff: Staff, note_positions: list, filename: str, track_id: int = 0):
+    def __init__(self, graphics: Graphics, note_render: NoteRender, font: Font, staff: Staff, note_positions: list, filename: str, track_id: int = 0):
         self.graphics = graphics
         self.mid = MidiFile(filename)
         self.clocks_per_tick = 24
@@ -31,7 +30,7 @@ class Music:
         self.font = font
         self.staff = staff
         self.note_positions = note_positions
-        self.notes = Notes(graphics, font, staff, note_positions, self.key_signature)
+        self.notes = Notes(graphics, note_render, staff, note_positions, self.key_signature)
         self.keys = {}
         self.track_names = {}
         self.backing_tracks = {}

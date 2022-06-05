@@ -115,3 +115,23 @@ class Graphics:
         for i in range(num_uniforms):
             name, size, type = glGetActiveUniform(shader, i)
             print(f"Shader unfiform dump - Name: {name}, type: {type}, size: {size}")
+
+    @staticmethod
+    def debug_print_shader(vertex_source: str, fragment_source: str):
+        """Utility function to compile and link a shader and print all log info out."""
+        program = glCreateProgram()
+
+        vshader = glCreateShader(GL_VERTEX_SHADER)
+        glShaderSource(vshader, vertex_source)
+        glCompileShader(vshader)
+        glAttachShader(program, vshader)
+        print(glGetShaderInfoLog(vshader))
+        
+        fshader = glCreateShader(GL_FRAGMENT_SHADER)
+        glShaderSource(fshader, fragment_source)
+        glCompileShader(fshader)
+        glAttachShader(program, fshader)
+        print(glGetShaderInfoLog(fshader))
+        
+        glLinkProgram(program)
+        print(glGetProgramInfoLog(program))   

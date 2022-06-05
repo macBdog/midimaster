@@ -10,6 +10,7 @@ from animation import AnimType
 from music import Music
 from staff import Staff
 from noteboard import NoteBoard
+from note_render import NoteRender
 from mido import Message
 from midi_devices import MidiDevices
 from font import Font
@@ -98,11 +99,13 @@ class MidiMaster(Game):
         self.score_fade = 0.0
         self.setup_input()
 
+        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height)
+
         # Read a midi file and load the notes
         level = "test.mid"
         level_path = os.path.join("music", level)
         if os.path.exists(level_path):
-            self.music = Music(self.graphics, music_font, self.staff, self.noteboard.get_note_positions(), level_path, 1)
+            self.music = Music(self.graphics, self.note_render, music_font, self.staff, self.noteboard.get_note_positions(), level_path, 1)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()

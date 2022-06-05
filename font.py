@@ -141,14 +141,13 @@ class Font():
 
     def draw(self, string: str, font_size: int, pos: list, colour: list):
         """ Draw a string of text with the bottom left of the first glyph at the pos coordinate."""
-
+        
         glUseProgram(self.graphics.shader_font)
         glUniform4f(self.colour_id, colour[0], colour[1], colour[2], colour[3]) 
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glBindVertexArray(self.VAO)
-        draw_pos = pos
-        display_size = font_size * 0.0000005
+        draw_pos, display_size = pos, font_size * 0.0000005
 
         for i in range(len(string)):
             c = ord(string[i])
@@ -162,8 +161,7 @@ class Font():
                 continue
 
             # Size and position in texture
-            tex_coord = self.positions[c]
-            tex_size = self.sizes[c]
+            tex_coord, tex_size = self.positions[c], self.sizes[c]
 
             # Size and position of glyph
             offset = self.offsets[c]
@@ -179,4 +177,3 @@ class Font():
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
             draw_pos = (draw_pos[0] + ((self.advance[c] * display_size) / self.window_ratio), draw_pos[1])
-
