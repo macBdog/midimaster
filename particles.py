@@ -87,7 +87,8 @@ class Particles:
         self.emitter_colours = [0.0] * Particles.NumEmitters * 3
         
         self.shader = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(Particles.PIXEL_SHADER_PARTICLES, GL_FRAGMENT_SHADER)
+            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), 
+            OpenGL.GL.shaders.compileShader(Particles.PIXEL_SHADER_PARTICLES, GL_FRAGMENT_SHADER)
         )
 
         self.texture = Texture("")

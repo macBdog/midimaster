@@ -98,15 +98,18 @@ class Graphics:
 
         # Compile multiple shaders for different purposes
         self.shader_texture = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_TEXTURE, GL_FRAGMENT_SHADER)
+            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), 
+            OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_TEXTURE, GL_FRAGMENT_SHADER)
         )
 
         self.shader_colour = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_COLOUR, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_COLOUR, GL_FRAGMENT_SHADER)
+            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_COLOUR, GL_VERTEX_SHADER), 
+            OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_COLOUR, GL_FRAGMENT_SHADER)
         )
 
         self.shader_font = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_FONT, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_FONT, GL_FRAGMENT_SHADER)
+            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_FONT, GL_VERTEX_SHADER), 
+            OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_FONT, GL_FRAGMENT_SHADER)
         )
 
     @staticmethod

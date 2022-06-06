@@ -1,96 +1,11 @@
-import enum
-from collections import defaultdict
-
 from texture import *
 from graphics import *
 from font import *
 from key_signature import KeySignature
 from staff import Staff
+from note import Note
 from note_render import NoteRender
 
-class NoteType(enum.Enum):
-    Whole = 1
-    Half = 2
-    Quarter = 3
-    Eight = 4
-    Sixteenth = 5
-    Thirtysecond = 5
-class NoteDecoration(enum.Enum):
-    Dotted = 1
-    Accent = 2
-    Natural = 3
-    Sharp = 4
-    Flat = 5
-class Note():
-    """Note is a POD style container for a note in a piece of music with representation."""
-
-    NoteLengthTypes = {
-        32: 1,    # Semibreve/Whole-note
-        16: 2,    # Minum/Half-note
-        8: 3,     # Crotchet/Quarter-note
-        4: 4,     # Quaver/Eighth-note
-        2: 5,     # Semi-quaver/Sixteenth-note
-        1: 5,     # Demi-quaver/Thirty-second-note
-    }
-    RestCharacters = {
-        32: "W",
-        16: "H",
-        8: "Q",
-        4: "E",
-        2: "S",
-        1: "S",     
-    }
-    NoteOptions = {
-        0: "Dotted",
-        1: "Sharp",
-        2: "Flat",
-        3: "Natural",
-        4: "Tie"
-    }
-    DottedChar = '.'
-
-    NoteOffsets = {
-        "w": -0.02,
-        "h": -0.015, 
-        "q": -0.01,
-        "e": -0.038,
-        "s": 0.0,
-    }
-
-    NoteLineLookupUnder = defaultdict(lambda: 0)
-    NoteLineLookupOver = defaultdict(lambda: 0)
-    NoteLineLookupUnder.update({
-        60: 1,
-        59: 1,
-        58: 1,
-        57: 2,
-        56: 2,
-        55: 2,
-        54: 3,
-        53: 3,
-        52: 3,
-        51: 3,
-        50: 4,
-        49: 4, 
-    })
-    NoteLineLookupOver.update({
-        80: 1,
-        81: 1,
-    })
-
-    @staticmethod
-    def get_quantized_length(note_length):
-        for _, k in enumerate(Note.NoteLengthTypes):
-            if note_length >= k:
-                remainder = note_length - k
-                dotted = remainder >= k / 2
-                return k, dotted
-        return 1, False
-
-    def __init__(self, note: int, time: int, length: int):
-        self.note = note
-        self.time = time
-        self.length = length
 
 class Notes:
     """Notes manages all the on-screen note representations for a game.
@@ -189,14 +104,17 @@ class Notes:
             note_lookup, accidental = self.key_signature.get_accidental(note.note, self.prev_note, [])
             self.prev_note = note_lookup
 
-            note_pos_y = self.note_positions[note_lookup]
+            note_width_32 = 0.025 
+            note_pos_x = self.ref_c4_pos[0] + (note.time * note_width_32)
+            note_pos_y = self.note_positions[note_lookup] - 0.063
             quantized_length, dotted = Note.get_quantized_length(note.length)
-            pos = [note.time, note_pos_y]
+
+            pos = [note_pos_x, note_pos_y]
             type = Note.NoteLengthTypes[quantized_length]
             decoration = 1 if dotted else 0
             tail = [4.0, 0.0]
             tie = 0.0
-            self.note_render.assign(note.note, pos, type, decoration, tail, tie)
+            self.note_render.assign(note, pos, type, decoration, tail, tie)
             self.notes_offset += 1
         
 
@@ -216,7 +134,7 @@ class Notes:
             if self.bartimes[i] < music_time:   
                 self.bartimes[i] += self.num_barlines * 32
                           
-        # Draw all the notes 
-        self.note_render.draw(dt, music_time)
+        # Draw all the notes and return times for the ones that are playing
+        self.note_render.draw(dt, music_time, note_width, self.notes_on)
 
         return self.notes_on

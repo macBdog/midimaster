@@ -3,6 +3,8 @@ from graphics import Graphics
 from OpenGL.GL import *
 
 from texture import SpriteTexture, Texture
+from note import Note
+from staff import Staff
 
 class NoteRender:
     """Draw 32 notes at a time for the entire game on the GPU."""
@@ -189,10 +191,11 @@ class NoteRender:
     }
     """.replace("NUM_NOTES", str(NumNotes))
 
-    def __init__(self, graphics: Graphics, display_ratio: float):
+    def __init__(self, graphics: Graphics, display_ratio: float, ref_c4_pos: list):
         self.display_ratio = 1.0 / display_ratio
+        self.ref_c4_pos = ref_c4_pos
         self.note = -1
-        self.notes = [-1] * NoteRender.NumNotes
+        self.notes = [None] * NoteRender.NumNotes
         self.note_positions = [0.0] * NoteRender.NumNotes * 2
         self.note_types = [0] * NoteRender.NumNotes
         self.note_decoration = [0] * NoteRender.NumNotes
@@ -200,7 +203,8 @@ class NoteRender:
         self.note_ties = [0.0] * NoteRender.NumNotes
 
         self.shader = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), OpenGL.GL.shaders.compileShader(NoteRender.PIXEL_SHADER_NOTES, GL_FRAGMENT_SHADER)
+            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), 
+            OpenGL.GL.shaders.compileShader(NoteRender.PIXEL_SHADER_NOTES, GL_FRAGMENT_SHADER)
         )
 
         self.texture = Texture("")
@@ -214,12 +218,12 @@ class NoteRender:
         self.note_tails_id = glGetUniformLocation(self.shader, "NoteTails")
         self.note_ties_id = glGetUniformLocation(self.shader, "NoteTies")
 
-    def assign(self, note_id: int, pos: list, type: int, decoration: int, tail: list, tie: float):
+    def assign(self, note: Note, pos: list, type: int, decoration: int, tail: list, tie: float):
         """Add a new note to an empty note slot."""
 
         search = 0
         new_note = (self.note + 1) % NoteRender.NumNotes
-        while self.notes[new_note] > 0.0:
+        while self.notes[new_note] is not None:
             search += 1
             new_note = (self.note + search) % NoteRender.NumNotes
             if search >= NoteRender.NumNotes:
@@ -228,19 +232,52 @@ class NoteRender:
                 break
         
         self.note = new_note
-        self.notes[self.note] = note_id
+        self.notes[self.note] = note
 
-        npos_id = self.note * 2
-        self.note_positions[npos_id] = pos[0]
-        self.note_positions[npos_id + 1] = pos[1]
+        npos = self.note * 2
+        self.note_positions[npos] = pos[0]
+        self.note_positions[npos + 1] = pos[1]
         self.note_types[self.note] = type
         self.note_decoration[self.note] = decoration
-        self.note_tails[npos_id] = tail[0]
-        self.note_tails[npos_id + 1] = tail[1]
+        self.note_tails[npos] = tail[0]
+        self.note_tails[npos + 1] = tail[1]
         self.note_ties[self.note] = tie
 
-    def draw(self, dt: float, music_time: float):
-        """Upload the note data state to the shader every frame."""
+    def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:
+        """Process note timing then upload the note data state to the shader every frame."""
+        
+        for i in range(NoteRender.NumNotes):
+            note = self.notes[i]
+
+            if note is not None and note.time - music_time < 32 * 4:
+                npos = i * 2
+                self.note_positions
+                self.note_positions[npos] = self.ref_c4_pos[0] + ((note.time - music_time) * note_width)
+
+                # Hold the visuals a 32note longer so the player can see which note to play
+                should_be_played = note.time <= music_time
+                should_be_recycled = note.time + 1 < music_time
+                note_col = [0.1, 0.78, 0.1, 1.0] if should_be_played else [0.1, 0.1, 0.1, 1.0]
+
+                note_lookup = note.note % 12
+                num_under = Note.NoteLineLookupUnder[note_lookup]
+                num_over = Note.NoteLineLookupOver[note_lookup]
+                line_y_offset = 0.025 if num_under <= 1 or note_lookup < 60 else 0.012
+                line_x_offset = -0.019
+                for j in range(num_under):
+                    pass
+                    #self.font.draw('_', 82, [note_pos[0] + line_x_offset, self.ref_c4_pos[1] + line_y_offset - (i * Staff.NoteSpacing * 2)], note_col)
+
+                for j in range(num_over):
+                    pass
+                    #self.font.draw('_', 82, [note_pos[0] + line_x_offset, self.ref_c4_pos[1] + line_y_offset + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)
+                    
+                # Note is on as soon as it hits the playhead
+                if should_be_played:
+                    notes_on[self.note] = music_time + note.length
+
+                if should_be_recycled:
+                    self.notes[i] = None
 
         def note_uniforms():
             glUniform1f(self.display_ratio_id, self.display_ratio)

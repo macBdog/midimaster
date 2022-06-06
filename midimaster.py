@@ -99,7 +99,8 @@ class MidiMaster(Game):
         self.score_fade = 0.0
         self.setup_input()
 
-        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height)
+        ref_c4_pos = [self.staff.pos[0] - (self.staff.width * 0.5), self.noteboard.note_positions[60]]
+        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, ref_c4_pos)
 
         # Read a midi file and load the notes
         level = "test.mid"
