@@ -48,6 +48,11 @@ class Game:
         self.input.add_key_mapping(256, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, self.end)
         self.input.add_key_mapping(283, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, self.profile.capture_next_frame)
 
+        def toggle_dev_mode():
+            GameSettings.DEV_MODE = not GameSettings.DEV_MODE
+
+        self.input.add_key_mapping(68, InputActionKey.ACTION_KEYDOWN, InputActionModifier.LCTRL, toggle_dev_mode)
+
         glViewport(0, 0, self.window_width, self.window_height)
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glShadeModel(GL_SMOOTH)

@@ -19,7 +19,6 @@ class NoteRender:
     uniform sampler2D SamplerTex;
     uniform vec4 Colour;
     uniform float DisplayRatio;
-    uniform float MusicTime;
 
     uniform vec2 NotePositions[NUM_NOTES];
     uniform int NoteTypes[NUM_NOTES];
@@ -169,12 +168,13 @@ class NoteRender:
         return blob + tie + stalk + tail + decoration;   
     }
 
-    vec3 drawNotes(in vec2 uv, in float music_time)
+    vec3 drawNotes(in vec2 uv)
     {
         vec3 col = vec3(0.0);
         for (int i = 0; i < NUM_NOTES; ++i)
         {
-            col += drawNote(uv, NotePositions[i] + vec2(music_time, 0.0), NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
+            vec2 npos = (NotePositions[i] + 1.0) * 0.5;
+            col += drawNote(uv, npos, NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
         }
         return col;
     }
@@ -182,12 +182,12 @@ class NoteRender:
     void main()
     {
         vec2 uv = OutTexCoord;
-        uv.y *= DisplayRatio;
+        //uv.y *= DisplayRatio;
 
         vec3 col = vec3(0.0);
-        col += drawNotes(uv, MusicTime);
+        col += drawNotes(uv);
         
-        outColour = vec4(col, col.r);
+        outColour = vec4(1.0-col, col.r);
     }
     """.replace("NUM_NOTES", str(NumNotes))
 
