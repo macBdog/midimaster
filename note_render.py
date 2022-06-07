@@ -21,6 +21,7 @@ class NoteRender:
     uniform float DisplayRatio;
 
     uniform vec2 NotePositions[NUM_NOTES];
+    uniform vec4 NoteColours[NUM_NOTES];
     uniform int NoteTypes[NUM_NOTES];
     uniform int NoteDecoration[NUM_NOTES];
     uniform vec2 NoteTails[NUM_NOTES];
@@ -168,15 +169,17 @@ class NoteRender:
         return blob + tie + stalk + tail + decoration;   
     }
 
-    vec3 drawNotes(in vec2 uv)
+    vec4 drawNotes(in vec2 uv)
     {
-        vec3 col = vec3(0.0);
+        vec4 all_notes = vec4(0.0);
         for (int i = 0; i < NUM_NOTES; ++i)
         {
-            vec2 npos = (NotePositions[i] + 1.0) * 0.5;
-            col += drawNote(uv, npos, NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
+            vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
+            vec3 note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
+            float alpha = NoteColours[i].a;
+            all_notes += vec4(note, note.r * alpha);
         }
-        return col;
+        return all_notes;
     }
 
     void main()
@@ -184,10 +187,7 @@ class NoteRender:
         vec2 uv = OutTexCoord;
         //uv.y *= DisplayRatio;
 
-        vec3 col = vec3(0.0);
-        col += drawNotes(uv);
-        
-        outColour = vec4(1.0-col, col.r);
+        outColour = vec4(drawNotes(uv));
     }
     """.replace("NUM_NOTES", str(NumNotes))
 
@@ -197,6 +197,7 @@ class NoteRender:
         self.note = -1
         self.notes = [None] * NoteRender.NumNotes
         self.note_positions = [0.0] * NoteRender.NumNotes * 2
+        self.note_colours = [0.0] * NoteRender.NumNotes * 4
         self.note_types = [0] * NoteRender.NumNotes
         self.note_decoration = [0] * NoteRender.NumNotes
         self.note_tails = [0.0] * NoteRender.NumNotes * 2
@@ -213,6 +214,7 @@ class NoteRender:
         self.display_ratio_id = glGetUniformLocation(self.shader, "DisplayRatio")
         self.music_time_id = glGetUniformLocation(self.shader, "MusicTime")
         self.note_positions_id = glGetUniformLocation(self.shader, "NotePositions")
+        self.note_colours_id = glGetUniformLocation(self.shader, "NoteColours")
         self.note_types_id = glGetUniformLocation(self.shader, "NoteTypes")
         self.note_decoration_id = glGetUniformLocation(self.shader, "NoteDecoration")
         self.note_tails_id = glGetUniformLocation(self.shader, "NoteTails")
@@ -234,9 +236,16 @@ class NoteRender:
         self.note = new_note
         self.notes[self.note] = note
 
+        col = [0.1, 0.1, 0.1, 1.0]
+
         npos = self.note * 2
+        cpos = self.note * 4
         self.note_positions[npos] = pos[0]
         self.note_positions[npos + 1] = pos[1]
+        self.note_colours[cpos] = col[0]
+        self.note_colours[cpos+1] = col[1]
+        self.note_colours[cpos+2] = col[2]
+        self.note_colours[cpos+3] = col[3]
         self.note_types[self.note] = type
         self.note_decoration[self.note] = decoration
         self.note_tails[npos] = tail[0]
@@ -251,13 +260,17 @@ class NoteRender:
 
             if note is not None and note.time - music_time < 32 * 4:
                 npos = i * 2
+                cpos = i * 4
                 self.note_positions
                 self.note_positions[npos] = self.ref_c4_pos[0] + ((note.time - music_time) * note_width)
 
                 # Hold the visuals a 32note longer so the player can see which note to play
                 should_be_played = note.time <= music_time
                 should_be_recycled = note.time + 1 < music_time
-                note_col = [0.1, 0.78, 0.1, 1.0] if should_be_played else [0.1, 0.1, 0.1, 1.0]
+                if should_be_played:
+                    self.note_colours[cpos + 1] = 0.78
+                else:
+                    self.note_colours[cpos + 1] = 0.1
 
                 note_lookup = note.note % 12
                 num_under = Note.NoteLineLookupUnder[note_lookup]
@@ -283,6 +296,7 @@ class NoteRender:
             glUniform1f(self.display_ratio_id, self.display_ratio)
             glUniform1f(self.music_time_id, music_time)
             glUniform2fv(self.note_positions_id, NoteRender.NumNotes, self.note_positions)
+            glUniform4fv(self.note_colours_id, NoteRender.NumNotes, self.note_colours)
             glUniform1iv(self.note_types_id, NoteRender.NumNotes, self.note_types)
             glUniform1iv(self.note_decoration_id, NoteRender.NumNotes, self.note_decoration)
             glUniform2fv(self.note_tails_id, NoteRender.NumNotes, self.note_tails)
