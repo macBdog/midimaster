@@ -45,14 +45,14 @@ class NoteRender:
     #define dec_sharp 4
     #define dec_flat 5
 
-    vec3 drawCircle(in vec2 uv, vec2 center, float radius)
+    float drawCircle(in vec2 uv, vec2 center, float radius)
     {
         vec2 d1 = uv - center;
         vec2 d2 = d1;
-        return clamp(vec3(smoothstep(radius, radius - (antialias * 0.02), dot(d1, d2) * 100.0)), vec3(0.0), vec3(1.0));
+        return smoothstep(radius, radius - (antialias * 0.02), dot(d1, d2) * 100.0);
     }
 
-    vec3 drawEllipse(in vec2 uv, in vec2 pos, vec2 dim) 
+    float drawEllipse(in vec2 uv, in vec2 pos, vec2 dim) 
     {
         vec2 d = (uv - pos);
         d.x /= dot(vec2(dim.x, 0.0), vec2(dim.x, 0.0));
@@ -60,12 +60,12 @@ class NoteRender:
 
         if (abs( d.x ) <= 1.0 && abs( d.y ) < 1.0 ) 
         {
-            if (dot(d, d) < 1.0) return vec3(1.0, 1.0, 1.0);
+            if (dot(d, d) < 1.0) return 1.0;
         }
-        return vec3(0.0);
+        0.0;
     }
 
-    vec3 drawRotatedEllipse(vec2 uv, vec2 pos, float size, bool altRot)
+    float drawRotatedEllipse(vec2 uv, vec2 pos, float size, bool altRot)
     {
         float dim = 70.0;
         pos *= vec2(dim, dim);
@@ -79,42 +79,42 @@ class NoteRender:
         
         vec2 coord = uv * vec2(dim,  dim);
 
-        return clamp(vec3(smoothstep(0.0, antialias, distance(l, r) + 1.0 - (distance(coord, l) + distance(coord, r)))), vec3(0.0), vec3(1.0));
+        return smoothstep(0.0, antialias, distance(l, r) + 1.0 - (distance(coord, l) + distance(coord, r)));
     }
 
-    float rect(in vec2 uv, in vec2 center, in vec2 wh)
+    float drawRect(in vec2 uv, in vec2 center, in vec2 wh)
     {
         vec2 disRec = abs(uv - center) - wh * 0.5;
         float dis = max(disRec.x, disRec.y);
-        return float(dis < 0.0);
+        return clamp(float(dis < 0.0), 0.0, 1.0);
     }
 
     float distanceToSegment( vec2 a, vec2 b, vec2 p )
     {
-        vec2 pa = p - a, ba = b - a;
-        float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-        return length( pa - ba*h );
+    vec2 pa = p - a, ba = b - a;
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return length( pa - ba*h );
     }
 
-    vec3 drawLineRounded(in vec2 uv, in vec2 start, in vec2 end, in float width)
+    float drawLineRounded(in vec2 uv, in vec2 start, in vec2 end, in float width)
     {
-        return mix(vec3(0.0), vec3(1.0), 1.0-smoothstep(width-antialias*0.02,width, distanceToSegment(start, end, uv)));
+        return mix(0.0, 1.0, 1.0-smoothstep(width-antialias*0.02,width, distanceToSegment(start, end, uv)));
     }
 
-    vec3 drawLineSquare(in vec2 uv, in vec2 start, in vec2 end, in float width)
+    float drawLineSquare(in vec2 uv, in vec2 start, in vec2 end, in float width)
     {
-        vec3 col = vec3(0.0);
+        float col = 0.0;
         vec2 clip_box = vec2(0.015, width * 4.0);
-        vec3 line = mix(vec3(0.0), vec3(1.0), 1.0-smoothstep(width-antialias*0.01,width, distanceToSegment(start, end, uv)));
-        vec3 leftBox = vec3(rect(uv, start + vec2(clip_box.x * -0.5, 0.0), clip_box));
-        vec3 rightBox = vec3(rect(uv, end + vec2(clip_box.x * 0.5, 0.0), clip_box));
+        float line = mix(0.0, 1.0, 1.0-smoothstep(width-antialias*0.01,width, distanceToSegment(start, end, uv)));
+        float leftBox = drawRect(uv, start + vec2(clip_box.x * -0.5, 0.0), clip_box);
+        float rightBox = drawRect(uv, end + vec2(clip_box.x * 0.5, 0.0), clip_box);
         col = line - leftBox - rightBox;
-        return clamp(col, vec3(0.0), vec3(1.0));
+        return clamp(col, 0.0, 1.0);
     }
 
-    vec3 drawTie(in vec2 uv, in vec2 start, in vec2 end)
+    float drawTie(in vec2 uv, in vec2 start, in vec2 end)
     {
-        vec3 col = vec3(0.0);
+        float col = 0.0;
         vec2 dir = (end - start);
         float elen = length(dir);
         vec2 mid = start + (dir * 0.5) + vec2(-0.004, clamp(elen - 0.2, 0.0, 0.1) - 0.035);
@@ -122,21 +122,21 @@ class NoteRender:
         vec2 dim_hi = vec2(dim_lo.x * 1.15, dim_lo.y * 1.15);
         vec2 offset_inner = vec2(0.0, elen * 0.11);
         col += drawEllipse(uv, mid, dim_lo) - drawEllipse(uv, mid + offset_inner, dim_hi);
-        return clamp(col, vec3(0.0), vec3(1.0));
+        return clamp(col, 0.0, 1.0);
     }
 
-    vec3 drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 tail_size, in float tie_32s) 
+    float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 tail_size, in float tie_32s) 
     {
         vec2 stalk_size = vec2(0.0025, 0.2);
         float blob_size = 1.6;
-        vec3 blob = drawRotatedEllipse(uv, p, blob_size, false);
-        vec3 decoration = vec3(0.0);
+        float blob = drawRotatedEllipse(uv, p, blob_size, false);
+        float decoration = 0.0;
         if (dec == 1)
         {
             decoration += drawEllipse(uv, p + vec2(0.04, 0.0), vec2(0.07, 0.1));
         }
         
-        vec3 tie = vec3(0.0);
+        float tie = 0.0;
         if (tie_32s > 0.0)
         {
             tie = drawTie(uv, p, p + vec2(note_spacing_32nd * tie_32s, 0.0));
@@ -149,24 +149,24 @@ class NoteRender:
         
         if (note_type == note_type_whole)
         {
-            return blob + tie + decoration;
+            return clamp(blob + tie + decoration, 0.0, 1.0);
         }
         
         float stalk_width = note_size * 0.184;
         vec2 stalk_pos = vec2(stalk_width, stalk_size.y * 0.5);
-        vec3 stalk = vec3(rect(uv, p + stalk_pos, stalk_size));
+        float stalk = drawRect(uv, p + stalk_pos, stalk_size);
         
         if (note_type <= note_type_quarter)
         {
-            return blob + tie + stalk + decoration;
+            return clamp(blob + tie + stalk + decoration, 0.0, 1.0);
         }
         
         float tail_width = 0.012;
         vec2 tail_start = p + stalk_pos + vec2(stalk_width * -0.05, (stalk_size.y * 0.51) - tail_width);
-        vec2 tail_end = tail_start + tail_size;
-        vec3 tail = drawLineSquare(uv, tail_start, tail_end, tail_width);
+        vec2 tail_end = tail_start + tail_size + vec2(0.002, 0.0);
+        float tail = drawLineSquare(uv, tail_start, tail_end, tail_width);
         
-        return blob + tie + stalk + tail + decoration;   
+        return clamp(blob + tie + stalk + tail + decoration, 0.0, 1.0);   
     }
 
     vec4 drawNotes(in vec2 uv)
@@ -175,9 +175,9 @@ class NoteRender:
         for (int i = 0; i < NUM_NOTES; ++i)
         {
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
-            vec3 note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
+            float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
             float alpha = NoteColours[i].a;
-            all_notes += vec4(note, note.r * alpha);
+            all_notes += vec4(note * NoteColours[i].xyz, note.r * alpha);
         }
         return all_notes;
     }
@@ -185,13 +185,14 @@ class NoteRender:
     void main()
     {
         vec2 uv = OutTexCoord;
-        //uv.y *= DisplayRatio;
+        uv.y = 1.0 - uv.y;
 
         outColour = vec4(drawNotes(uv));
     }
     """.replace("NUM_NOTES", str(NumNotes))
 
     def __init__(self, graphics: Graphics, display_ratio: float, ref_c4_pos: list):
+        self.calibration = False
         self.display_ratio = 1.0 / display_ratio
         self.ref_c4_pos = ref_c4_pos
         self.note = -1
@@ -219,6 +220,31 @@ class NoteRender:
         self.note_decoration_id = glGetUniformLocation(self.shader, "NoteDecoration")
         self.note_tails_id = glGetUniformLocation(self.shader, "NoteTails")
         self.note_ties_id = glGetUniformLocation(self.shader, "NoteTies")
+
+    def _assign_calibration_notes(self):
+        """Add five notes with separate colours to each extent of the screen."""
+
+        self.calibration = True
+        npos = 0
+        cpos = 0
+
+        def add_calibration_note(npos, cpos, pos: list, col: list):
+            self.note +=1
+            self.notes[self.note] = Note(60, 0, 32)
+            self.note_positions[npos] = pos[0]
+            self.note_positions[npos + 1] = pos[1]
+            self.note_colours[cpos] = col[0]
+            self.note_colours[cpos+1] = col[1]
+            self.note_colours[cpos+2] = col[2]
+            self.note_colours[cpos+3] = col[3]
+            self.note_types[self.note] = 1
+            return npos + 2, cpos + 4
+
+        npos, cpos = add_calibration_note(npos, cpos, [-1.0, -1.0], [1.0, 0.0, 0.0, 1.0])
+        npos, cpos = add_calibration_note(npos, cpos, [1.0, -1.0], [0.0, 1.0, 0.0, 1.0])
+        npos, cpos = add_calibration_note(npos, cpos, [1.0, 1.0], [0.0, 0.0, 1.0, 1.0])
+        npos, cpos = add_calibration_note(npos, cpos, [-1.0, 1.0], [1.0, 1.0, 0.0, 1.0])
+        npos, cpos = add_calibration_note(npos, cpos, [0.0, 0.0], [1.0, 0.0, 1.0, 1.0])
 
     def assign(self, note: Note, pos: list, type: int, decoration: int, tail: list, tie: float):
         """Add a new note to an empty note slot."""
@@ -257,8 +283,8 @@ class NoteRender:
         
         for i in range(NoteRender.NumNotes):
             note = self.notes[i]
-
-            if note is not None and note.time - music_time < 32 * 4:
+            should_be_displayed = note is not None and note.time - music_time < 32 * 4
+            if should_be_displayed and not self.calibration:
                 npos = i * 2
                 cpos = i * 4
                 self.note_positions
