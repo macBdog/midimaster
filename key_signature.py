@@ -45,8 +45,8 @@ class KeySignature:
             num_notes = len(notes)
             draw_count = 0
             pos_count = offset
-            acc_pos_x = 0.01
-            hspacing = 0.056
+            acc_pos_x = -0.75
+            hspacing = 0.0056
 
             if num_notes == 1:
                 draw_index = 0

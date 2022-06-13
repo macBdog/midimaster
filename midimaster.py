@@ -273,7 +273,7 @@ class MidiMaster(Game):
         btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
         btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, controls_height), playback_button_size))
         btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
-        btn_mode = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/panel.tga", (0.65, 0.8), (0.32, 0.13)))
+        btn_mode = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/panel_long.png", (0.655, 0.825), (0.32, 0.15)))
 
         btn_play.set_action(play, self)
         btn_play.set_colour_func(play_button_colour, self)

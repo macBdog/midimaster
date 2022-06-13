@@ -115,11 +115,15 @@ class NoteRender:
         return clamp(col, 0.0, 1.0);
     }
 
-    float drawAccidental(in vec2 uv, in vec2 p, int val)
+    float drawAccidental(in vec2 uv, in vec2 p, int val, bool note_relative_pos)
     {
         float col = 0.0;
         float width = 0.07;
-        vec2 acc_pos = p - vec2(0.04, 0.0);
+        vec2 acc_pos = p;
+        if (note_relative_pos)
+        {
+            acc_pos = p - vec2(0.04, 0.0);
+        }
         if (val == 2)
         {
             // Natural
@@ -155,10 +159,10 @@ class NoteRender:
         float key = 0.0;
         for (int i = 0; i < NUM_KEY_SIG; ++i)
         {
-            vec2 p = KeyPositions[i];
+            vec2 p = (KeyPositions[i] + 1.0) * 0.5;
             if (abs(p.x) + abs(p.y) > 0.0)
             {
-                key += drawAccidental(uv, p, i <= 7 ? 1 : -1);
+                key += drawAccidental(uv, p, i <= 7 ? 1 : -1, false);
             }
         }
         return key;
@@ -231,7 +235,7 @@ class NoteRender:
         
         if (dec != 0)
         {
-            decoration += drawAccidental(uv, p, dec);
+            decoration += drawAccidental(uv, p, dec, true);
         }
         
         float tie = 0.0;
@@ -355,7 +359,9 @@ class NoteRender:
         {
             bool dotted = false;
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
-            float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], NoteTails[i], NoteTies[i]);
+            vec2 tail = (NoteTails[i] + 1.0) * 0.5;
+            float tie = (NoteTies[i] + 1.0) * 0.5;
+            float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], tail, tie);
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
@@ -367,11 +373,13 @@ class NoteRender:
         vec2 uv = OutTexCoord;
         uv.y = 1.0 - uv.y;
 
-        float s = drawStaff(uv, staff_pos);
         vec4 notes = drawNotes(uv);
-        float key = drawKeySignature(uv);
+        float s = drawStaff(uv, staff_pos);
+        float k = drawKeySignature(uv);
 
         vec4 staff = vec4(vec3(s * 0.075), s);
+        vec4 key = vec4(vec3(k * 0.2), k);
+        notes = max(key, notes);
         outColour = max(staff, notes);
     }
     """
