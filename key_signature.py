@@ -1,9 +1,7 @@
-from font import Font
-from staff import Staff
-
 class KeySignature:
     """Store and draw params of music key in reference to the midi meta-message for key signature."""
 
+    NumAccidentals = 14
     SharpsAndFlats = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
     AccidentalCharacters = { 
         1: "B", 
@@ -14,9 +12,14 @@ class KeySignature:
     OriginNote = 60
 
     def __init__(self):
-        self.set('C')
+        self._set_key('C')
+        self.positions = [0.0] * KeySignature.NumAccidentals * 2
 
-    def set(self, key:str):
+    def set(self, key:str, note_positions: list):
+        self._set_key(key)
+        self._set_accidental_positions(note_positions)
+
+    def _set_key(self, key: str):
         self.sharps = []
         self.flats = []
         self.major = key.find("m") < 0
@@ -35,16 +38,15 @@ class KeySignature:
         else:
             add_sharps_and_flats(KeySignature.LookupTableMinor[tonic])
 
-    def draw(self, font:Font, staff:Staff, note_positions):
-        hspacing = 0.056
-        acc_size = 90
-        acc_col = [0.23, 0.23, 0.23, 0.7]
-        draw_pos_x = staff.pos[0] - (staff.width * 0.5) + 0.15
-                        
-        def draw_key_table(notes, character):
+    
+    def _set_accidental_positions(self, note_positions: list):
+        self.positions = [0.0 for x in self.positions]
+        def set_key_pos(notes, offset: int):
             num_notes = len(notes)
             draw_count = 0
-            acc_pos_x = draw_pos_x
+            pos_count = offset
+            acc_pos_x = 0.01
+            hspacing = 0.056
 
             if num_notes == 1:
                 draw_index = 0
@@ -53,7 +55,10 @@ class KeySignature:
 
             while draw_index >= 0 and draw_index < num_notes:
                 acc = KeySignature.OriginNote + notes[draw_index]
-                font.draw(character, acc_size, [acc_pos_x, note_positions[acc]], acc_col)
+
+                self.positions[pos_count] = acc_pos_x
+                self.positions[pos_count+1] = note_positions[acc]
+                pos_count += 2
                 draw_count += 1
                 acc_pos_x += hspacing
                 if draw_count % 2 == 0:
@@ -62,8 +67,9 @@ class KeySignature:
                 else:
                     draw_index += 1
 
-        draw_key_table(self.sharps, KeySignature.AccidentalCharacters[1])
-        draw_key_table(self.flats, KeySignature.AccidentalCharacters[-1])
+        set_key_pos(self.sharps, 0)
+        set_key_pos(self.flats, KeySignature.NumAccidentals // 2)
+
 
     def get_accidental(self, note:int, prev_note:int, bar_accidentals:list):
         """Return the drawn note and the accidental character or None if extra notation is not required.

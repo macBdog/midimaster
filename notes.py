@@ -1,7 +1,6 @@
 from texture import *
 from graphics import *
 from font import *
-from key_signature import KeySignature
 from staff import Staff
 from note import Note
 from note_render import NoteRender
@@ -13,7 +12,7 @@ class Notes:
     for each piece of music when they should be on-screen. There is a pool
     of onscreen notes that recycled when they reach the playhead.
     """    
-    def __init__(self, graphics:Graphics, note_render: NoteRender, staff: Staff, note_positions: list, key_signature: KeySignature):
+    def __init__(self, graphics:Graphics, note_render: NoteRender, staff: Staff, note_positions: list):
         self.graphics = graphics
         self.note_render = note_render
         self.notes = []
@@ -22,10 +21,9 @@ class Notes:
         self.rests_offset = 0
 
         self.prev_note = 0
-        self.key_signature = key_signature
         self.note_positions = note_positions
         self.staff = staff
-        self.ref_c4_pos = [staff.pos[0] - (staff.width * 0.5), note_positions[60]]
+        self.ref_c4_pos = [Staff.Pos[0], note_positions[60]]
         self.notes_on = {}
 
         # Create the barlines with 0 being the immovable 0 bar
@@ -101,12 +99,12 @@ class Notes:
             note = self.notes[self.notes_offset]
 
             # Handle accidentals, sharp going up, flat coming down
-            note_lookup, accidental = self.key_signature.get_accidental(note.note, self.prev_note, [])
+            note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, self.prev_note, [])
             self.prev_note = note_lookup
 
             note_width_32 = 0.025 
             note_pos_x = self.ref_c4_pos[0] + (note.time * note_width_32)
-            note_pos_y = self.note_positions[note_lookup] - 0.063
+            note_pos_y = self.note_positions[note_lookup]
             quantized_length, dotted = Note.get_quantized_length(note.length)
 
             pos = [note_pos_x, note_pos_y]
@@ -127,7 +125,7 @@ class Notes:
             bar_start = self.ref_c4_pos[0]
             rel_time = self.bartimes[i] - music_time
             self.barlines[i].pos[0] = bar_start + (rel_time * note_width)
-            self.barlines[i].pos[1] = self.staff.pos[1] + 0.25           
+            self.barlines[i].pos[1] = Staff.Pos[1] + 0.25           
             
             self.barlines[i].draw()
 

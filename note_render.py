@@ -1,9 +1,11 @@
+from staff import Staff
 from settings import GameSettings
 from graphics import Graphics
 from OpenGL.GL import *
 
 from texture import SpriteTexture, Texture
 from note import Note
+from key_signature import KeySignature
 from staff import Staff
 
 class NoteRender:
@@ -20,6 +22,7 @@ class NoteRender:
     uniform vec4 Colour;
     uniform float DisplayRatio;
 
+    uniform vec2 KeyPositions[NUM_KEY_SIG]; // 0-6 # Sharp, 8-15 b Flat
     uniform vec2 NotePositions[NUM_NOTES];
     uniform vec4 NoteColours[NUM_NOTES];
     uniform int NoteTypes[NUM_NOTES];
@@ -39,30 +42,23 @@ class NoteRender:
     #define note_type_eighth 4
     #define note_type_sixteenth 4
 
-    #define dec_dotted 1
-    #define dec_accent 2
-    #define dec_natural 3
-    #define dec_sharp 4
-    #define dec_flat 5
-
-    float drawCircle(in vec2 uv, vec2 center, float radius)
-    {
-        vec2 d1 = uv - center;
-        vec2 d2 = d1;
-        return smoothstep(radius, radius - (antialias * 0.02), dot(d1, d2) * 100.0);
-    }
+    #define staff_note_spacing 0.03
+    #define staff_spacing staff_note_spacing * 2.0
+    #define staff_octave_spacing staff_note_spacing * 7.0
+    #define staff_pos_x 0.0
+    #define staff_pos_y 0.5
+    #define staff_pos vec2(staff_pos_x, staff_pos_y)
+    #define staff_width 1.0
+    #define staff_line_width 0.003
 
     float drawEllipse(in vec2 uv, in vec2 pos, vec2 dim) 
     {
-        vec2 d = (uv - pos);
-        d.x /= dot(vec2(dim.x, 0.0), vec2(dim.x, 0.0));
-        d.y /= dot(vec2(0.0, dim.y), vec2(0.0, dim.y));
-
+        vec2 d = (uv - pos) / (dim * dim);
         if (abs( d.x ) <= 1.0 && abs( d.y ) < 1.0 ) 
         {
             if (dot(d, d) < 1.0) return 1.0;
         }
-        0.0;
+        return 0.0;
     }
 
     float drawRotatedEllipse(vec2 uv, vec2 pos, float size, bool altRot)
@@ -77,8 +73,7 @@ class NoteRender:
         vec2 l = pos - diff;
         vec2 r = pos + diff;
         
-        vec2 coord = uv * vec2(dim,  dim);
-
+        vec2 coord = uv * vec2(dim, dim);
         return smoothstep(0.0, antialias, distance(l, r) + 1.0 - (distance(coord, l) + distance(coord, r)));
     }
 
@@ -91,9 +86,9 @@ class NoteRender:
 
     float distanceToSegment( vec2 a, vec2 b, vec2 p )
     {
-    vec2 pa = p - a, ba = b - a;
-    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-    return length( pa - ba*h );
+        vec2 pa = p - a, ba = b - a;
+        float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+        return length( pa - ba*h );
     }
 
     float drawLineRounded(in vec2 uv, in vec2 start, in vec2 end, in float width)
@@ -103,16 +98,70 @@ class NoteRender:
 
     float drawLineSquare(in vec2 uv, in vec2 start, in vec2 end, in float width)
     {
-        float col = 0.0;
+        float col = drawLineRounded(uv, start, end, width);
         vec2 clip_box = vec2(0.015, width * 4.0);
-        float line = mix(0.0, 1.0, 1.0-smoothstep(width-antialias*0.01,width, distanceToSegment(start, end, uv)));
         float leftBox = drawRect(uv, start + vec2(clip_box.x * -0.5, 0.0), clip_box);
         float rightBox = drawRect(uv, end + vec2(clip_box.x * 0.5, 0.0), clip_box);
-        col = line - leftBox - rightBox;
+        if (abs(end.y - start.y) > abs(end.x - start.x))
+        {
+            clip_box = vec2(width * 4.0, 0.02);
+            leftBox = drawRect(uv, start, clip_box);
+            rightBox = drawRect(uv, end, clip_box);
+        }
+        col -= leftBox + rightBox;
         return clamp(col, 0.0, 1.0);
     }
 
-    float drawTie(in vec2 uv, in vec2 start, in vec2 end)
+    float drawAccidental(in vec2 uv, in vec2 p, int val)
+    {
+        float col = 0.0;
+        float width = 0.07;
+        vec2 acc_pos = p - vec2(0.04, 0.0);
+        if (val == 2)
+        {
+            // Natural
+            col += drawRect(uv, acc_pos + vec2(0.0, -0.015), vec2(0.001, width));
+            col += drawRect(uv, acc_pos - vec2(0.015, -0.021), vec2(0.001, width));
+            col += drawLineSquare(uv, acc_pos + vec2(-0.015, -0.01), acc_pos + vec2(0.0, -0.00), 0.004);
+            col += drawLineSquare(uv, acc_pos + vec2(-0.015, 0.01), acc_pos + vec2(0.0, 0.02), 0.004);
+        }
+        
+        else if (val == 1)
+        {
+            // Sharp
+            col += drawRect(uv, acc_pos, vec2(0.0025, width));
+            col += drawRect(uv, acc_pos - vec2(0.012, 0.006), vec2(0.0025, width));
+            col += drawLineSquare(uv, acc_pos + vec2(-0.02, 0.002), acc_pos + vec2(0.007, 0.023), 0.004);
+            col += drawLineSquare(uv, acc_pos + vec2(-0.02, -0.022), acc_pos + vec2(0.007, -0.003), 0.004);
+        }
+        
+        else if (val == -1)
+        {
+            // Flat
+            float little_b = drawRect(uv, acc_pos - vec2(0.015, -0.021), vec2(0.002, width));
+            little_b += drawRotatedEllipse(uv, acc_pos - vec2(0.015, 0.0), 0.5, true);
+            little_b -= drawRotatedEllipse(uv, acc_pos - vec2(0.015, 0.0), 0.15, false);
+            little_b -= drawRect(uv, acc_pos - vec2(0.031, 0.0), vec2(0.03, 0.05));
+            col += little_b;
+        }
+        return col;
+    }
+
+    float drawKeySignature(in vec2 uv)
+    {
+        float key = 0.0;
+        for (int i = 0; i < NUM_KEY_SIG; ++i)
+        {
+            vec2 p = KeyPositions[i];
+            if (abs(p.x) + abs(p.y) > 0.0)
+            {
+                key += drawAccidental(uv, p, i <= 7 ? 1 : -1);
+            }
+        }
+        return key;
+    }
+
+    float drawTie(in vec2 uv, in vec2 start, in vec2 end, bool above)
     {
         float col = 0.0;
         vec2 dir = (end - start);
@@ -120,26 +169,72 @@ class NoteRender:
         vec2 mid = start + (dir * 0.5) + vec2(-0.004, clamp(elen - 0.2, 0.0, 0.1) - 0.035);
         vec2 dim_lo = vec2(elen * 1.45, elen * 0.99);
         vec2 dim_hi = vec2(dim_lo.x * 1.15, dim_lo.y * 1.15);
-        vec2 offset_inner = vec2(0.0, elen * 0.11);
+        vec2 offset_inner = vec2(0.0, elen * 0.12);
+        if (above)
+        {
+            offset_inner = vec2(0.0, elen * -0.12);
+        }
         col += drawEllipse(uv, mid, dim_lo) - drawEllipse(uv, mid + offset_inner, dim_hi);
         return clamp(col, 0.0, 1.0);
     }
 
-    float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 tail_size, in float tie_32s) 
+    float drawRest(in vec2 uv, in float p, in int note_type)
+    {
+        if (note_type == note_type_whole)
+        {
+            return drawRect(uv, vec2(p, staff_pos_y + staff_note_spacing * 5.5), vec2(0.035, 0.025));
+        }
+        else if (note_type == note_type_half)
+        {
+            return drawRect(uv, vec2(p, staff_pos_y + staff_note_spacing * 4.5), vec2(0.035, 0.025));
+        }
+        else if (note_type == note_type_quarter)
+        {
+            float col = drawLineRounded(uv, vec2(p - 0.015, staff_pos_y + 0.22), vec2(p - 0.001, staff_pos_y + 0.18), 0.0025);
+            col += drawLineSquare(uv, vec2(p-0.006, staff_pos_y + 0.19), vec2(p - 0.02, staff_pos_y + 0.11), 0.009);
+            col += drawLineRounded(uv, vec2(p - 0.025, staff_pos_y + 0.12), vec2(p - 0.011, staff_pos_y + 0.072), 0.0025);
+            col += drawEllipse(uv, vec2(p - 0.022, staff_pos_y + 0.07), vec2(0.11, 0.14));
+            col -= drawEllipse(uv, vec2(p - 0.019, staff_pos_y + 0.062), vec2(0.1, 0.13));
+            return clamp(col, 0.0, 1.0);
+        }
+        else if (note_type == note_type_sixteenth)
+        {
+            float col = drawLineRounded(uv, vec2(p - 0.001, staff_pos_y + 0.173), vec2(p - 0.02, staff_pos_y + 0.06), 0.0025);
+            col += drawEllipse(uv, vec2(p - 0.024, staff_pos_y + 0.15), vec2(0.105, 0.135));
+            col += drawLineRounded(uv, vec2(p - 0.016, staff_pos_y + 0.14), vec2(p - 0.003, staff_pos_y + 0.167), 0.003);
+            return col;
+        }
+        return 0.0;
+    }
+
+    // hat-size denotes joining between eigth and sixteenth notes
+    // X component is the length, Y component is the end heigh difference
+    // X of zero and negative Y means the note has been tied into and does not require a tail
+    float drawNote(in vec2 uv, in vec2 p, in int note_type, bool dotted, in int dec, in vec2 hat_size, in float tie_32s) 
     {
         vec2 stalk_size = vec2(0.0025, 0.2);
         float blob_size = 1.6;
         float blob = drawRotatedEllipse(uv, p, blob_size, false);
         float decoration = 0.0;
-        if (dec == 1)
+        float lines = 0.0;
+        int lines_over = 0;
+        int lines_under = 0;
+        bool stalk_dir_down = p.y > staff_pos_y + (staff_note_spacing * 2.0);
+        
+        if (dotted)
         {
             decoration += drawEllipse(uv, p + vec2(0.04, 0.0), vec2(0.07, 0.1));
+        }
+        
+        if (dec != 0)
+        {
+            decoration += drawAccidental(uv, p, dec);
         }
         
         float tie = 0.0;
         if (tie_32s > 0.0)
         {
-            tie = drawTie(uv, p, p + vec2(note_spacing_32nd * tie_32s, 0.0));
+            tie = drawTie(uv, p, p + vec2(note_spacing_32nd * tie_32s, 0.0), stalk_dir_down);
         }
         
         if (note_type <= note_type_half)
@@ -147,26 +242,107 @@ class NoteRender:
             blob -= drawRotatedEllipse(uv, p, blob_size * 0.5, true);
         }
         
-        if (note_type == note_type_whole)
+        float staff_above = (staff_pos_y + staff_note_spacing * 9.0);
+        float staff_below = (staff_pos_y - staff_note_spacing * 2.0);
+        float dist_below = staff_below - p.y;
+        float dist_above = p.y - staff_above;
+        vec2 line_size = vec2(0.055, staff_line_width * 2.0);
+        if (dist_below >= 0.0)
         {
-            return clamp(blob + tie + decoration, 0.0, 1.0);
+            vec2 line_pos = vec2(p.x, staff_below);
+            int num_lines = 1 + int(dist_below / staff_note_spacing / 1.9);
+            for (int i = 0; i < num_lines; ++i)
+            {
+                lines += drawRect(uv, line_pos, line_size);
+                line_pos.y -= staff_note_spacing * 2.0;
+            }
+        }
+        else if (dist_above >= 0.0)
+        {
+            vec2 line_pos = vec2(p.x, staff_above);
+            int num_lines = 1 + int(dist_above / staff_note_spacing / 1.9);
+            for (int i = 0; i < num_lines; ++i)
+            {
+                lines += drawRect(uv, line_pos, line_size);
+                line_pos.y += staff_note_spacing * 2.0;
+            }
         }
         
-        float stalk_width = note_size * 0.184;
-        vec2 stalk_pos = vec2(stalk_width, stalk_size.y * 0.5);
+        if (note_type == note_type_whole)
+        {
+            return clamp(blob + lines + tie + decoration, 0.0, 1.0);
+        }
+
+        float stalk_width = note_size * 0.2;
+        vec2 stalk_pos = vec2(stalk_width - 0.001, stalk_size.y * 0.5);
+        if (stalk_dir_down)
+        {
+            stalk_pos.x -= blob_size * 0.024;
+            stalk_pos.y -= stalk_size.y;
+        }
         float stalk = drawRect(uv, p + stalk_pos, stalk_size);
+                    
+        if (note_type >= note_type_eighth && hat_size.x <= 0.0 && hat_size.y >= 0.0)
+        {
+            float tail = 0.0;
+            
+            // Single tail
+            if (note_type >= note_type_eighth)
+            {
+                vec2 tail_dim = vec2(0.18, 0.3);
+                vec2 tail_pos = p + stalk_pos + vec2(0.0, (tail_dim.y - stalk_size.y) * 0.1);
+                if (stalk_dir_down)
+                {
+                    tail_pos = p + stalk_pos - vec2(0.0, (tail_dim.y - stalk_size.y) * 0.1);
+                    tail += drawEllipse(uv, tail_pos, tail_dim);
+                    tail -= drawEllipse(uv, tail_pos + vec2(0.0, 0.01), tail_dim - vec2(0.01, 0.008));
+                    tail -= drawRect(uv, p + stalk_pos - vec2(0.05, 0.0), vec2(0.1, stalk_size.y)); 
+                }
+                else
+                {
+                    tail += drawEllipse(uv, tail_pos, tail_dim);
+                    tail -= drawEllipse(uv, tail_pos - vec2(0.0, 0.01), tail_dim - vec2(0.01, 0.008));
+                    tail -= drawRect(uv, p + stalk_pos - vec2(0.05, 0.0), vec2(0.1, stalk_size.y)); 
+                }
+                tail = clamp(tail, 0.0, 1.0);
+            }
+            
+            // Double tail
+            if (note_type >= note_type_sixteenth)
+            {
+            
+            }
+            return clamp(blob + lines + tie + stalk + decoration + tail, 0.0, 1.0);
+        }
         
         if (note_type <= note_type_quarter)
         {
-            return clamp(blob + tie + stalk + decoration, 0.0, 1.0);
+            return clamp(blob + lines + tie + stalk + decoration, 0.0, 1.0);
         }
         
-        float tail_width = 0.012;
-        vec2 tail_start = p + stalk_pos + vec2(stalk_width * -0.05, (stalk_size.y * 0.51) - tail_width);
-        vec2 tail_end = tail_start + tail_size + vec2(0.002, 0.0);
-        float tail = drawLineSquare(uv, tail_start, tail_end, tail_width);
+        // Lines joining quavers and semi quavers
+        float hat = 0.0;
+        if (hat_size.x > 0.0)
+        {
+            float hat_width = 0.012;
+            vec2 hat_start = p + stalk_pos + vec2(stalk_width * -0.05, (stalk_size.y * 0.51) - hat_width);
+            vec2 hat_end = hat_start + hat_size + vec2(0.002, 0.0);
+            hat = drawLineSquare(uv, hat_start, hat_end, hat_width);
+        }
         
-        return clamp(blob + tie + stalk + tail + decoration, 0.0, 1.0);   
+        return clamp(blob + lines + tie + stalk + hat + decoration, 0.0, 1.0);   
+    }
+
+    float drawStaff(in vec2 uv, in vec2 p)
+    {
+        float col = drawRect(uv, p + vec2(0.5 * staff_width, staff_spacing * 2.0), vec2(staff_width, staff_spacing * 4.0)) * 0.5;
+        for (int i = 0; i < 5; ++i)
+        {
+            vec2 start = p + vec2(0.0, float(i) * staff_spacing);
+            vec2 end = start + vec2(staff_width, 0.0);
+            col += mix(0.0, 1.0, 1.0-smoothstep(staff_line_width-antialias*0.01, staff_line_width, distanceToSegment(start, end, uv)));
+        }
+        return col;
     }
 
     vec4 drawNotes(in vec2 uv)
@@ -174,8 +350,9 @@ class NoteRender:
         vec4 all_notes = vec4(0.0);
         for (int i = 0; i < NUM_NOTES; ++i)
         {
+            bool dotted = false;
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
-            float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteTails[i], NoteTies[i]);
+            float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], NoteTails[i], NoteTies[i]);
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].xyz, note.r * alpha);
         }
@@ -187,14 +364,15 @@ class NoteRender:
         vec2 uv = OutTexCoord;
         uv.y = 1.0 - uv.y;
 
-        outColour = vec4(drawNotes(uv));
+        outColour = vec4(drawStaff(uv, staff_pos)) + vec4(drawNotes(uv)) + vec4(drawKeySignature(uv));
     }
-    """.replace("NUM_NOTES", str(NumNotes))
+    """
 
-    def __init__(self, graphics: Graphics, display_ratio: float, ref_c4_pos: list):
+    def __init__(self, graphics: Graphics, display_ratio: float, staff: Staff):
+        self.staff = staff
         self.calibration = False
         self.display_ratio = 1.0 / display_ratio
-        self.ref_c4_pos = ref_c4_pos
+        self.ref_c4_pos = [Staff.Pos[0], staff.note_positions[60]]
         self.note = -1
         self.notes = [None] * NoteRender.NumNotes
         self.note_positions = [0.0] * NoteRender.NumNotes * 2
@@ -204,16 +382,24 @@ class NoteRender:
         self.note_tails = [0.0] * NoteRender.NumNotes * 2
         self.note_ties = [0.0] * NoteRender.NumNotes
 
-        self.shader = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), 
-            OpenGL.GL.shaders.compileShader(NoteRender.PIXEL_SHADER_NOTES, GL_FRAGMENT_SHADER)
-        )
-
+        # Notation shader draws from 0->1 on XY, left->right, down->up
+        shader_substitutes = {
+            "NUM_NOTES": NoteRender.NumNotes,
+            "NUM_KEY_SIG": KeySignature.NumAccidentals,
+            "#define staff_pos_x 0.0": f"#define staff_pos_x {0.5 + Staff.Pos[0] * 0.5}",
+            "#define staff_pos_y 0.5": f"#define staff_pos_y {0.5 + Staff.Pos[1] * 0.5}",
+            "#define staff_width 1.0": f"#define staff_width {Staff.Width * 0.5}",
+            "#define staff_note_spacing 0.03": f"#define staff_note_spacing {Staff.NoteSpacing * 0.5}"
+        }
+        NoteRender.PIXEL_SHADER_NOTES = Graphics.process_shader_source(NoteRender.PIXEL_SHADER_NOTES, shader_substitutes)
+        self.shader = Graphics.compile_shader(Graphics.VERTEX_SHADER_TEXTURE, NoteRender.PIXEL_SHADER_NOTES)
+        
         self.texture = Texture("")
         self.sprite = SpriteTexture(graphics, self.texture, [1.0, 1.0, 1.0, 1.0], [0.0, 0.0], [2.0, 2.0], self.shader)
 
         self.display_ratio_id = glGetUniformLocation(self.shader, "DisplayRatio")
         self.music_time_id = glGetUniformLocation(self.shader, "MusicTime")
+        self.key_positions_id = glGetUniformLocation(self.shader, "KeyPositions")
         self.note_positions_id = glGetUniformLocation(self.shader, "NotePositions")
         self.note_colours_id = glGetUniformLocation(self.shader, "NoteColours")
         self.note_types_id = glGetUniformLocation(self.shader, "NoteTypes")
@@ -287,10 +473,9 @@ class NoteRender:
             if should_be_displayed and not self.calibration:
                 npos = i * 2
                 cpos = i * 4
-                self.note_positions
                 self.note_positions[npos] = self.ref_c4_pos[0] + ((note.time - music_time) * note_width)
 
-                # Hold the visuals a 32note longer so the player can see which note to play
+                # Hold the visuals a 32nd note longer so the player can see which note to play
                 should_be_played = note.time <= music_time
                 should_be_recycled = note.time + 1 < music_time
                 if should_be_played:
@@ -298,29 +483,18 @@ class NoteRender:
                 else:
                     self.note_colours[cpos + 1] = 0.1
 
-                note_lookup = note.note % 12
-                num_under = Note.NoteLineLookupUnder[note_lookup]
-                num_over = Note.NoteLineLookupOver[note_lookup]
-                line_y_offset = 0.025 if num_under <= 1 or note_lookup < 60 else 0.012
-                line_x_offset = -0.019
-                for j in range(num_under):
-                    pass
-                    #self.font.draw('_', 82, [note_pos[0] + line_x_offset, self.ref_c4_pos[1] + line_y_offset - (i * Staff.NoteSpacing * 2)], note_col)
-
-                for j in range(num_over):
-                    pass
-                    #self.font.draw('_', 82, [note_pos[0] + line_x_offset, self.ref_c4_pos[1] + line_y_offset + (Staff.NoteSpacing * 12) - (i * Staff.NoteSpacing * 2)], note_col)
-                    
                 # Note is on as soon as it hits the playhead
                 if should_be_played:
-                    notes_on[self.note] = music_time + note.length
+                    notes_on[note.note] = music_time + note.length
 
                 if should_be_recycled:
+                    self.note_colours[npos + 3] = 0.0
                     self.notes[i] = None
 
         def note_uniforms():
             glUniform1f(self.display_ratio_id, self.display_ratio)
             glUniform1f(self.music_time_id, music_time)
+            glUniform2fv(self.key_positions_id, KeySignature.NumAccidentals, self.staff.key_signature.positions)
             glUniform2fv(self.note_positions_id, NoteRender.NumNotes, self.note_positions)
             glUniform4fv(self.note_colours_id, NoteRender.NumNotes, self.note_colours)
             glUniform1iv(self.note_types_id, NoteRender.NumNotes, self.note_types)
@@ -329,6 +503,8 @@ class NoteRender:
             glUniform1fv(self.note_ties_id, NoteRender.NumNotes, self.note_ties)
         
         self.sprite.draw(note_uniforms)
+
+        return notes_on
 
     def end(self):
         pass

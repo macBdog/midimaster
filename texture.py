@@ -166,11 +166,11 @@ class TextureManager:
             self.textures[texture_name] = new_texture
             return new_texture
 
-    def create_sprite_shape(self, colour: list, position: list, size: list):
-        return SpriteShape(self.graphics, colour, position, size)
+    def create_sprite_shape(self, colour: list, position: list, size: list, shader=None):
+        return SpriteShape(self.graphics, colour, position, size, shader)
 
-    def create_sprite_texture(self, texture_name: str, position: tuple, size: tuple):
-        return SpriteTexture(self.graphics, self.get(texture_name), [1.0, 1.0, 1.0, 1.0], position, size)
+    def create_sprite_texture(self, texture_name: str, position: tuple, size: tuple, shader=None):
+        return SpriteTexture(self.graphics, self.get(texture_name), [1.0, 1.0, 1.0, 1.0], position, size, shader)
 
-    def create_sprite_texture_tinted(self, texture_name: str, colour: list, position: tuple, size: tuple):
-        return SpriteTexture(self.graphics, self.get(texture_name), colour, position, size)
+    def create_sprite_texture_tinted(self, texture_name: str, colour: list, position: tuple, size: tuple, shader=None):
+        return SpriteTexture(self.graphics, self.get(texture_name), colour, position, size, shader)

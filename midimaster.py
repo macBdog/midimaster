@@ -7,9 +7,9 @@ from widget import AlignX
 from widget import AlignY
 from animation import Animation
 from animation import AnimType
+from graphics import Graphics
 from music import Music
 from staff import Staff
-from noteboard import NoteBoard
 from note_render import NoteRender
 from mido import Message
 from midi_devices import MidiDevices
@@ -56,7 +56,6 @@ class MidiMaster(Game):
     def prepare(self):
         super().prepare()
         self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
-        music_font = Font(os.path.join("ext", "Musisync.ttf"), self.graphics, self.window)
 
         # Create a background image stretched to the size of the window
         gui_splash = Gui(self.window_width, self.window_height, "splash_screen")
@@ -79,34 +78,34 @@ class MidiMaster(Game):
 
         title.animation.set_action(-1, transition_to_game)
 
-        game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
+        bg_shader = Graphics.compile_shader(Graphics.VERTEX_SHADER_TEXTURE, Graphics.PIXEL_SHADER_TEXTURE_SCROLL)
+        game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0), bg_shader)
         self.gui_game.add_widget(game_bg)
 
         self.staff = Staff()
-        self.noteboard = NoteBoard()
-
-        note_bg_pos_x = 0.228
+        
+        bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
+        bg_size_top = 0.35
+        bg_size_btm = 1.25
         self.note_bg_top = self.gui_game.add_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] + 0.775), (2.0, -0.35))
+            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)), (Staff.Width, bg_size_top * -1.0))
         )
         self.note_bg_btm = self.gui_game.add_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (note_bg_pos_x, self.staff.pos[1] - 0.705), (2.0, 1.25))
+            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5), (Staff.Width, bg_size_btm))
         )
 
         self.staff.prepare(self.gui_game, self.textures)
-        self.noteboard.prepare(self.textures, self.gui_game, self.staff)
-
+        
         self.score_fade = 0.0
         self.setup_input()
 
-        ref_c4_pos = [self.staff.pos[0] - (self.staff.width * 0.5), self.noteboard.note_positions[60]]
-        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, ref_c4_pos)
+        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
 
         # Read a midi file and load the notes
         level = "test.mid"
         level_path = os.path.join("music", level)
         if os.path.exists(level_path):
-            self.music = Music(self.graphics, self.note_render, music_font, self.staff, self.noteboard.get_note_positions(), level_path, 1)
+            self.music = Music(self.graphics, self.note_render, self.staff, level_path, 1)
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
@@ -120,7 +119,7 @@ class MidiMaster(Game):
             self.score_fade = 1.0
             self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
             if note_id is not None:
-                spawn_pos = [-0.71, self.noteboard.note_positions[note_id]]
+                spawn_pos = [-0.71, self.staff.note_positions[note_id]]
                 self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0])
 
         # Handle events from MIDI input, echo to output so player can hear
@@ -146,7 +145,7 @@ class MidiMaster(Game):
         # Light up score box for any held note
         for note, velocity in self.notes_down.items():
             if velocity > 0.0:
-                self.noteboard.set_score(note)
+                self.staff.set_score(note)
         self.profile.end()
 
         self.devices.input_messages = []
@@ -172,7 +171,7 @@ class MidiMaster(Game):
             for k in music_notes:
                 # Highlight the note box to show this note should be currently played
                 if music_notes[k] >= self.music_time:
-                    self.noteboard.note_on(k)
+                    self.staff.note_on(k)
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:
@@ -189,7 +188,7 @@ class MidiMaster(Game):
             # Send note off messages for all the notes in the music
             for k in music_notes_off:
                 del music_notes[k]
-                self.noteboard.note_off(k)
+                self.staff.note_off(k)
                 new_note_off = Message("note_off")
                 new_note_off.note = k
                 self.devices.output_messages.append(new_note_off)
@@ -198,7 +197,7 @@ class MidiMaster(Game):
 
             self.profile.begin("scoring")
             if self.mode == MusicMode.PERFORMANCE:
-                if self.noteboard.is_scoring():
+                if self.staff.is_scoring():
                     score_vfx()
                     self.score = self.score + 10 * self.dt
             elif self.mode == MusicMode.PAUSE_AND_LEARN:
@@ -208,7 +207,7 @@ class MidiMaster(Game):
             # Highlight staff background to show score
             self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
             self.note_bg_top.sprite.set_colour(self.note_correct_colour)
-            self.noteboard.draw(dt)
+            self.staff.draw(dt)
             self.profile.end()
 
             self.profile.begin("text")
@@ -318,8 +317,8 @@ class MidiMaster(Game):
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES:
             note_keycode = 0
             keymap = [67, 68, 69, 70, 71, 65, 66]  # CDEFGAB
-            for i in range(NoteBoard.NumNotes):
-                note = NoteBoard.OriginNote + i
+            for i in range(Staff.NumNotes):
+                note = Staff.OriginNote + i
                 note_lookup = note % 12
                 if note_lookup in KeySignature.SharpsAndFlats:
                     add_note_key_mapping(keymap[(note_keycode - 1) % 7], note, InputActionModifier.LSHIFT)  # Shift for sharp (#)
@@ -329,19 +328,19 @@ class MidiMaster(Game):
                     note_keycode += 1
 
         elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
-            add_note_key_mapping(81, NoteBoard.OriginNote)  # C
-            add_note_key_mapping(50, NoteBoard.OriginNote + 1)  # Db
-            add_note_key_mapping(87, NoteBoard.OriginNote + 2)  # D
-            add_note_key_mapping(51, NoteBoard.OriginNote + 3)  # Eb
-            add_note_key_mapping(69, NoteBoard.OriginNote + 4)  # E
-            add_note_key_mapping(82, NoteBoard.OriginNote + 5)  # F
-            add_note_key_mapping(53, NoteBoard.OriginNote + 6)  # Gb
-            add_note_key_mapping(84, NoteBoard.OriginNote + 7)  # G
-            add_note_key_mapping(54, NoteBoard.OriginNote + 8)  # Ab
-            add_note_key_mapping(89, NoteBoard.OriginNote + 9)  # A
-            add_note_key_mapping(55, NoteBoard.OriginNote + 10)  # Bb
-            add_note_key_mapping(85, NoteBoard.OriginNote + 11)  # B
-            add_note_key_mapping(73, NoteBoard.OriginNote + 12)  # C
+            add_note_key_mapping(81, Staff.OriginNote)  # C
+            add_note_key_mapping(50, Staff.OriginNote + 1)  # Db
+            add_note_key_mapping(87, Staff.OriginNote + 2)  # D
+            add_note_key_mapping(51, Staff.OriginNote + 3)  # Eb
+            add_note_key_mapping(69, Staff.OriginNote + 4)  # E
+            add_note_key_mapping(82, Staff.OriginNote + 5)  # F
+            add_note_key_mapping(53, Staff.OriginNote + 6)  # Gb
+            add_note_key_mapping(84, Staff.OriginNote + 7)  # G
+            add_note_key_mapping(54, Staff.OriginNote + 8)  # Ab
+            add_note_key_mapping(89, Staff.OriginNote + 9)  # A
+            add_note_key_mapping(55, Staff.OriginNote + 10)  # Bb
+            add_note_key_mapping(85, Staff.OriginNote + 11)  # B
+            add_note_key_mapping(73, Staff.OriginNote + 12)  # C
 
 
 def main():

@@ -3,6 +3,8 @@ from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.constant import Constant
 
+from settings import GameSettings
+
 class Graphics:
     VERTEX_SHADER_TEXTURE = """
     #version 430
@@ -31,6 +33,24 @@ class Graphics:
     void main() 
     {
         outColour = texture(SamplerTex, OutTexCoord) * Colour;
+    }
+    """
+
+    PIXEL_SHADER_TEXTURE_SCROLL = """
+    #version 430
+
+    in vec2 OutTexCoord;     
+    uniform sampler2D SamplerTex;
+    uniform vec4 Colour;
+    out vec4 outColour;
+
+    float iTime = 0.0;
+
+    void main() 
+    {
+        vec2 scroll = OutTexCoord + vec2(iTime, iTime);
+        outColour = texture(SamplerTex, scroll) * Colour;
+        iTime += 0.0015;
     }
     """
 
@@ -96,7 +116,7 @@ class Graphics:
     def __init__(self):
         self.indices = numpy.array([0, 1, 2, 2, 3, 0], dtype=numpy.uint32)
 
-        # Compile multiple shaders for different purposes
+        # Pre-compile multiple shaders for general purpose drawing
         self.shader_texture = OpenGL.GL.shaders.compileProgram(
             OpenGL.GL.shaders.compileShader(Graphics.VERTEX_SHADER_TEXTURE, GL_VERTEX_SHADER), 
             OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_TEXTURE, GL_FRAGMENT_SHADER)
@@ -112,12 +132,32 @@ class Graphics:
             OpenGL.GL.shaders.compileShader(Graphics.PIXEL_SHADER_FONT, GL_FRAGMENT_SHADER)
         )
 
+
+    @staticmethod
+    def compile_shader(vertex_shader_source: str, pixel_shader_source: str):
+        return OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader_source, GL_VERTEX_SHADER), 
+            OpenGL.GL.shaders.compileShader(pixel_shader_source, GL_FRAGMENT_SHADER)
+        )
+
+
+    @staticmethod
+    def process_shader_source(src: str, subs: dict) -> str:
+        for key, sub in subs.items():
+            if src.find(key):
+                src = src.replace(key, str(sub))
+            elif GameSettings.DEV_MODE:
+                print(f"Cannot find shader substitute key: {key} ")
+        return src
+
+
     @staticmethod
     def print_all_uniforms(shader: int):
         num_uniforms = glGetProgramiv(shader, GL_ACTIVE_UNIFORMS)
         for i in range(num_uniforms):
             name, size, type = glGetActiveUniform(shader, i)
             print(f"Shader unfiform dump - Name: {name}, type: {type}, size: {size}")
+
 
     @staticmethod
     def debug_print_shader(vertex_source: str, fragment_source: str):
