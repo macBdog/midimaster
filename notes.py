@@ -30,9 +30,9 @@ class Notes:
         self.num_barlines = 8
         self.barlines = []
         self.bartimes = []
-        staff_width = 0.085 * 2 * 4
+        staff_width = Staff.StaffSpacing * 4.0
         for i in range(self.num_barlines):
-            barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, 0.0], [0.011, staff_width])
+            barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, 0.0], [0.008, staff_width])
             self.barlines.append(barline)
             self.bartimes.append(i * 32.0)
 
@@ -125,7 +125,7 @@ class Notes:
             bar_start = self.ref_c4_pos[0]
             rel_time = self.bartimes[i] - music_time
             self.barlines[i].pos[0] = bar_start + (rel_time * note_width)
-            self.barlines[i].pos[1] = Staff.Pos[1] + 0.25           
+            self.barlines[i].pos[1] = Staff.Pos[1] + Staff.StaffSpacing * 2.0           
             
             self.barlines[i].draw()
 

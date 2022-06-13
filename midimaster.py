@@ -41,6 +41,7 @@ class MidiMaster(Game):
         self.name = "MidiMaster"
         self.note_width_32nd = 0.025
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
+        self.note_bg_colour = [0.5] * 4
         self.mode = MusicMode.PAUSE_AND_LEARN
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
         self.reset()
@@ -92,6 +93,9 @@ class MidiMaster(Game):
         )
         self.note_bg_btm = self.gui_game.add_widget(
             self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5), (Staff.Width, bg_size_btm))
+        )
+        self.note_bg = self.gui_game.add_widget(
+            self.textures.create_sprite_shape(self.note_bg_colour, [Staff.Pos[0] + Staff.Width * 0.5, Staff.Pos[1] + Staff.StaffSpacing * 2.0], (Staff.Width, Staff.StaffSpacing * 4.0))
         )
 
         self.staff.prepare(self.gui_game, self.textures)
@@ -214,6 +218,10 @@ class MidiMaster(Game):
             # Same with the note highlight background
             self.note_correct_colour = [max(0.65, i - 0.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
 
+            # Show the play mode
+            mode_string = "Performance" if self.mode == MusicMode.PERFORMANCE else "Pause & Learn"
+            self.font_game.draw(f"{mode_string}", 16, [0.5, 0.8], [0.6, 0.6, 0.6, 1.0])
+
             # Show the score on top of everything
             self.score_fade -= dt * 0.5
             self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
@@ -248,6 +256,9 @@ class MidiMaster(Game):
             self.reset()
             self.music.reset()
 
+        def mode_toggle(self):
+            self.mode = MusicMode.PAUSE_AND_LEARN if self.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
+
         def play_button_colour(self):
             return [0.1, 0.87, 0.11, 1.0] if self.music_running else [0.8, 0.8, 0.8, 1.0]
 
@@ -262,12 +273,14 @@ class MidiMaster(Game):
         btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
         btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, controls_height), playback_button_size))
         btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
+        btn_mode = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/panel.tga", (0.65, 0.8), (0.32, 0.13)))
 
         btn_play.set_action(play, self)
         btn_play.set_colour_func(play_button_colour, self)
         btn_pause.set_action(pause, self)
         btn_pause.set_colour_func(pause_button_colour, self)
         btn_stop.set_action(stop_rewind, self)
+        btn_mode.set_action(mode_toggle, self)
 
         self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, controls_height - 0.10), (0.5, 0.25)))
         self.bg_score.set_colour_func(score_bg_colour, self)

@@ -11,6 +11,9 @@ from staff import Staff
 class NoteRender:
     """Draw 32 notes at a time for the entire game on the GPU."""
     NumNotes = 32
+    BaseColour = 0.15
+    HitColour = [0.15, 0.78, 0.15, 1.0]
+    MissColour = [0.78, 0.15, 0.15, 1.0]
 
     PIXEL_SHADER_NOTES = """
     #version 430
@@ -335,7 +338,7 @@ class NoteRender:
 
     float drawStaff(in vec2 uv, in vec2 p)
     {
-        float col = drawRect(uv, p + vec2(0.5 * staff_width, staff_spacing * 2.0), vec2(staff_width, staff_spacing * 4.0)) * 0.5;
+        float col = drawRect(uv, p + vec2(0.5 * staff_width, staff_spacing * 2.0), vec2(staff_width, staff_spacing * 4.0)) * 0.25;
         for (int i = 0; i < 5; ++i)
         {
             vec2 start = p + vec2(0.0, float(i) * staff_spacing);
@@ -354,7 +357,7 @@ class NoteRender:
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
             float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], NoteTails[i], NoteTies[i]);
             float alpha = NoteColours[i].a;
-            all_notes += vec4(note * NoteColours[i].xyz, note.r * alpha);
+            all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
         return all_notes;
     }
@@ -364,7 +367,12 @@ class NoteRender:
         vec2 uv = OutTexCoord;
         uv.y = 1.0 - uv.y;
 
-        outColour = vec4(drawStaff(uv, staff_pos)) + vec4(drawNotes(uv)) + vec4(drawKeySignature(uv));
+        float s = drawStaff(uv, staff_pos);
+        vec4 notes = drawNotes(uv);
+        float key = drawKeySignature(uv);
+
+        vec4 staff = vec4(vec3(s * 0.075), s);
+        outColour = max(staff, notes);
     }
     """
 
@@ -448,7 +456,7 @@ class NoteRender:
         self.note = new_note
         self.notes[self.note] = note
 
-        col = [0.1, 0.1, 0.1, 1.0]
+        col = [NoteRender.BaseColour, NoteRender.BaseColour, NoteRender.BaseColour, 1.0]
 
         npos = self.note * 2
         cpos = self.note * 4
@@ -479,9 +487,9 @@ class NoteRender:
                 should_be_played = note.time <= music_time
                 should_be_recycled = note.time + 1 < music_time
                 if should_be_played:
-                    self.note_colours[cpos + 1] = 0.78
+                    self.note_colours[cpos + 1] = NoteRender.HitColour[1]
                 else:
-                    self.note_colours[cpos + 1] = 0.1
+                    self.note_colours[cpos + 1] = NoteRender.BaseColour
 
                 # Note is on as soon as it hits the playhead
                 if should_be_played:

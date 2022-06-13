@@ -46,7 +46,7 @@ class Staff:
         tone_count = 0
         score_width = 0.07
         note_start_x = -1.0 + (score_width * 2.0)
-        note_start_y = Staff.Pos[1] - Staff.NoteSpacing * (12 - 2)
+        note_start_y = Staff.Pos[1] - Staff.NoteSpacing * (12 - 3)
         score_start_x = note_start_x + score_width
         for i in range(Staff.NumNotes):
             note_height = Staff.NoteSpacing
