@@ -39,7 +39,7 @@ class MidiMaster(Game):
     def __init__(self):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
-        self.note_width_32nd = 0.025
+        self.note_width_32nd = Staff.NoteWidth32nd
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
         self.note_bg_colour = [0.5] * 4
         self.mode = MusicMode.PAUSE_AND_LEARN

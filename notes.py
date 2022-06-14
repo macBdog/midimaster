@@ -9,49 +9,54 @@ from note_render import NoteRender
 class Notes:
     """Notes manages all the on-screen note representations for a game.
     It is intended to be called by a music manager that creates the notes
-    for each piece of music when they should be on-screen. There is a pool
-    of onscreen notes that recycled when they reach the playhead.
+    for each piece of music, then notes manages when they should be on-screen.
     """    
     def __init__(self, graphics:Graphics, note_render: NoteRender, staff: Staff, note_positions: list):
         self.graphics = graphics
         self.note_render = note_render
         self.notes = []
         self.rests = []
-        self.notes_offset = 0
-        self.rests_offset = 0
-
-        self.prev_note = 0
-        self.note_positions = note_positions
-        self.staff = staff
-        self.ref_c4_pos = [Staff.Pos[0], note_positions[60]]
-        self.notes_on = {}
-
-        # Create the barlines with 0 being the immovable 0 bar
         self.num_barlines = 8
         self.barlines = []
         self.bartimes = []
+
+        self.note_positions = note_positions
+        self.staff = staff
+        self.ref_c4_pos = [Staff.Pos[0], note_positions[60]]
+        
+        # Create the barlines with 0 being the immovable 0 bar
         staff_width = Staff.StaffSpacing * 4.0
         for i in range(self.num_barlines):
             barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, 0.0], [0.008, staff_width])
             self.barlines.append(barline)
             self.bartimes.append(i * 32.0)
+        
+        self.reset()
 
     def reset(self):
-        """Restore the note pool and barlines to their original state."""
+        """Restore the note pool and barlines to their original state without clearing the music."""
         
         self.notes_offset = 0
         self.rests_offset = 0
         self.prev_note = 0
-        for _, note in enumerate(self.notes):
-            self.assign_note()
-
-        for _, rest in enumerate(self.rests):
-            self.assign_rest()
+        self.notes_on = {}
+        self.assign_notes()
 
         for i in range(self.num_barlines):
             self.bartimes[i] = i * 32.0
 
-        self.notes_on = {}
+    def assign_notes(self, num_notes:int=-1):
+        """Add a number of notes to the render queue, -1 meaning add all."""
+
+        notes_len = len(self.notes)
+        num_to_add = num_notes if num_notes > 0 else notes_len - self.notes_offset
+        for count in range(num_to_add):
+            note_idx = self.notes_offset + count
+            note = self.notes[note_idx]
+            next_note = self.notes[note_idx + 1] if note_idx < len(self.notes) - 1 else None
+            self._assign_note(note, next_note)
+
+        self.notes_offset += num_to_add
 
 
     def add(self, pitch: int, time: int, length: int):
@@ -60,9 +65,6 @@ class Notes:
             self.notes.append(Note(pitch, time, length))
         elif GameSettings.DEV_MODE:
             print(f"Ignoring a note that is out of playable range: {pitch}") 
-
-        # Automatically assign all the notes in the music
-        self.assign_note()
     
 
     def add_rests(self):
@@ -77,11 +79,11 @@ class Notes:
             rest_length = next_note.time - rest_start
             if rest_length > 0:
                 self.rests.append(Note(0, rest_start, rest_length))               
-                self.assign_rest()
+                self._assign_rest()
             note_count += 1
 
 
-    def assign_rest(self):
+    def _assign_rest(self):
         """Get the next rest in the list and add it to the render as a note type"""
 
         if self.rests_offset < len(self.rests):
@@ -92,28 +94,28 @@ class Notes:
             self.rests_offset += 1
     
 
-    def assign_note(self):
+    def _assign_note(self, note, next_note):
         """Get the next note in the list and add it to the render"""
 
-        if self.notes_offset < len(self.notes):
-            note = self.notes[self.notes_offset]
+        # Handle accidentals, sharp going up, flat coming down
+        note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, self.prev_note, [])
+        self.prev_note = note_lookup
 
-            # Handle accidentals, sharp going up, flat coming down
-            note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, self.prev_note, [])
-            self.prev_note = note_lookup
+        note_pos_x = self.ref_c4_pos[0] + (note.time * Staff.NoteWidth32nd)
+        note_pos_y = self.note_positions[note_lookup]
+        quantized_length, dotted = Note.get_quantized_length(note.length)
 
-            note_width_32 = 0.025 
-            note_pos_x = self.ref_c4_pos[0] + (note.time * note_width_32)
-            note_pos_y = self.note_positions[note_lookup]
-            quantized_length, dotted = Note.get_quantized_length(note.length)
+        pos = [note_pos_x, note_pos_y]
+        type = Note.NoteLengthTypes[quantized_length]
+        decoration = 1 if dotted else 0
+        
+        hat = [0.0, 0.0]
+        if next_note is not None:
+            if note.length == next_note.length and note.length <= 8:
+                hat = [note.length, note.note - next_note.note]
 
-            pos = [note_pos_x, note_pos_y]
-            type = Note.NoteLengthTypes[quantized_length]
-            decoration = 1 if dotted else 0
-            tail = [4.0, 0.0]
-            tie = 0.0
-            self.note_render.assign(note, pos, type, decoration, tail, tie)
-            self.notes_offset += 1
+        tie = 0.0
+        self.note_render.assign(note, pos, type, decoration, hat, tie)
         
 
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:

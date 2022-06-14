@@ -42,28 +42,7 @@ class Note():
         3: "Natural",
         4: "Tie"
     }
-    DottedChar = '.'
-    NoteLineLookupUnder = defaultdict(lambda: 0)
-    NoteLineLookupOver = defaultdict(lambda: 0)
-    NoteLineLookupUnder.update({
-        60: 1,
-        59: 1,
-        58: 1,
-        57: 2,
-        56: 2,
-        55: 2,
-        54: 3,
-        53: 3,
-        52: 3,
-        51: 3,
-        50: 4,
-        49: 4, 
-    })
-    NoteLineLookupOver.update({
-        80: 1,
-        81: 1,
-    })
-
+    
     @staticmethod
     def get_quantized_length(note_length):
         for _, k in enumerate(Note.NoteLengthTypes):

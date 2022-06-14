@@ -3,11 +3,6 @@ class KeySignature:
 
     NumAccidentals = 14
     SharpsAndFlats = {1: True, 3: True, 6: True, 8: True, 10: True, 13: True, 15: True, 18: True, 20: True}
-    AccidentalCharacters = { 
-        1: "B", 
-        0: "½", 
-        -1: "b" 
-    }
     LookupTableKeyToIndex = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 8, 'A': 9, 'B': 11}
     OriginNote = 60
 
@@ -41,12 +36,13 @@ class KeySignature:
     
     def _set_accidental_positions(self, note_positions: list):
         self.positions = [0.0 for x in self.positions]
+
         def set_key_pos(notes, offset: int):
             num_notes = len(notes)
             draw_count = 0
             pos_count = offset
-            acc_pos_x = -0.75
-            hspacing = 0.0056
+            acc_pos_x = -0.69
+            hspacing = 0.056
 
             if num_notes == 1:
                 draw_index = 0
@@ -55,7 +51,9 @@ class KeySignature:
 
             while draw_index >= 0 and draw_index < num_notes:
                 acc = KeySignature.OriginNote + notes[draw_index]
-
+                # Key signatures are traditionally drawn in the upper registers
+                if acc < 68:
+                    acc += 12
                 self.positions[pos_count] = acc_pos_x
                 self.positions[pos_count+1] = note_positions[acc]
                 pos_count += 2
@@ -68,7 +66,7 @@ class KeySignature:
                     draw_index += 1
 
         set_key_pos(self.sharps, 0)
-        set_key_pos(self.flats, KeySignature.NumAccidentals // 2)
+        set_key_pos(self.flats, KeySignature.NumAccidentals)
 
 
     def get_accidental(self, note:int, prev_note:int, bar_accidentals:list):
@@ -84,17 +82,17 @@ class KeySignature:
                 if mod_note in self.sharps:
                     return note - 1, None
                 else:
-                    return note - 1, KeySignature.AccidentalCharacters[1]
+                    return note - 1, 1
             else:
                 mod_note = playable_note + 1
                 if mod_note in self.flats:
                     return note + 1, None
                 else:
-                    return note - 1, KeySignature.AccidentalCharacters[-1]
+                    return note - 1, -1
         elif playable_note in self.sharps:
-            return note, KeySignature.AccidentalCharacters[0]
+            return note, 0
         elif playable_note in self.flats:
-            return note, KeySignature.AccidentalCharacters[0]
+            return note, 0
         return note, None
 
     def __str__(self):

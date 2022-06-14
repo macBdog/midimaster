@@ -25,12 +25,12 @@ class NoteRender:
     uniform vec4 Colour;
     uniform float DisplayRatio;
 
-    uniform vec2 KeyPositions[NUM_KEY_SIG]; // 0-6 # Sharp, 8-15 b Flat
+    uniform vec2 KeyPositions[NUM_KEY_SIG]; // 0-6 # Sharp, 7-13 b Flat
     uniform vec2 NotePositions[NUM_NOTES];
     uniform vec4 NoteColours[NUM_NOTES];
     uniform int NoteTypes[NUM_NOTES];
     uniform int NoteDecoration[NUM_NOTES];
-    uniform vec2 NoteTails[NUM_NOTES];
+    uniform vec2 NoteHats[NUM_NOTES];
     uniform float NoteTies[NUM_NOTES];
 
     #define antialias 0.08
@@ -162,7 +162,7 @@ class NoteRender:
             vec2 p = (KeyPositions[i] + 1.0) * 0.5;
             if (abs(p.x) + abs(p.y) > 0.0)
             {
-                key += drawAccidental(uv, p, i <= 7 ? 1 : -1, false);
+                key += drawAccidental(uv, p, i < NUM_KEY_SIG / 2 ? 1 : -1, false);
             }
         }
         return key;
@@ -359,9 +359,8 @@ class NoteRender:
         {
             bool dotted = false;
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
-            vec2 tail = (NoteTails[i] + 1.0) * 0.5;
             float tie = (NoteTies[i] + 1.0) * 0.5;
-            float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], tail, tie);
+            float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], NoteHats[i], tie);
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
@@ -378,7 +377,7 @@ class NoteRender:
         float k = drawKeySignature(uv);
 
         vec4 staff = vec4(vec3(s * 0.075), s);
-        vec4 key = vec4(vec3(k * 0.2), k);
+        vec4 key = vec4(vec3(k * 0.08), k);
         notes = max(key, notes);
         outColour = max(staff, notes);
     }
@@ -389,13 +388,14 @@ class NoteRender:
         self.calibration = False
         self.display_ratio = 1.0 / display_ratio
         self.ref_c4_pos = [Staff.Pos[0], staff.note_positions[60]]
+        self.note_width = Staff.NoteWidth32nd
         self.note = -1
         self.notes = [None] * NoteRender.NumNotes
         self.note_positions = [0.0] * NoteRender.NumNotes * 2
         self.note_colours = [0.0] * NoteRender.NumNotes * 4
         self.note_types = [0] * NoteRender.NumNotes
         self.note_decoration = [0] * NoteRender.NumNotes
-        self.note_tails = [0.0] * NoteRender.NumNotes * 2
+        self.note_hats = [0.0] * NoteRender.NumNotes * 2
         self.note_ties = [0.0] * NoteRender.NumNotes
 
         # Notation shader draws from 0->1 on XY, left->right, down->up
@@ -420,7 +420,7 @@ class NoteRender:
         self.note_colours_id = glGetUniformLocation(self.shader, "NoteColours")
         self.note_types_id = glGetUniformLocation(self.shader, "NoteTypes")
         self.note_decoration_id = glGetUniformLocation(self.shader, "NoteDecoration")
-        self.note_tails_id = glGetUniformLocation(self.shader, "NoteTails")
+        self.note_hats_id = glGetUniformLocation(self.shader, "NoteHats")
         self.note_ties_id = glGetUniformLocation(self.shader, "NoteTies")
 
     def _assign_calibration_notes(self):
@@ -448,7 +448,7 @@ class NoteRender:
         npos, cpos = add_calibration_note(npos, cpos, [-1.0, 1.0], [1.0, 1.0, 0.0, 1.0])
         npos, cpos = add_calibration_note(npos, cpos, [0.0, 0.0], [1.0, 0.0, 1.0, 1.0])
 
-    def assign(self, note: Note, pos: list, type: int, decoration: int, tail: list, tie: float):
+    def assign(self, note: Note, pos: list, type: int, decoration: int, hat: list, tie: float):
         """Add a new note to an empty note slot."""
 
         search = 0
@@ -476,13 +476,15 @@ class NoteRender:
         self.note_colours[cpos+3] = col[3]
         self.note_types[self.note] = type
         self.note_decoration[self.note] = decoration
-        self.note_tails[npos] = tail[0]
-        self.note_tails[npos + 1] = tail[1]
+        self.note_hats[npos] = hat[0] * self.note_width * 0.5
+        self.note_hats[npos + 1] = hat[1] * Staff.NoteSpacing
         self.note_ties[self.note] = tie
 
     def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:
         """Process note timing then upload the note data state to the shader every frame."""
         
+        self.note_width = note_width
+
         for i in range(NoteRender.NumNotes):
             note = self.notes[i]
             should_be_displayed = note is not None and note.time - music_time < 32 * 4
@@ -515,7 +517,7 @@ class NoteRender:
             glUniform4fv(self.note_colours_id, NoteRender.NumNotes, self.note_colours)
             glUniform1iv(self.note_types_id, NoteRender.NumNotes, self.note_types)
             glUniform1iv(self.note_decoration_id, NoteRender.NumNotes, self.note_decoration)
-            glUniform2fv(self.note_tails_id, NoteRender.NumNotes, self.note_tails)
+            glUniform2fv(self.note_hats_id, NoteRender.NumNotes, self.note_hats)
             glUniform1fv(self.note_ties_id, NoteRender.NumNotes, self.note_ties)
         
         self.sprite.draw(note_uniforms)

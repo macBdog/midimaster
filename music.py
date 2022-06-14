@@ -72,6 +72,7 @@ class Music:
                             self.backing_tracks[id].append(msg)
 
         self.notes.add_rests()
+        self.notes.assign_notes()
 
     def reset(self):
         """Restore all the notes in the music to the state just after loading."""
