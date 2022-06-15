@@ -3,7 +3,7 @@ from graphics import *
 from font import *
 from staff import Staff
 from note import Note
-from note_render import NoteRender
+from note_render import NoteDecoration, NoteRender
 
 
 class Notes:
@@ -107,12 +107,16 @@ class Notes:
 
         pos = [note_pos_x, note_pos_y]
         type = Note.NoteLengthTypes[quantized_length]
-        decoration = 1 if dotted else 0
+        decoration = NoteDecoration.DOTTED if dotted else NoteDecoration.NONE
+        if accidental is not None:
+            decoration = int(decoration.value) + 2 + accidental
+            decoration = NoteDecoration(decoration)
         
         hat = [0.0, 0.0]
         if next_note is not None:
+            next_note_lookup, next_accidental = self.staff.key_signature.get_accidental(next_note.note, note.note, [])
             if note.length == next_note.length and note.length <= 8:
-                hat = [note.length, note.note - next_note.note]
+                hat = [note.length, next_note_lookup - note_lookup]
 
         tie = 0.0
         self.note_render.assign(note, pos, type, decoration, hat, tie)

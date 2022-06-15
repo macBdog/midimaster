@@ -2,11 +2,24 @@ from staff import Staff
 from settings import GameSettings
 from graphics import Graphics
 from OpenGL.GL import *
+from enum import Enum
+from enum import auto
 
 from texture import SpriteTexture, Texture
 from note import Note
 from key_signature import KeySignature
 from staff import Staff
+
+class NoteDecoration(Enum):
+    """Fit all note decoration types into an int matching values in the shader."""
+    NONE = 0
+    FLAT = auto()
+    NATURAL = auto()
+    SHARP = auto()
+    DOTTED = auto()
+    DOTTED_FLAT = auto()
+    DOTTED_NATURAL = auto()
+    DOTTED_SHARP = auto()
 
 class NoteRender:
     """Draw 32 notes at a time for the entire game on the GPU."""
@@ -53,6 +66,15 @@ class NoteRender:
     #define staff_pos vec2(staff_pos_x, staff_pos_y)
     #define staff_width 1.0
     #define staff_line_width 0.003
+
+    #define decoration_none 0
+    #define decoration_flat 1
+    #define decoration_natural 2
+    #define decoration_sharp 3
+    #define decoration_dotted 4
+    #define decoration_dotted_flat 5
+    #define decoration_dotted_natural 6
+    #define decoration_dotted_sharp 7
 
     float drawEllipse(in vec2 uv, in vec2 pos, vec2 dim) 
     {
@@ -217,7 +239,7 @@ class NoteRender:
     // hat-size denotes joining between eigth and sixteenth notes
     // X component is the length, Y component is the end heigh difference
     // X of zero and negative Y means the note has been tied into and does not require a tail
-    float drawNote(in vec2 uv, in vec2 p, in int note_type, bool dotted, in int dec, in vec2 hat_size, in float tie_32s) 
+    float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_size, in float tie_32s) 
     {
         vec2 stalk_size = vec2(0.0025, 0.2);
         float blob_size = 1.6;
@@ -226,6 +248,7 @@ class NoteRender:
         float lines = 0.0;
         int lines_over = 0;
         int lines_under = 0;
+        bool dotted = dec >= decoration_dotted;
         bool stalk_dir_down = p.y > staff_pos_y + (staff_note_spacing * 2.0);
         
         if (dotted)
@@ -233,7 +256,8 @@ class NoteRender:
             decoration += drawEllipse(uv, p + vec2(0.04, 0.0), vec2(0.07, 0.1));
         }
         
-        if (dec != 0)
+        int acc = dec >= decoration_dotted_flat ? dec - decoration_dotted_natural : dec - decoration_natural;
+        if (abs(acc) <= 1)
         {
             decoration += drawAccidental(uv, p, dec, true);
         }
@@ -357,10 +381,9 @@ class NoteRender:
         vec4 all_notes = vec4(0.0);
         for (int i = 0; i < NUM_NOTES; ++i)
         {
-            bool dotted = false;
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
             float tie = (NoteTies[i] + 1.0) * 0.5;
-            float note = drawNote(uv, note_pos, NoteTypes[i], dotted, NoteDecoration[i], NoteHats[i], tie);
+            float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteHats[i], tie);
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
@@ -448,7 +471,7 @@ class NoteRender:
         npos, cpos = add_calibration_note(npos, cpos, [-1.0, 1.0], [1.0, 1.0, 0.0, 1.0])
         npos, cpos = add_calibration_note(npos, cpos, [0.0, 0.0], [1.0, 0.0, 1.0, 1.0])
 
-    def assign(self, note: Note, pos: list, type: int, decoration: int, hat: list, tie: float):
+    def assign(self, note: Note, pos: list, type: int, decoration: NoteDecoration, hat: list, tie: float):
         """Add a new note to an empty note slot."""
 
         search = 0
@@ -475,9 +498,9 @@ class NoteRender:
         self.note_colours[cpos+2] = col[2]
         self.note_colours[cpos+3] = col[3]
         self.note_types[self.note] = type
-        self.note_decoration[self.note] = decoration
+        self.note_decoration[self.note] = int(decoration.value)
         self.note_hats[npos] = hat[0] * self.note_width * 0.5
-        self.note_hats[npos + 1] = hat[1] * Staff.NoteSpacing
+        self.note_hats[npos + 1] = hat[1] * Staff.NoteSpacing * 0.5
         self.note_ties[self.note] = tie
 
     def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:

@@ -69,7 +69,7 @@ class KeySignature:
         set_key_pos(self.flats, KeySignature.NumAccidentals)
 
 
-    def get_accidental(self, note:int, prev_note:int, bar_accidentals:list):
+    def get_accidental(self, note:int, prev_note:int, bar_accidentals:list) -> int:
         """Return the drawn note and the accidental character or None if extra notation is not required.
            If a note is a flat or sharp and not included in the key signature it should be draw with an accidental.
            If a note is included in a key signature's sharps or flats it should be drawn as the original note."""
