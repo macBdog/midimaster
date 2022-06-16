@@ -237,11 +237,15 @@ class NoteRender:
     }
 
     // hat-size denotes joining between eigth and sixteenth notes
-    // X component is the length, Y component is the end heigh difference
-    // X of zero and negative Y means the note has been tied into and does not require a tail
-    float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_size, in float tie_32s) 
+    // hat_size.x component is the length,Y component is the end heigh difference
+    // hat_size.x of zero and negative Y means the note has been tied into and does not require a tail
+
+    // extra_geo denotes extending the stalk length of a note or forcing it's stalk a direction
+    // extra_geo.x of absolute value greater than zero will force the stalk direction, +ve for up, -ve for down
+    // extra_geo.y is added onto the default stalk lenghth
+    float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_size, in float tie_32s, in vec2 extra_geo) 
     {
-        vec2 stalk_size = vec2(0.0025, 0.2);
+        vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
         float blob_size = 1.6;
         float blob = drawRotatedEllipse(uv, p, blob_size, false);
         float decoration = 0.0;
@@ -250,7 +254,15 @@ class NoteRender:
         int lines_under = 0;
         bool dotted = dec >= decoration_dotted;
         bool stalk_dir_down = p.y > staff_pos_y + (staff_note_spacing * 2.0);
-        
+        if (extra_geo.x > 0.0)
+        {
+            stalk_dir_down = false;
+        }
+        else if (extra_geo.x < 0.0)
+        {
+            stalk_dir_down = true;
+        }
+
         if (dotted)
         {
             decoration += drawEllipse(uv, p + vec2(0.04, 0.0), vec2(0.07, 0.1));
@@ -382,8 +394,9 @@ class NoteRender:
         for (int i = 0; i < NUM_NOTES; ++i)
         {
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
+            vec2 extra_geo = vec2(0.0);
             float tie = (NoteTies[i] + 1.0) * 0.5;
-            float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteHats[i], tie);
+            float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteHats[i], tie, extra_geo);
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
