@@ -2,24 +2,11 @@ from staff import Staff
 from settings import GameSettings
 from graphics import Graphics
 from OpenGL.GL import *
-from enum import Enum
-from enum import auto
 
 from texture import SpriteTexture, Texture
-from note import Note
+from note import Note, NoteDecoration
 from key_signature import KeySignature
 from staff import Staff
-
-class NoteDecoration(Enum):
-    """Fit all note decoration types into an int matching values in the shader."""
-    NONE = 0
-    FLAT = auto()
-    NATURAL = auto()
-    SHARP = auto()
-    DOTTED = auto()
-    DOTTED_FLAT = auto()
-    DOTTED_NATURAL = auto()
-    DOTTED_SHARP = auto()
 
 class NoteRender:
     """Draw 32 notes at a time for the entire game on the GPU."""
@@ -56,7 +43,14 @@ class NoteRender:
     #define note_type_half 2
     #define note_type_quarter 3
     #define note_type_eighth 4
-    #define note_type_sixteenth 4
+    #define note_type_sixteenth 5
+    #define note_type_thirtysecond 6
+    #define note_type_rest_whole 7
+    #define note_type_rest_half 8
+    #define note_type_rest_quarter 9
+    #define note_type_rest_eighth 10
+    #define note_type_rest_sixteenth 11
+    #define note_type_rest_thirtysecond 12
 
     #define staff_note_spacing 0.03
     #define staff_spacing staff_note_spacing * 2.0
@@ -207,35 +201,6 @@ class NoteRender:
         return clamp(col, 0.0, 1.0);
     }
 
-    float drawRest(in vec2 uv, in float p, in int note_type)
-    {
-        if (note_type == note_type_whole)
-        {
-            return drawRect(uv, vec2(p, staff_pos_y + staff_note_spacing * 5.5), vec2(0.035, 0.025));
-        }
-        else if (note_type == note_type_half)
-        {
-            return drawRect(uv, vec2(p, staff_pos_y + staff_note_spacing * 4.5), vec2(0.035, 0.025));
-        }
-        else if (note_type == note_type_quarter)
-        {
-            float col = drawLineRounded(uv, vec2(p - 0.015, staff_pos_y + 0.22), vec2(p - 0.001, staff_pos_y + 0.18), 0.0025);
-            col += drawLineSquare(uv, vec2(p-0.006, staff_pos_y + 0.19), vec2(p - 0.02, staff_pos_y + 0.11), 0.009);
-            col += drawLineRounded(uv, vec2(p - 0.025, staff_pos_y + 0.12), vec2(p - 0.011, staff_pos_y + 0.072), 0.0025);
-            col += drawEllipse(uv, vec2(p - 0.022, staff_pos_y + 0.07), vec2(0.11, 0.14));
-            col -= drawEllipse(uv, vec2(p - 0.019, staff_pos_y + 0.062), vec2(0.1, 0.13));
-            return clamp(col, 0.0, 1.0);
-        }
-        else if (note_type == note_type_sixteenth)
-        {
-            float col = drawLineRounded(uv, vec2(p - 0.001, staff_pos_y + 0.173), vec2(p - 0.02, staff_pos_y + 0.06), 0.0025);
-            col += drawEllipse(uv, vec2(p - 0.024, staff_pos_y + 0.15), vec2(0.105, 0.135));
-            col += drawLineRounded(uv, vec2(p - 0.016, staff_pos_y + 0.14), vec2(p - 0.003, staff_pos_y + 0.167), 0.003);
-            return col;
-        }
-        return 0.0;
-    }
-
     // hat-size denotes joining between eigth and sixteenth notes
     // hat_size.x component is the length,Y component is the end heigh difference
     // hat_size.x of zero and negative Y means the note has been tied into and does not require a tail
@@ -245,6 +210,31 @@ class NoteRender:
     // extra_geo.y is added onto the default stalk lenghth
     float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_size, in float tie_32s, in vec2 extra_geo) 
     {
+        if (note_type == note_type_rest_whole)
+        {
+            return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 5.5), vec2(0.035, 0.025));
+        }
+        else if (note_type == note_type_rest_half)
+        {
+            return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 4.5), vec2(0.035, 0.025));
+        }
+        else if (note_type == note_type_rest_quarter)
+        {
+            float col = drawLineRounded(uv, vec2(p.x - 0.015, staff_pos_y + 0.22), vec2(p.x - 0.001, staff_pos_y + 0.18), 0.0025);
+            col += drawLineSquare(uv, vec2(p.x-0.006, staff_pos_y + 0.19), vec2(p.x - 0.02, staff_pos_y + 0.11), 0.009);
+            col += drawLineRounded(uv, vec2(p.x - 0.025, staff_pos_y + 0.12), vec2(p.x - 0.011, staff_pos_y + 0.072), 0.0025);
+            col += drawEllipse(uv, vec2(p.x - 0.022, staff_pos_y + 0.07), vec2(0.11, 0.14));
+            col -= drawEllipse(uv, vec2(p.x - 0.019, staff_pos_y + 0.062), vec2(0.1, 0.13));
+            return clamp(col, 0.0, 1.0);
+        }
+        else if (note_type >= note_type_rest_sixteenth)
+        {
+            float col = drawLineRounded(uv, vec2(p.x - 0.001, staff_pos_y + 0.173), vec2(p.x - 0.02, staff_pos_y + 0.06), 0.0025);
+            col += drawEllipse(uv, vec2(p.x - 0.024, staff_pos_y + 0.15), vec2(0.105, 0.135));
+            col += drawLineRounded(uv, vec2(p.x - 0.016, staff_pos_y + 0.14), vec2(p.x - 0.003, staff_pos_y + 0.167), 0.003);
+            return col;
+        }
+
         vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
         float blob_size = 1.6;
         float blob = drawRotatedEllipse(uv, p, blob_size, false);
@@ -484,7 +474,7 @@ class NoteRender:
         npos, cpos = add_calibration_note(npos, cpos, [-1.0, 1.0], [1.0, 1.0, 0.0, 1.0])
         npos, cpos = add_calibration_note(npos, cpos, [0.0, 0.0], [1.0, 0.0, 1.0, 1.0])
 
-    def assign(self, note: Note, pos: list, type: int, decoration: NoteDecoration, hat: list, tie: float):
+    def assign(self, note: Note):
         """Add a new note to an empty note slot."""
 
         search = 0
@@ -504,17 +494,17 @@ class NoteRender:
 
         npos = self.note * 2
         cpos = self.note * 4
-        self.note_positions[npos] = pos[0]
-        self.note_positions[npos + 1] = pos[1]
+        self.note_positions[npos] = note.pos[0]
+        self.note_positions[npos + 1] = note.pos[1]
         self.note_colours[cpos] = col[0]
         self.note_colours[cpos+1] = col[1]
         self.note_colours[cpos+2] = col[2]
         self.note_colours[cpos+3] = col[3]
-        self.note_types[self.note] = type
-        self.note_decoration[self.note] = int(decoration.value)
-        self.note_hats[npos] = hat[0] * self.note_width * 0.5
-        self.note_hats[npos + 1] = hat[1] * Staff.NoteSpacing * 0.5
-        self.note_ties[self.note] = tie
+        self.note_types[self.note] = int(note.type.value)
+        self.note_decoration[self.note] = int(note.decoration.value)
+        self.note_hats[npos] = note.hat[0] * self.note_width * 0.5
+        self.note_hats[npos + 1] = note.hat[1] * Staff.NoteSpacing * 0.5
+        self.note_ties[self.note] = note.tie
 
     def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:
         """Process note timing then upload the note data state to the shader every frame."""

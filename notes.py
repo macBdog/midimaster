@@ -2,8 +2,8 @@ from texture import *
 from graphics import *
 from font import *
 from staff import Staff
-from note import Note
-from note_render import NoteDecoration, NoteRender
+from note import Note, NoteType, NoteDecoration
+from note_render import NoteRender
 
 
 class Notes:
@@ -15,7 +15,6 @@ class Notes:
         self.graphics = graphics
         self.note_render = note_render
         self.notes = []
-        self.rests = []
         self.num_barlines = 8
         self.barlines = []
         self.bartimes = []
@@ -33,28 +32,99 @@ class Notes:
         
         self.reset()
 
+
     def reset(self):
         """Restore the note pool and barlines to their original state without clearing the music."""
         
         self.notes_offset = 0
-        self.rests_offset = 0
-        self.prev_note = 0
         self.notes_on = {}
-        self.assign_notes()
 
         for i in range(self.num_barlines):
             self.bartimes[i] = i * 32.0
 
-    def assign_notes(self, num_notes:int=-1):
-        """Add a number of notes to the render queue, -1 meaning add all."""
+        # TODO: Right now we are adding the max notes, this will have to be replaced with a ring buffer style update during rendering
+        self.add_notes_to_render()
+
+
+    def assign_notes(self):
+        """Walk in sequence through the notes setting the decoration values for drawing."""
+
+        note_id = 0
+        time = 0
+        bar_time_max = 32 # TODO Derive number of 32s in a bar from time signature
+        bar_time = bar_time_max
+        num_notes = len(self.notes)
+        hat_notes = []
+        hat_count = 0
+        hat_max = 4
+        tie_start_id = 0
+        pos_x = self.ref_c4_pos[0] + (0 * Staff.NoteWidth32nd)
+        pos_y = self.note_positions[60]
+        prev_note = None
+        prev_note_lookup = None
+        while note_id < num_notes:
+            note = self.notes[note_id]
+
+            time_to_next = note.time - time
+
+            # Handle rests greater than a bar
+            if time_to_next > bar_time_max:
+                time_to_next -= bar_time_max
+                time += bar_time_max
+                continue
+
+            # Insert rests before the next note
+            num_inserted_rests = 0
+            while time_to_next > 0:
+                rest_length = Note.get_quanitized_rest(time_to_next)
+                rest = Note(0, time, rest_length)
+                rest.decorate([pos_x, pos_y], Note.get_rest_type(rest_length), None, None, None)
+                self.notes.insert(note_id + num_inserted_rests, rest)
+                time_to_next -= rest_length
+                time += rest_length
+                bar_time -= rest_length
+                num_inserted_rests += 1
+
+            # Handle accidentals, sharp going up, flat coming down
+            prev_note_lookup = prev_note.note % 12 if prev_note is not None else note.note % 12
+            note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, prev_note_lookup, [])
+            quantized_length, dotted = Note.get_quantized_length(note.length)
+
+            # Decorate notes
+            pos_x = self.ref_c4_pos[0] + (time * Staff.NoteWidth32nd)
+            pos_y = self.note_positions[note_lookup]
+            type = Note.get_note_type(quantized_length)
+            decoration = NoteDecoration.DOTTED if dotted else NoteDecoration.NONE
+            if accidental is not None:
+                decoration = int(decoration.value) + 2 + accidental
+                decoration = NoteDecoration(decoration)
+
+            next_note = self.notes[note_id + 1] if note_id < num_notes - 1 else None
+            hat = [0, 0]
+            tie = [0, 0]
+            if next_note is not None:
+                next_note_lookup, next_accidental = self.staff.key_signature.get_accidental(next_note.note, note.note, [])
+                if note.length == next_note.length and note.length <= 8:
+                    hat = [note.length, next_note_lookup - note_lookup]
+       
+            note.decorate([pos_x, pos_y], type, decoration, hat, tie)
+
+            bar_time -= note.time
+            time += note.time
+            note_id += 1
+            prev_note = note
+
+ 
+    def add_notes_to_render(self, num_notes:int=-1):
+        # Add a number of notes to the render queue, -1 meaning add all."""
 
         notes_len = len(self.notes)
         num_to_add = num_notes if num_notes > 0 else notes_len - self.notes_offset
         for count in range(num_to_add):
-            note_idx = self.notes_offset + count
-            note = self.notes[note_idx]
-            next_note = self.notes[note_idx + 1] if note_idx < len(self.notes) - 1 else None
-            self._assign_note(note, next_note)
+            note = self.notes[count]
+            self.note_render.assign(note)
+            if GameSettings.DEV_MODE and not note.is_decorated():
+                print(f"Error: Undecorated note added to note rendering!")
 
         self.notes_offset += num_to_add
 
@@ -66,64 +136,9 @@ class Notes:
         elif GameSettings.DEV_MODE:
             print(f"Ignoring a note that is out of playable range: {pitch}") 
     
-
-    def add_rests(self):
-        """Walk through each note in the music looking for spaces between notes to insert rests."""
-
-        self.rests = []
-        note_count = 0
-        while note_count < len(self.notes) - 1:
-            note = self.notes[note_count]
-            next_note = self.notes[note_count + 1]
-            rest_start = note.time + note.length
-            rest_length = next_note.time - rest_start
-            if rest_length > 0:
-                self.rests.append(Note(0, rest_start, rest_length))               
-                self._assign_rest()
-            note_count += 1
-
-
-    def _assign_rest(self):
-        """Get the next rest in the list and add it to the render as a note type"""
-
-        if self.rests_offset < len(self.rests):
-            rest = self.rests[self.rests_offset]
-        
-            quantized_length, dotted = Note.get_quantized_length(rest.length)
-            
-            self.rests_offset += 1
     
-
-    def _assign_note(self, note, next_note):
-        """Get the next note in the list and add it to the render"""
-
-        # Handle accidentals, sharp going up, flat coming down
-        note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, self.prev_note, [])
-        self.prev_note = note_lookup
-
-        note_pos_x = self.ref_c4_pos[0] + (note.time * Staff.NoteWidth32nd)
-        note_pos_y = self.note_positions[note_lookup]
-        quantized_length, dotted = Note.get_quantized_length(note.length)
-
-        pos = [note_pos_x, note_pos_y]
-        type = Note.NoteLengthTypes[quantized_length]
-        decoration = NoteDecoration.DOTTED if dotted else NoteDecoration.NONE
-        if accidental is not None:
-            decoration = int(decoration.value) + 2 + accidental
-            decoration = NoteDecoration(decoration)
-        
-        hat = [0.0, 0.0]
-        if next_note is not None:
-            next_note_lookup, next_accidental = self.staff.key_signature.get_accidental(next_note.note, note.note, [])
-            if note.length == next_note.length and note.length <= 8:
-                hat = [note.length, next_note_lookup - note_lookup]
-
-        tie = 0.0
-        self.note_render.assign(note, pos, type, decoration, hat, tie)
-        
-
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
-        """ Draw and update the bar lines and all notes on the GPU.
+        """Draw and update the bar lines and all notes on the GPU.
         Return a dictionary keyed on note numbers with value of the end music time note length."""
 
         # Draw a recycled list of barlines moving from right to left

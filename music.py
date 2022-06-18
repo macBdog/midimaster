@@ -71,7 +71,7 @@ class Music:
                             self.backing_time[id] = 0.0
                             self.backing_tracks[id].append(msg)
 
-        self.notes.add_rests()
+        # Post-process the notes of the music, adding rests and decoration
         self.notes.assign_notes()
 
     def reset(self):
