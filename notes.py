@@ -120,7 +120,7 @@ class Notes:
             note.decorate(get_note_pos(note.time, note.note), type, decoration, hat, tie, extra)
 
             bar_time -= note.length
-            time += note.time
+            time += note.length
             note_id += 1
             prev_note = note
 

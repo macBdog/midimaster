@@ -228,7 +228,7 @@ class NoteRender:
             col -= drawEllipse(uv, vec2(p.x - 0.019, staff_pos_y + 0.062), vec2(0.1, 0.13));
             return clamp(col, 0.0, 1.0);
         }
-        else if (note_type >= note_type_rest_sixteenth)
+        else if (note_type >= note_type_rest_eighth)
         {
             float col = drawLineRounded(uv, vec2(p.x - 0.001, staff_pos_y + 0.173), vec2(p.x - 0.02, staff_pos_y + 0.06), 0.0025);
             col += drawEllipse(uv, vec2(p.x - 0.024, staff_pos_y + 0.15), vec2(0.105, 0.135));
