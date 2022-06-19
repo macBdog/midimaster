@@ -42,7 +42,6 @@ class Notes:
         for i in range(self.num_barlines):
             self.bartimes[i] = i * 32.0
 
-        # TODO: Right now we are adding the max notes, this will have to be replaced with a ring buffer style update during rendering
         self.add_notes_to_render()
 
 
@@ -58,32 +57,44 @@ class Notes:
         hat_count = 0
         hat_max = 4
         tie_start_id = 0
-        pos_x = self.ref_c4_pos[0] + (0 * Staff.NoteWidth32nd)
-        pos_y = self.note_positions[60]
         prev_note = None
         prev_note_lookup = None
+
+        def get_note_pos(time, pitch):
+            return [time, self.note_positions[pitch]]
+
         while note_id < num_notes:
             note = self.notes[note_id]
 
             time_to_next = note.time - time
 
             # Handle rests greater than a bar
-            if time_to_next > bar_time_max:
-                time_to_next -= bar_time_max
+            if time_to_next >= bar_time_max:
+                rest = Note(0, time + (bar_time_max // 2), bar_time_max)
+                rest.decorate_rest(get_note_pos(time + (bar_time_max // 2), 64), Note.get_rest_type(bar_time_max))
+                self.notes.insert(note_id, rest)
                 time += bar_time_max
+                note_id += 1
+                num_notes += 1
                 continue
 
             # Insert rests before the next note
             num_inserted_rests = 0
             while time_to_next > 0:
                 rest_length = Note.get_quanitized_rest(time_to_next)
-                rest = Note(0, time, rest_length)
-                rest.decorate([pos_x, pos_y], Note.get_rest_type(rest_length), None, None, None)
+                rest = Note(0, time + (rest_length // 2), rest_length)
+                rest.decorate_rest(get_note_pos(time + (rest_length // 2), 64), Note.get_rest_type(rest_length))
                 self.notes.insert(note_id + num_inserted_rests, rest)
                 time_to_next -= rest_length
                 time += rest_length
                 bar_time -= rest_length
                 num_inserted_rests += 1
+
+            # Advance to the next real note
+            if num_inserted_rests > 0:
+                note_id += num_inserted_rests
+                num_notes += num_inserted_rests
+                continue
 
             # Handle accidentals, sharp going up, flat coming down
             prev_note_lookup = prev_note.note % 12 if prev_note is not None else note.note % 12
@@ -91,8 +102,6 @@ class Notes:
             quantized_length, dotted = Note.get_quantized_length(note.length)
 
             # Decorate notes
-            pos_x = self.ref_c4_pos[0] + (time * Staff.NoteWidth32nd)
-            pos_y = self.note_positions[note_lookup]
             type = Note.get_note_type(quantized_length)
             decoration = NoteDecoration.DOTTED if dotted else NoteDecoration.NONE
             if accidental is not None:
@@ -100,23 +109,26 @@ class Notes:
                 decoration = NoteDecoration(decoration)
 
             next_note = self.notes[note_id + 1] if note_id < num_notes - 1 else None
-            hat = [0, 0]
-            tie = [0, 0]
+            hat = [0.0, 0.0]
+            tie = 0.0
+            extra = [0.0 ,0.0]
             if next_note is not None:
                 next_note_lookup, next_accidental = self.staff.key_signature.get_accidental(next_note.note, note.note, [])
                 if note.length == next_note.length and note.length <= 8:
                     hat = [note.length, next_note_lookup - note_lookup]
        
-            note.decorate([pos_x, pos_y], type, decoration, hat, tie)
+            note.decorate(get_note_pos(note.time, note.note), type, decoration, hat, tie, extra)
 
-            bar_time -= note.time
+            bar_time -= note.length
             time += note.time
             note_id += 1
             prev_note = note
 
+        self.add_notes_to_render()
  
     def add_notes_to_render(self, num_notes:int=-1):
         # Add a number of notes to the render queue, -1 meaning add all."""
+        # TODO: Right now we are adding the max notes on load, this will have to be replaced with a ring buffer style update during rendering
 
         notes_len = len(self.notes)
         num_to_add = num_notes if num_notes > 0 else notes_len - self.notes_offset

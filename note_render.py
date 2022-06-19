@@ -11,9 +11,9 @@ from staff import Staff
 class NoteRender:
     """Draw 32 notes at a time for the entire game on the GPU."""
     NumNotes = 32
-    BaseColour = 0.15
-    HitColour = [0.15, 0.78, 0.15, 1.0]
-    MissColour = [0.78, 0.15, 0.15, 1.0]
+    BaseColour = 0.11
+    HitColour = [BaseColour, 0.78, BaseColour, 1.0]
+    MissColour = [0.78, BaseColour, BaseColour, 1.0]
 
     PIXEL_SHADER_NOTES = """
     #version 430
@@ -32,6 +32,7 @@ class NoteRender:
     uniform int NoteDecoration[NUM_NOTES];
     uniform vec2 NoteHats[NUM_NOTES];
     uniform float NoteTies[NUM_NOTES];
+    uniform vec2 NoteExtra[NUM_NOTES];
 
     #define antialias 0.08
     #define note_size 0.1
@@ -175,9 +176,9 @@ class NoteRender:
         float key = 0.0;
         for (int i = 0; i < NUM_KEY_SIG; ++i)
         {
-            vec2 p = (KeyPositions[i] + 1.0) * 0.5;
-            if (abs(p.x) + abs(p.y) > 0.0)
+            if (abs(KeyPositions[i].x) + abs(KeyPositions[i].y) > 0.0)
             {
+                vec2 p = (KeyPositions[i] + 1.0) * 0.5;
                 key += drawAccidental(uv, p, i < NUM_KEY_SIG / 2 ? 1 : -1, false);
             }
         }
@@ -212,11 +213,11 @@ class NoteRender:
     {
         if (note_type == note_type_rest_whole)
         {
-            return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 5.5), vec2(0.035, 0.025));
+            return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 5.6), vec2(0.04, 0.03));
         }
         else if (note_type == note_type_rest_half)
         {
-            return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 4.5), vec2(0.035, 0.025));
+            return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 4.4), vec2(0.04, 0.03));
         }
         else if (note_type == note_type_rest_quarter)
         {
@@ -235,7 +236,7 @@ class NoteRender:
             return col;
         }
 
-        vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
+        vec2 stalk_size = vec2(0.0025, 0.25 + extra_geo.y);
         float blob_size = 1.6;
         float blob = drawRotatedEllipse(uv, p, blob_size, false);
         float decoration = 0.0;
@@ -384,7 +385,7 @@ class NoteRender:
         for (int i = 0; i < NUM_NOTES; ++i)
         {
             vec2 note_pos = (NotePositions[i] + 1.0) * 0.5;
-            vec2 extra_geo = vec2(0.0);
+            vec2 extra_geo = NoteExtra[i] * 0.5;
             float tie = (NoteTies[i] + 1.0) * 0.5;
             float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteHats[i], tie, extra_geo);
             float alpha = NoteColours[i].a;
@@ -402,7 +403,7 @@ class NoteRender:
         float s = drawStaff(uv, staff_pos);
         float k = drawKeySignature(uv);
 
-        vec4 staff = vec4(vec3(s * 0.075), s);
+        vec4 staff = vec4(vec3(s * 0.079), s);
         vec4 key = vec4(vec3(k * 0.08), k);
         notes = max(key, notes);
         outColour = max(staff, notes);
@@ -423,6 +424,7 @@ class NoteRender:
         self.note_decoration = [0] * NoteRender.NumNotes
         self.note_hats = [0.0] * NoteRender.NumNotes * 2
         self.note_ties = [0.0] * NoteRender.NumNotes
+        self.note_extra = [0.0] * NoteRender.NumNotes * 2
 
         # Notation shader draws from 0->1 on XY, left->right, down->up
         shader_substitutes = {
@@ -448,6 +450,7 @@ class NoteRender:
         self.note_decoration_id = glGetUniformLocation(self.shader, "NoteDecoration")
         self.note_hats_id = glGetUniformLocation(self.shader, "NoteHats")
         self.note_ties_id = glGetUniformLocation(self.shader, "NoteTies")
+        self.note_extra_id = glGetUniformLocation(self.shader, "NoteExtra")
 
     def _assign_calibration_notes(self):
         """Add five notes with separate colours to each extent of the screen."""
@@ -505,6 +508,8 @@ class NoteRender:
         self.note_hats[npos] = note.hat[0] * self.note_width * 0.5
         self.note_hats[npos + 1] = note.hat[1] * Staff.NoteSpacing * 0.5
         self.note_ties[self.note] = note.tie
+        self.note_extra[npos] = note.extra[0]
+        self.note_extra[npos + 1] = note.extra[1] * Staff.NoteSpacing * 0.5
 
     def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:
         """Process note timing then upload the note data state to the shader every frame."""
@@ -520,7 +525,7 @@ class NoteRender:
                 self.note_positions[npos] = self.ref_c4_pos[0] + ((note.time - music_time) * note_width)
 
                 # Hold the visuals a 32nd note longer so the player can see which note to play
-                should_be_played = note.time <= music_time
+                should_be_played = note.time <= music_time and not note.is_rest()
                 should_be_recycled = note.time + 1 < music_time
                 if should_be_played:
                     self.note_colours[cpos + 1] = NoteRender.HitColour[1]
@@ -545,6 +550,7 @@ class NoteRender:
             glUniform1iv(self.note_decoration_id, NoteRender.NumNotes, self.note_decoration)
             glUniform2fv(self.note_hats_id, NoteRender.NumNotes, self.note_hats)
             glUniform1fv(self.note_ties_id, NoteRender.NumNotes, self.note_ties)
+            glUniform2fv(self.note_extra_id, NoteRender.NumNotes, self.note_extra)
         
         self.sprite.draw(note_uniforms)
 

@@ -65,7 +65,7 @@ class Note():
 
     @staticmethod
     def get_rest_type(length) -> NoteType:
-        return NoteType(Note.NoteLengthTypes[length] + NoteType.THIRTYSECOND.value)
+        return NoteType(Note.NoteLengthTypes[length] + int(NoteType.THIRTYSECOND.value))
 
 
     def __init__(self, note: int, time: int, length: int):
@@ -75,15 +75,26 @@ class Note():
         self.length = length
         
         # These fields are for drawing notation are post-processed
+        """Hat denotes joining between eigth and sixteenth notes
+        hat[0] component is the length,Y component is the end heigh difference
+        hat[1] of zero and negative Y means the note has been tied into and does not require a tail"""
+
+        """Extra denotes extending the stalk length of a note or forcing it's stalk a direction
+        extra[0] of absolute value greater than zero will force the stalk direction, +ve for up, -ve for down
+        extra[1] is added onto the default stalk lenghth"""
+
         self.pos = [0.0, 0.0]
         self.type = NoteType.NONE
         self.decoration = NoteDecoration.NONE
         self.hat = [0.0, 0.0]
         self.tie = 0.0
+        self.extra = [0.0, 0.0]
 
     def is_decorated(self) -> bool: return self.type.value > 0
 
-    def decorate(self, pos: list, type: NoteType, decoration: NoteDecoration, hat: list, tie: float):
+    def is_rest(self) -> bool: return self.type.value > NoteType.THIRTYSECOND.value
+
+    def decorate(self, pos: list, type: NoteType, decoration: NoteDecoration, hat: list, tie: float, extra: list):
         self.pos = pos
         self.type = type
         if decoration is not None:
@@ -94,3 +105,9 @@ class Note():
 
         if tie is not None:
             self.tie = tie
+
+        if extra is not None:
+            self.extra = extra
+
+    def decorate_rest(self, pos: list, type: NoteType):
+        self.decorate(pos, type, None, None, None, None)
