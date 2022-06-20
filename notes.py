@@ -53,8 +53,7 @@ class Notes:
         bar_time_max = 32 # TODO Derive number of 32s in a bar from time signature
         bar_time = bar_time_max
         num_notes = len(self.notes)
-        hat_notes = []
-        hat_count = 0
+        hats = []
         hat_max = 4
         tie_start_id = 0
         prev_note = None
@@ -101,21 +100,59 @@ class Notes:
             note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, prev_note_lookup, [])
             quantized_length, dotted = Note.get_quantized_length(note.length)
 
-            # Decorate notes
+            # Set timing type and dotted
             type = Note.get_note_type(quantized_length)
             decoration = NoteDecoration.DOTTED if dotted else NoteDecoration.NONE
             if accidental is not None:
                 decoration = int(decoration.value) + 2 + accidental
                 decoration = NoteDecoration(decoration)
 
+            # Add hats only when we get to the end of the hat chain
+            hat_num = len(hats)
+            def add_all_hats(hats):
+                hat_dir = 0.0
+                hat_height = 0
+                num_hats = len(hats)
+
+                # Find the tallest note stem
+                for h in hats:
+                    if hat_dir >= 0.0:
+                        if h.note > hat_height:
+                            hat_height = h.note
+                    elif h.note < hat_height:
+                        hat_height = h.note
+                
+                if num_hats == 2:
+                    y_diff = hats[0].note - hats[1].note
+                    hats[0].hat = [hat_note.length, y_diff]
+                    hats[1].hat = [0.0, 0.0]
+                else:
+                    for count in range(num_hats):
+                        hat_note = hats[count]
+                        hat_note.hat = [hat_note.length, 0.0]
+                        hat_note.extra = [0.0, hat_height - hat_note.note]
+
+                # Remove the tail from the last note in the chain
+                hats[num_hats - 1].hat = [0.0, -1.0]
+                hats = []
+
+            if note.length <= 8:
+                if hat_num < hat_max:
+                    if hat_num == 0:
+                        hats.append(note)
+                    else:
+                        if hats[hat_num - 1].length == note.length:
+                            hats.append(note)
+                        else:
+                            add_all_hats()
+                            hats.append(note)
+                if len(hats) >= hat_max:
+                    add_all_hats(hats)
+                            
             next_note = self.notes[note_id + 1] if note_id < num_notes - 1 else None
             hat = [0.0, 0.0]
             tie = 0.0
             extra = [0.0 ,0.0]
-            if next_note is not None:
-                next_note_lookup, next_accidental = self.staff.key_signature.get_accidental(next_note.note, note.note, [])
-                if note.length == next_note.length and note.length <= 8:
-                    hat = [note.length, next_note_lookup - note_lookup]
        
             note.decorate(get_note_pos(note.time, note.note), type, decoration, hat, tie, extra)
 

@@ -76,8 +76,8 @@ class Note():
         
         # These fields are for drawing notation are post-processed
         """Hat denotes joining between eigth and sixteenth notes
-        hat[0] component is the length,Y component is the end heigh difference
-        hat[1] of zero and negative Y means the note has been tied into and does not require a tail"""
+        hat[0] component is the length, Y component is the end heigh difference
+        hat[0] of zero and negative Y means the note has been tied into and does not require a tail"""
 
         """Extra denotes extending the stalk length of a note or forcing it's stalk a direction
         extra[0] of absolute value greater than zero will force the stalk direction, +ve for up, -ve for down

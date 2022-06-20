@@ -20,8 +20,8 @@ class Staff:
     Pos = [-1.0 + (2.0 - Width), 0.0]    
     DrawColour = [0.075, 0.075, 0.075, 0.8]
     FillColour = [0.78, 0.78, 0.78, 0.75]
-    NoteWidth32nd = 0.025
-    NoteSpacing = 0.085
+    NoteWidth32nd = 0.03
+    NoteSpacing = 0.075
     StaffSpacing = NoteSpacing * 2
     OctaveSpacing = NoteSpacing * 7
     BarlineHeight = 0.02

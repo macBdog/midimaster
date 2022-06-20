@@ -236,8 +236,8 @@ class NoteRender:
             return col;
         }
 
-        vec2 stalk_size = vec2(0.0025, 0.25 + extra_geo.y);
-        float blob_size = 1.6;
+        vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
+        float blob_size = staff_note_spacing * 50.0;
         float blob = drawRotatedEllipse(uv, p, blob_size, false);
         float decoration = 0.0;
         float lines = 0.0;
