@@ -141,7 +141,7 @@ class NoteRender:
         {
             acc_pos = p - vec2(0.04, 0.0);
         }
-        if (val == 2)
+        if (val == 0)
         {
             // Natural
             col += drawRect(uv, acc_pos + vec2(0.0, -0.015), vec2(0.001, width));
@@ -168,7 +168,7 @@ class NoteRender:
             little_b -= drawRect(uv, acc_pos - vec2(0.031, 0.0), vec2(0.03, 0.05));
             col += little_b;
         }
-        return col;
+        return clamp(col, 0.0, 1.0);
     }
 
     float drawKeySignature(in vec2 uv)
@@ -262,7 +262,7 @@ class NoteRender:
         int acc = dec >= decoration_dotted_flat ? dec - decoration_dotted_natural : dec - decoration_natural;
         if (abs(acc) <= 1)
         {
-            decoration += drawAccidental(uv, p, dec, true);
+            decoration += drawAccidental(uv, p, acc, true);
         }
         
         float tie = 0.0;
@@ -391,7 +391,7 @@ class NoteRender:
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
-        return all_notes;
+        return clamp(all_notes, 0.0, 1.0);
     }
 
     void main()

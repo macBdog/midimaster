@@ -55,7 +55,6 @@ class Notes:
         num_notes = len(self.notes)
         hats = []
         hat_max = 4
-        tie_start_id = 0
         prev_note = None
         prev_note_lookup = None
 
@@ -97,7 +96,7 @@ class Notes:
 
             # Handle accidentals, sharp going up, flat coming down
             prev_note_lookup = prev_note.note % 12 if prev_note is not None else note.note % 12
-            note_lookup, accidental = self.staff.key_signature.get_accidental(note.note, prev_note_lookup, [])
+            note.note_drawn, accidental = self.staff.key_signature.get_accidental(note.note, prev_note_lookup, [])
             quantized_length, dotted = Note.get_quantized_length(note.length)
 
             # Set timing type and dotted
@@ -117,24 +116,23 @@ class Notes:
                 # Find the tallest note stem
                 for h in hats:
                     if hat_dir >= 0.0:
-                        if h.note > hat_height:
-                            hat_height = h.note
-                    elif h.note < hat_height:
-                        hat_height = h.note
+                        if h.note_drawn > hat_height:
+                            hat_height = h.note_drawn
+                    elif h.note_drawn < hat_height:
+                        hat_height = h.note_drawn
                 
                 if num_hats == 2:
-                    y_diff = hats[0].note - hats[1].note
+                    y_diff = hats[0].note_drawn - hats[1].note_drawn
                     hats[0].hat = [hat_note.length, y_diff]
                     hats[1].hat = [0.0, 0.0]
                 else:
                     for count in range(num_hats):
                         hat_note = hats[count]
                         hat_note.hat = [hat_note.length, 0.0]
-                        hat_note.extra = [0.0, hat_height - hat_note.note]
+                        hat_note.extra = [0.0, hat_height - hat_note.note_drawn]
 
                 # Remove the tail from the last note in the chain
                 hats[num_hats - 1].hat = [0.0, -1.0]
-                hats = []
 
             if note.length <= 8:
                 if hat_num < hat_max:
@@ -145,16 +143,18 @@ class Notes:
                             hats.append(note)
                         else:
                             add_all_hats()
+                            hats = []
                             hats.append(note)
+                
+                # 4 notes max in one hat chain
                 if len(hats) >= hat_max:
                     add_all_hats(hats)
+                    hats = []
+            elif hat_num > 0:
+                add_all_hats(hats)
+                hats = []
                             
-            next_note = self.notes[note_id + 1] if note_id < num_notes - 1 else None
-            hat = [0.0, 0.0]
-            tie = 0.0
-            extra = [0.0 ,0.0]
-       
-            note.decorate(get_note_pos(note.time, note.note), type, decoration, hat, tie, extra)
+            note.decorate(get_note_pos(note.time, note.note_drawn), type, decoration, note.hat, note.tie, note.extra)
 
             bar_time -= note.length
             time += note.length

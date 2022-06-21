@@ -83,6 +83,7 @@ class Note():
         extra[0] of absolute value greater than zero will force the stalk direction, +ve for up, -ve for down
         extra[1] is added onto the default stalk lenghth"""
 
+        self.note_drawn = note # When the key signature specifies, draw a note a half tone up or down
         self.pos = [0.0, 0.0]
         self.type = NoteType.NONE
         self.decoration = NoteDecoration.NONE
