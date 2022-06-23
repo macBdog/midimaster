@@ -391,7 +391,7 @@ class NoteRender:
             float alpha = NoteColours[i].a;
             all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
         }
-        return clamp(all_notes, 0.0, 1.0);
+        return all_notes;
     }
 
     void main()
@@ -506,10 +506,10 @@ class NoteRender:
         self.note_types[self.note] = int(note.type.value)
         self.note_decoration[self.note] = int(note.decoration.value)
         self.note_hats[npos] = note.hat[0] * self.note_width * 0.5
-        self.note_hats[npos + 1] = note.hat[1] * Staff.NoteSpacing * 0.5
+        self.note_hats[npos + 1] = note.hat[1]
         self.note_ties[self.note] = note.tie
         self.note_extra[npos] = note.extra[0]
-        self.note_extra[npos + 1] = note.extra[1] * Staff.NoteSpacing * 0.5
+        self.note_extra[npos + 1] = note.extra[1]
 
     def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:
         """Process note timing then upload the note data state to the shader every frame."""
