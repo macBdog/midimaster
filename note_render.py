@@ -233,7 +233,7 @@ class NoteRender:
             float col = drawLineRounded(uv, vec2(p.x - 0.001, staff_pos_y + 0.173), vec2(p.x - 0.02, staff_pos_y + 0.06), 0.0025);
             col += drawEllipse(uv, vec2(p.x - 0.024, staff_pos_y + 0.15), vec2(0.105, 0.135));
             col += drawLineRounded(uv, vec2(p.x - 0.016, staff_pos_y + 0.14), vec2(p.x - 0.003, staff_pos_y + 0.167), 0.003);
-            return col;
+            return clamp(col, 0.0, 1.0);
         }
 
         vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
@@ -311,7 +311,7 @@ class NoteRender:
         vec2 stalk_pos = vec2(stalk_width - 0.001, stalk_size.y * 0.5);
         if (stalk_dir_down)
         {
-            stalk_pos.x -= blob_size * 0.024;
+            stalk_pos.x -= blob_size * 0.02;
             stalk_pos.y -= stalk_size.y;
         }
         float stalk = drawRect(uv, p + stalk_pos, stalk_size);
@@ -358,8 +358,9 @@ class NoteRender:
         float hat = 0.0;
         if (hat_size.x > 0.0)
         {
+            float stalk_y_mult = stalk_dir_down ? -0.44 : 0.51;
             float hat_width = 0.012;
-            vec2 hat_start = p + stalk_pos + vec2(stalk_width * -0.05, (stalk_size.y * 0.51) - hat_width);
+            vec2 hat_start = p + stalk_pos + vec2(stalk_width * -0.05, (stalk_size.y * stalk_y_mult) - hat_width);
             vec2 hat_end = hat_start + hat_size + vec2(0.002, 0.0);
             hat = drawLineSquare(uv, hat_start, hat_end, hat_width);
         }
@@ -389,7 +390,7 @@ class NoteRender:
             float tie = (NoteTies[i] + 1.0) * 0.5;
             float note = drawNote(uv, note_pos, NoteTypes[i], NoteDecoration[i], NoteHats[i], tie, extra_geo);
             float alpha = NoteColours[i].a;
-            all_notes += vec4(note * NoteColours[i].rgb, note * alpha);
+            all_notes = max(all_notes, vec4(note * NoteColours[i].rgb, note * alpha));
         }
         return all_notes;
     }

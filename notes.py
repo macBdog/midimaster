@@ -134,7 +134,10 @@ class Notes:
                     for count in range(num_hats):
                         hat_note = hats[count]
                         hat_note.hat = [hat_note.length, 0.0]
-                        y_diff = note_positions[hat_tallest_note] - note_positions[hat_note.note_drawn]
+                        if hat_dir:
+                            y_diff = note_positions[hat_tallest_note] - note_positions[hat_note.note_drawn]
+                        else:
+                            y_diff = note_positions[hat_note.note_drawn] - note_positions[hat_tallest_note]
                         hat_note.extra = [0.0, y_diff]
                       
                 # Remove the tail from the last note in the chain
