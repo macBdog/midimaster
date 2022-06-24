@@ -14,8 +14,8 @@ class Game:
     def __init__(self):
         self.name = "game"
         self.running = False
-        self.window_width = 1280
-        self.window_height = 720
+        self.window_width = 1920
+        self.window_height = 1080
         self.dt = 0.03
         self.fps = 0
         self.fps_last_update = 1

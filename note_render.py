@@ -60,7 +60,7 @@ class NoteRender:
     #define staff_pos_y 0.5
     #define staff_pos vec2(staff_pos_x, staff_pos_y)
     #define staff_width 1.0
-    #define staff_line_width 0.003
+    #define staff_line_width 0.002
 
     #define decoration_none 0
     #define decoration_flat 1
@@ -139,7 +139,7 @@ class NoteRender:
         vec2 acc_pos = p;
         if (note_relative_pos)
         {
-            acc_pos = p - vec2(0.04, 0.0);
+            acc_pos = p - vec2(0.02, 0.0);
         }
         if (val == 0)
         {
@@ -237,7 +237,7 @@ class NoteRender:
         }
 
         vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
-        float blob_size = staff_note_spacing * 50.0;
+        float blob_size = staff_note_spacing * 45.0;
         float blob = drawRotatedEllipse(uv, p, blob_size, false);
         float decoration = 0.0;
         float lines = 0.0;
@@ -308,10 +308,10 @@ class NoteRender:
         }
 
         float stalk_width = note_size * 0.2;
-        vec2 stalk_pos = vec2(stalk_width - 0.001, stalk_size.y * 0.5);
+        vec2 stalk_pos = vec2(stalk_width - 0.002, stalk_size.y * 0.5);
         if (stalk_dir_down)
         {
-            stalk_pos.x -= blob_size * 0.02;
+            stalk_pos.x -= blob_size * 0.03;
             stalk_pos.y -= stalk_size.y;
         }
         float stalk = drawRect(uv, p + stalk_pos, stalk_size);
@@ -506,7 +506,7 @@ class NoteRender:
         self.note_colours[cpos+3] = col[3]
         self.note_types[self.note] = int(note.type.value)
         self.note_decoration[self.note] = int(note.decoration.value)
-        self.note_hats[npos] = note.hat[0] * self.note_width * 0.5
+        self.note_hats[npos] = note.hat[0] * self.note_width * 0.5 # TODO Move note_width into a uniform so hats join up when zooming
         self.note_hats[npos + 1] = note.hat[1]
         self.note_ties[self.note] = note.tie
         self.note_extra[npos] = note.extra[0]

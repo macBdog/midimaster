@@ -16,15 +16,14 @@ class Staff:
     NoteColours = [[31, 130, 180, 1.0],    [166, 206, 227, 1.0],    [51, 166, 44, 1.0],  [178, 223, 138, 1.0], # C, Db, D, Eb 
                     [227, 26, 28, 1.0],     [255, 127, 0.0, 1.0],    [253, 191, 111, 1.0], [106, 61, 154, 1.0], # E, F Gb, G
                     [255, 107, 225, 1.0],   [255, 0, 229, 1.0],      [255, 255, 153, 1.0], [177, 89, 40, 1.0]]# Ab, A, Bb, B 
-    Width = 1.75
+    Width = 1.8
     Pos = [-1.0 + (2.0 - Width), 0.0]    
     DrawColour = [0.075, 0.075, 0.075, 0.8]
     FillColour = [0.78, 0.78, 0.78, 0.75]
-    NoteWidth32nd = 0.03
-    NoteSpacing = 0.075
+    NoteWidth32nd = 0.02
+    NoteSpacing = 0.055
     StaffSpacing = NoteSpacing * 2
     OctaveSpacing = NoteSpacing * 7
-    BarlineHeight = 0.02
 
     def __init__(self):
         self.key_signature = KeySignature()
@@ -45,7 +44,7 @@ class Staff:
         """Calculate and add two rows of virtual keys aligned with the staff drawn separately."""
         
         tone_count = 0
-        score_width = 0.07
+        score_width = 0.055
         note_start_x = -1.0 + (score_width * 2.0)
         note_start_y = Staff.Pos[1] - Staff.NoteSpacing * (12 - 3)
         score_start_x = note_start_x + score_width
