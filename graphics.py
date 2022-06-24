@@ -1,4 +1,5 @@
 import numpy
+from pathlib import Path
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.constant import Constant
@@ -6,6 +7,8 @@ from OpenGL.constant import Constant
 from settings import GameSettings
 
 class Graphics:
+    SHADER_PATH = "ext/shaders"
+
     VERTEX_SHADER_TEXTURE = """
     #version 430
 
@@ -140,6 +143,11 @@ class Graphics:
             OpenGL.GL.shaders.compileShader(pixel_shader_source, GL_FRAGMENT_SHADER)
         )
 
+    @staticmethod
+    def load_shader(name: str) -> str:
+        path = Path(__file__).parent / Graphics.SHADER_PATH / name
+        with open(path, 'r') as shader_file:
+            return shader_file.read()
 
     @staticmethod
     def process_shader_source(src: str, subs: dict) -> str:
