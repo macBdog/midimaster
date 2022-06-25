@@ -41,7 +41,7 @@ class NoteRender:
             "#define staff_note_spacing 0.03": f"#define staff_note_spacing {Staff.NoteSpacing * 0.5}"
         }
         note_shader = Graphics.process_shader_source(Graphics.load_shader("notes.frag"), shader_substitutes)
-        self.shader = Graphics.compile_shader(Graphics.VERTEX_SHADER_TEXTURE, note_shader)
+        self.shader = Graphics.compile_shader(Graphics.load_shader("texture.vert"), note_shader)
         
         self.texture = Texture("")
         self.sprite = SpriteTexture(graphics, self.texture, [1.0, 1.0, 1.0, 1.0], [0.0, 0.0], [2.0, 2.0], self.shader)

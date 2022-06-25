@@ -79,7 +79,7 @@ class MidiMaster(Game):
 
         title.animation.set_action(-1, transition_to_game)
 
-        bg_shader = Graphics.compile_shader(Graphics.VERTEX_SHADER_TEXTURE, Graphics.PIXEL_SHADER_TEXTURE_SCROLL)
+        bg_shader = Graphics.compile_shader(Graphics.load_shader("texture.vert"), Graphics.load_shader("texture_anim.frag"))
         game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0), bg_shader)
         self.gui_game.add_widget(game_bg)
 
