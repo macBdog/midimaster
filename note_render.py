@@ -4,7 +4,7 @@ from graphics import Graphics
 from OpenGL.GL import *
 
 from texture import SpriteTexture, Texture
-from note import Note, NoteDecoration
+from note import Note
 from key_signature import KeySignature
 from staff import Staff
 
@@ -121,29 +121,34 @@ class NoteRender:
         
         self.note_width = note_width
 
-        for i in range(NoteRender.NumNotes):
-            note = self.notes[i]
-            should_be_displayed = note is not None and note.time - music_time < 32 * 4
-            if should_be_displayed and not self.calibration:
+        if not self.calibration:
+            for i in range(NoteRender.NumNotes):
+                note = self.notes[i]
                 npos = i * 2
                 cpos = i * 4
-                self.note_positions[npos] = self.ref_c4_pos[0] + ((note.time - music_time) * note_width)
+                should_be_displayed = note is not None and note.time - music_time < 32 * 8
+                if should_be_displayed:
+                    self.note_colours[cpos + 3] = 1.0
+                    self.note_positions[npos] = self.ref_c4_pos[0] + ((note.time - music_time) * note_width)
 
-                # Hold the visuals a 32nd note longer so the player can see which note to play
-                should_be_played = note.time <= music_time and not note.is_rest()
-                should_be_recycled = note.time + 1 < music_time
-                if should_be_played:
-                    self.note_colours[cpos + 1] = NoteRender.HitColour[1]
+                    # Hold the visuals a 32nd note longer so the player can see which note to play
+                    should_be_played = note.time <= music_time and not note.is_rest()
+                    should_be_recycled = note.time + 1 < music_time
+                    if should_be_played:
+                        self.note_colours[cpos + 1] = NoteRender.HitColour[1]
+                    else:
+                        self.note_colours[cpos + 1] = NoteRender.BaseColour
+
+                    # Note is on as soon as it hits the playhead
+                    if should_be_played:
+                        notes_on[note.note] = music_time + note.length
+
+                    if should_be_recycled:
+                        self.note_positions[npos] = -99.0
+                        self.note_colours[cpos + 3] = 0.0
+                        self.notes[i] = None
                 else:
-                    self.note_colours[cpos + 1] = NoteRender.BaseColour
-
-                # Note is on as soon as it hits the playhead
-                if should_be_played:
-                    notes_on[note.note] = music_time + note.length
-
-                if should_be_recycled:
-                    self.note_colours[npos + 3] = 0.0
-                    self.notes[i] = None
+                    self.note_colours[cpos + 3] = 0.0
 
         def note_uniforms():
             glUniform1f(self.display_ratio_id, self.display_ratio)

@@ -2,7 +2,7 @@ from texture import *
 from graphics import *
 from font import *
 from staff import Staff
-from note import Note, NoteType, NoteDecoration
+from note import Note, NoteDecoration
 from note_render import NoteRender
 
 
@@ -127,9 +127,11 @@ class Notes:
                     hcount += 1
 
                 if num_hats == 2:
-                    y_diff = note_positions[hats[0].note_drawn] - note_positions[hats[1].note_drawn]
-                    hats[0].hat = [hat_note.length, y_diff]
-                    hats[1].hat = [0.0, 0.0]
+                    hat_note = hats[0]
+                    hat_note_next = hats[1]
+                    y_diff = note_positions[hat_note.note_drawn] - note_positions[hat_note_next.note_drawn]
+                    hat_note.hat = [hat_note.length, y_diff]
+                    hat_note_next.hat = [0.0, 0.0]
                 elif straight_hat:
                     for count in range(num_hats):
                         hat_note = hats[count]
@@ -205,7 +207,7 @@ class Notes:
         for i in range(self.num_barlines):
             bar_start = self.ref_c4_pos[0]
             rel_time = self.bartimes[i] - music_time
-            self.barlines[i].pos[0] = bar_start + (rel_time * note_width)
+            self.barlines[i].pos[0] = bar_start + (rel_time * note_width) - (note_width * 3)
             self.barlines[i].pos[1] = Staff.Pos[1] + Staff.StaffSpacing * 2.0           
             
             self.barlines[i].draw()

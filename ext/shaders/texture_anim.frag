@@ -1,15 +1,13 @@
 #version 430
 
-in vec2 OutTexCoord;     
+in vec2 OutTexCoord;
+uniform float Time;
 uniform sampler2D SamplerTex;
 uniform vec4 Colour;
 out vec4 outColour;
 
-float iTime = 0.0;
-
 void main() 
 {
-    vec2 scroll = OutTexCoord + vec2(iTime, iTime);
+    vec2 scroll = OutTexCoord + vec2(Time*0.05, Time*0.05);
     outColour = texture(SamplerTex, scroll) * Colour;
-    iTime += 0.0015;
 }

@@ -3,11 +3,11 @@ import sys
 from gui import Gui
 from input import InputActionKey, InputActionModifier
 from key_signature import KeySignature
+from scrolling_background import ScrollingBackground
 from widget import AlignX
 from widget import AlignY
 from animation import Animation
 from animation import AnimType
-from graphics import Graphics
 from music import Music
 from staff import Staff
 from note_render import NoteRender
@@ -78,10 +78,12 @@ class MidiMaster(Game):
             self.gui_game.set_active(True, True)
 
         title.animation.set_action(-1, transition_to_game)
+ 
+        self.gui_game.add_widget(
+            self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
+        )
 
-        bg_shader = Graphics.compile_shader(Graphics.load_shader("texture.vert"), Graphics.load_shader("texture_anim.frag"))
-        game_bg = self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0), bg_shader)
-        self.gui_game.add_widget(game_bg)
+        self.bg = ScrollingBackground(self.textures, "menu_glyphs.tga")
 
         self.staff = Staff()
         
@@ -106,7 +108,7 @@ class MidiMaster(Game):
         self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
 
         # Read a midi file and load the notes
-        level = "test.mid"
+        level = "mary.mid"
         level_path = os.path.join("music", level)
         if os.path.exists(level_path):
             self.music = Music(self.graphics, self.note_render, self.staff, level_path, 1)
@@ -117,6 +119,8 @@ class MidiMaster(Game):
         self.devices.open_output_default()
 
     def update(self, dt):
+        self.bg.draw(self.dt)
+
         self.profile.begin("midi")
 
         def score_vfx(note_id = None):
@@ -182,6 +186,7 @@ class MidiMaster(Game):
                     if self.music_time >= music_notes[k]:
                         music_notes_off[k] = True
                 else:
+                    # A new note to play
                     self.midi_notes[k] = music_notes[k]
                     self.scored_notes[k] = self.music_time
                     new_note_on = Message("note_on")
@@ -197,6 +202,7 @@ class MidiMaster(Game):
                 new_note_off.note = k
                 self.devices.output_messages.append(new_note_off)
                 self.midi_notes.pop(k)
+
             self.profile.end()
 
             self.profile.begin("scoring")

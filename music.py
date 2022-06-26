@@ -71,6 +71,15 @@ class Music:
                             self.backing_time[id] = 0.0
                             self.backing_tracks[id].append(msg)
 
+        # Add a lead in if the first notes to be played start within a bar
+        if self.notes.notes[0].time < 32:
+            lead_in_32s = 32
+            for note in self.notes.notes:
+                note.time += lead_in_32s
+            for _, track in enumerate(self.backing_tracks):
+                for note in self.backing_tracks[track]:
+                    note.time += lead_in_32s
+
         # Post-process the notes of the music, adding rests and decoration
         self.notes.assign_notes()
 
@@ -78,8 +87,8 @@ class Music:
         """Restore all the notes in the music to the state just after loading."""
 
         self.notes.reset()
-        self.backing_index = [0 for track in self.backing_index]
-        self.backing_time = [0.0 for track in self.backing_time]
+        self.backing_index = {track: 0 for track in self.backing_index}
+        self.backing_time = {track: 0.0 for track in self.backing_time}
         
         
     def update(self, dt: float, music_time: float, devices: MidiDevices):
