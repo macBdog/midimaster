@@ -41,13 +41,20 @@ class Staff:
         self.playing_notes = {}
         
     def prepare(self, gui:Gui, textures:TextureManager):
-        """Calculate and add two rows of virtual keys aligned with the staff drawn separately."""
+        """Calculate and add two rows of virtual keys aligned with the staff drawn separately.
+        [black_keys]            [score box]
+                    [white_keys][score box]
+        [black_keys]            [score box]
+                    [white_keys][score box]
+        """
         
         tone_count = 0
-        score_width = 0.055
-        note_start_x = -1.0 + (score_width * 2.0)
+        total_width = 2.0 - Staff.Width
+        box_width = total_width / 3.0
+        note_black_key_start_x = -1.0 + (box_width * 0.5)
+        note_start_x = -1.0 + (box_width * 1.5)
+        score_start_x = -1.0 + (box_width * 2.5)
         note_start_y = Staff.Pos[1] - Staff.NoteSpacing * (12 - 3)
-        score_start_x = note_start_x + score_width
         for i in range(Staff.NumNotes):
             note_height = Staff.NoteSpacing
             score_height = Staff.NoteSpacing
@@ -77,11 +84,12 @@ class Staff:
                     score_height -= black_key_height * 0.25
                     score_pos += black_key_height * 0.25
 
-            note_size = [Staff.NoteSpacing, note_height]
-            score_size = [score_width - 0.02, score_height]
+            score_height = 0.02
+            note_size = [box_width, note_height]
+            score_size = [box_width, score_height]
 
             if black_key:
-                self.note_box.append(gui.add_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_start_x - Staff.NoteSpacing - 0.005, note_pos - Staff.NoteSpacing * 0.5], note_size)))
+                self.note_box.append(gui.add_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5], note_size)))
                 self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos - Staff.NoteSpacing * 0.5], score_size)))
             else:
                 self.note_box.append(gui.add_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_start_x, note_pos], note_size)))

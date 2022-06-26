@@ -139,9 +139,17 @@ class NoteRender:
                     else:
                         self.note_colours[cpos + 1] = NoteRender.BaseColour
 
-                    # Note is on as soon as it hits the playhead
+                    # Note is on as soon as it hits the playhead 
                     if should_be_played:
-                        notes_on[note.note] = music_time + note.length
+                        note_off_time = music_time + note.length
+                        if note.note in notes_on:
+                            # Dictionary entry will be a list if there are repeated notes
+                            if isinstance(notes_on[note.note], list):
+                                notes_on[note.note].append(note_off_time)
+                            else:
+                                notes_on[note.note] = [notes_on[note.note], note_off_time]
+                        else:
+                            notes_on[note.note] = note_off_time
 
                     if should_be_recycled:
                         self.note_positions[npos] = -99.0

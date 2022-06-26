@@ -210,7 +210,8 @@ class Notes:
             self.barlines[i].pos[0] = bar_start + (rel_time * note_width) - (note_width * 3)
             self.barlines[i].pos[1] = Staff.Pos[1] + Staff.StaffSpacing * 2.0           
             
-            self.barlines[i].draw()
+            if self.barlines[i].pos[0] > bar_start + (rel_time * note_width):
+                self.barlines[i].draw()
 
             if self.bartimes[i] < music_time:   
                 self.bartimes[i] += self.num_barlines * 32

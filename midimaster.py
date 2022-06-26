@@ -49,7 +49,7 @@ class MidiMaster(Game):
     def reset(self):
         self.score = 0
         self.music_time = 0.0  # The number of elapsed 32nd notes as a factor of absolute time
-        self.notes_down = {}
+        self.player_notes_down = {}
         self.midi_notes = {}
         self.scored_notes = {}
         self.music_running = False
@@ -119,7 +119,7 @@ class MidiMaster(Game):
         self.devices.open_output_default()
 
     def update(self, dt):
-        self.bg.draw(self.dt)
+        self.bg.draw(self.dt if self.music_running else self.dt * 0.1)
 
         self.profile.begin("midi")
 
@@ -138,7 +138,7 @@ class MidiMaster(Game):
         # Process any output messages and transfer them to player notes down
         for message in self.devices.output_messages:
             if message.type == "note_on":
-                self.notes_down[message.note] = 1.0
+                self.player_notes_down[message.note] = 1.0
 
                 if self.mode == MusicMode.PAUSE_AND_LEARN:
                     if message.note in self.scored_notes:
@@ -148,10 +148,10 @@ class MidiMaster(Game):
                         del self.scored_notes[message.note]
 
             elif message.type == "note_off":
-                del self.notes_down[message.note]
+                del self.player_notes_down[message.note]
 
         # Light up score box for any held note
-        for note, velocity in self.notes_down.items():
+        for note, velocity in self.player_notes_down.items():
             if velocity > 0.0:
                 self.staff.set_score(note)
         self.profile.end()
@@ -177,22 +177,31 @@ class MidiMaster(Game):
             self.profile.begin("note_replay")
             music_notes_off = {}
             for k in music_notes:
+                note_off_time = 0
+                note_entry = music_notes[k]
+                if isinstance(note_entry, list):
+                    note_off_time = note_entry[0]
+                else:
+                    note_off_time = note_entry
+
                 # Highlight the note box to show this note should be currently played
-                if music_notes[k] >= self.music_time:
+                if note_off_time >= self.music_time:
                     self.staff.note_on(k)
 
-                # The note value in the dictionary is the time to turn off
-                if k in self.midi_notes:
-                    if self.music_time >= music_notes[k]:
-                        music_notes_off[k] = True
-                else:
-                    # A new note to play
-                    self.midi_notes[k] = music_notes[k]
+                def new_note_to_play():
+                    self.midi_notes[k] = note_off_time
                     self.scored_notes[k] = self.music_time
                     new_note_on = Message("note_on")
                     new_note_on.note = k
                     new_note_on.velocity = 100
                     self.devices.output_messages.append(new_note_on)
+
+                # The note value in the dictionary is the time to turn off
+                if k in self.midi_notes:
+                    if self.music_time >= note_off_time:
+                        music_notes_off[k] = True
+                else:
+                    new_note_to_play()
 
             # Send note off messages for all the notes in the music
             for k in music_notes_off:
@@ -347,7 +356,7 @@ class MidiMaster(Game):
                     note_keycode += 1
 
         elif self.keyboard_mapping == KeyboardMapping.QWERTY_PIANO:
-            add_note_key_mapping(81, Staff.OriginNote)  # C
+            add_note_key_mapping(47, Staff.OriginNote)  # C
             add_note_key_mapping(50, Staff.OriginNote + 1)  # Db
             add_note_key_mapping(87, Staff.OriginNote + 2)  # D
             add_note_key_mapping(51, Staff.OriginNote + 3)  # Eb
@@ -359,7 +368,6 @@ class MidiMaster(Game):
             add_note_key_mapping(89, Staff.OriginNote + 9)  # A
             add_note_key_mapping(55, Staff.OriginNote + 10)  # Bb
             add_note_key_mapping(85, Staff.OriginNote + 11)  # B
-            add_note_key_mapping(73, Staff.OriginNote + 12)  # C
 
 
 def main():
