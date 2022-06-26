@@ -88,7 +88,7 @@ class MidiMaster(Game):
         self.staff = Staff()
         
         bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
-        bg_size_top = 0.35
+        bg_size_top = 0.65
         bg_size_btm = 1.25
         self.note_bg_top = self.gui_game.add_widget(
             self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)), (Staff.Width, bg_size_top * -1.0))

@@ -16,7 +16,7 @@ class Staff:
     NoteColours = [[31, 130, 180, 1.0],    [166, 206, 227, 1.0],    [51, 166, 44, 1.0],  [178, 223, 138, 1.0], # C, Db, D, Eb 
                     [227, 26, 28, 1.0],     [255, 127, 0.0, 1.0],    [253, 191, 111, 1.0], [106, 61, 154, 1.0], # E, F Gb, G
                     [255, 107, 225, 1.0],   [255, 0, 229, 1.0],      [255, 255, 153, 1.0], [177, 89, 40, 1.0]]# Ab, A, Bb, B 
-    Width = 1.8
+    Width = 1.85
     Pos = [-1.0 + (2.0 - Width), 0.0]    
     DrawColour = [0.075, 0.075, 0.075, 0.8]
     FillColour = [0.78, 0.78, 0.78, 0.75]
@@ -76,15 +76,14 @@ class Staff:
                 score_height = black_key_height
             else:
                 if black_key_next and black_key_prev:
-                    score_height -= black_key_height * 0.5
+                    score_height -= black_key_height
                 elif black_key_next and not black_key_prev:
-                    score_height -= black_key_height * 0.25
+                    score_height -= black_key_height * 0.5
                     score_pos -= black_key_height * 0.25
                 elif black_key_prev and not black_key_next:
-                    score_height -= black_key_height * 0.25
+                    score_height -= black_key_height * 0.5
                     score_pos += black_key_height * 0.25
 
-            score_height = 0.02
             note_size = [box_width, note_height]
             score_size = [box_width, score_height]
 
@@ -136,6 +135,6 @@ class Staff:
         for i in range(Staff.NumNotes):
             self.note_box[i].sprite.set_alpha(self.note_highlight[i])
             self.score_box[i].sprite.set_alpha(self.score_highlight[i])
-            self.note_highlight[i] = max(Staff.BaseAlphaNote, self.note_highlight[i] - 0.9 * dt)
-            self.score_highlight[i] = max(Staff.BaseAlphaScore, self.score_highlight[i] - 0.8 * dt)
+            self.note_highlight[i] = max(Staff.BaseAlphaNote, self.note_highlight[i] - 0.8 * dt)
+            self.score_highlight[i] = max(Staff.BaseAlphaScore, self.score_highlight[i] - 0.7 * dt)
 

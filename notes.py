@@ -10,7 +10,8 @@ class Notes:
     """Notes manages all the on-screen note representations for a game.
     It is intended to be called by a music manager that creates the notes
     for each piece of music, then notes manages when they should be on-screen.
-    """    
+    """
+    BarlineWidth = 0.004
     def __init__(self, graphics:Graphics, note_render: NoteRender, staff: Staff, note_positions: list):
         self.graphics = graphics
         self.note_render = note_render
@@ -26,7 +27,7 @@ class Notes:
         # Create the barlines with 0 being the immovable 0 bar
         staff_width = Staff.StaffSpacing * 4.0
         for i in range(self.num_barlines):
-            barline = SpriteShape(self.graphics, [0.0, 0.0, 0.0, 1.0], [0.0, 0.0], [0.008, staff_width])
+            barline = SpriteShape(self.graphics, [0.1, 0.1, 0.1, 0.75], [0.0, 0.0], [Notes.BarlineWidth, staff_width])
             self.barlines.append(barline)
             self.bartimes.append(i * 32.0)
         
@@ -210,7 +211,7 @@ class Notes:
             self.barlines[i].pos[0] = bar_start + (rel_time * note_width) - (note_width * 3)
             self.barlines[i].pos[1] = Staff.Pos[1] + Staff.StaffSpacing * 2.0           
             
-            if self.barlines[i].pos[0] > bar_start + (rel_time * note_width):
+            if self.barlines[i].pos[0] > bar_start:
                 self.barlines[i].draw()
 
             if self.bartimes[i] < music_time:   
