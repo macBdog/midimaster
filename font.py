@@ -1,9 +1,31 @@
 import glfw
-from texture import *
-from freetype import *
-from graphics import *
-from OpenGL.GL import *
+import numpy as np
+from freetype import Face, ctypes
+from graphics import Graphics
 from settings import GameSettings
+from OpenGL.GL import (
+    glGenBuffers, glBindBuffer, glBufferData,
+    glGenTextures, glBindTexture, glActiveTexture,
+    glTexImage2D, glTexParameteri,
+    glGenVertexArrays,
+    glUseProgram,
+    glBindVertexArray,
+    glVertexAttribPointer,
+    glEnableVertexAttribArray,
+    glGetAttribLocation,
+    glGetUniformLocation,
+    glUniform2f, glUniform4f,
+    glDrawElements,
+    GL_TEXTURE_2D, GL_TEXTURE0,
+    GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T,
+    GL_CLAMP_TO_EDGE,
+    GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER,
+    GL_LINEAR,
+    GL_R8, GL_RED, GL_FLOAT, GL_UNSIGNED_INT, GL_UNSIGNED_BYTE, GL_FALSE,
+    GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER,
+    GL_STATIC_DRAW,
+    GL_TRIANGLES
+)
 
 class Font():
     def blit(self, dest, src, loc):
@@ -33,7 +55,7 @@ class Font():
             print(f"Font atlas not large enough for all characters!")
             return loc
             
-        src = numpy.reshape(bitmap.buffer, (width, height))
+        src = np.reshape(bitmap.buffer, (width, height))
         self.blit(dest, src, loc)
 
         self.sizes[char_index] = (height / self.tex_width, width / self.tex_height)
@@ -60,7 +82,7 @@ class Font():
         # Create one big texture for all the glyphs
         self.tex_width = 2048
         self.tex_height = 2048
-        self.image_data = numpy.zeros((self.tex_width, self.tex_height), dtype=numpy.uint8)
+        self.image_data = np.zeros((self.tex_width, self.tex_height), dtype=np.uint8)
 
         if GameSettings.DEV_MODE:
             print(f"Building font atlas for {filename}: ", end='')
@@ -111,10 +133,10 @@ class Font():
 
         # Create Buffer object in gpu
         self.VBO = glGenBuffers(1)
-        self.rectangle = numpy.array([-0.5, -0.5, 
+        self.rectangle = np.array([-0.5, -0.5, 
                                        0.5, -0.5, 
                                        0.5, 0.5, 
-                                      -0.5, 0.5, 0.0, 1.0, 1.0, 1.0,1.0, 0.0, 0.0, 0.0], dtype = numpy.float32)
+                                      -0.5, 0.5, 0.0, 1.0, 1.0, 1.0,1.0, 0.0, 0.0, 0.0], dtype = np.float32)
 
         # Bind the buffer
         glBindBuffer(GL_ARRAY_BUFFER, self.VBO)

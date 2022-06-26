@@ -3,8 +3,8 @@ from font import Font
 import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import OpenGL.GL.shaders
-from texture import *
+from texture import TextureManager
+from graphics import Graphics
 
 def main():
     window_width = 1024
@@ -20,7 +20,7 @@ def main():
     glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
     glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
     glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-    window = glfw.create_window(window_width, window_height, "MidiMasterL - Test", None, None)
+    window = glfw.create_window(window_width, window_height, "MidiMaster - Test", None, None)
  
     if not window:
         glfw.terminate()

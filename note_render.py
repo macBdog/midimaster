@@ -1,12 +1,17 @@
 from staff import Staff
 from settings import GameSettings
 from graphics import Graphics
-from OpenGL.GL import *
-
 from texture import SpriteTexture, Texture
 from note import Note
 from key_signature import KeySignature
 from staff import Staff
+from OpenGL.GL import (
+    glGetUniformLocation,
+    glUniform1iv,
+    glUniform1f, 
+    glUniform1fv, glUniform2fv, glUniform4fv,
+)
+
 
 class NoteRender:
     """Draw 32 notes at a time for the entire game on the GPU."""

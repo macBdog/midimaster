@@ -1,10 +1,9 @@
-from texture import *
-from graphics import *
-from font import *
+from texture import SpriteShape
+from graphics import Graphics
 from staff import Staff
 from note import Note, NoteDecoration
 from note_render import NoteRender
-
+from settings import GameSettings
 
 class Notes:
     """Notes manages all the on-screen note representations for a game.

@@ -217,8 +217,11 @@ class MidiMaster(Game):
             self.profile.begin("scoring")
             if self.mode == MusicMode.PERFORMANCE:
                 if self.staff.is_scoring():
-                    score_vfx()
-                    self.score = self.score + 10 * self.dt
+                    if self.score_fade < 0.5:
+                        for note in self.scored_notes:
+                            score_vfx(note)
+                            break
+                    self.score += 10 ** self.dt
             elif self.mode == MusicMode.PAUSE_AND_LEARN:
                 if len(self.scored_notes) > 0 and self.music_running:
                     self.music_time -= music_time_advance

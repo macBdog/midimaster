@@ -1,5 +1,5 @@
 from graphics import Graphics
-from OpenGL.GL import *
+from OpenGL.GL import glUniform1f, glGetUniformLocation
 from texture import TextureManager
 from graphics import Graphics
 

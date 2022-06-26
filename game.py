@@ -1,12 +1,23 @@
 import glfw
 from graphics import Graphics
 from input import Input, InputActionKey, InputMethod, InputActionModifier
-from texture import *
+from texture import TextureManager
 import time
 from gui import Gui
 from profile import Profile
 from particles import Particles
 from settings import GameSettings
+from OpenGL.GL import (
+    glViewport,
+    glClear, glClearColor,
+    glShadeModel,
+    glEnable,
+    glDepthFunc, glBlendFunc,
+    GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
+    GL_BLEND, GL_SMOOTH, GL_DEPTH_TEST, GL_LEQUAL,
+    GL_TRUE
+)
 
 class Game:
     """A generic interactive frame interpolation loop without connection to specific logic."""

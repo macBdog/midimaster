@@ -14,10 +14,9 @@ python3 midimaster.py
 * Keys ABCDEFG to play MIDI notes Shift is Sharp (#), Ctrl is Flat (b)
 
 ## Task Queue:
-1. Fix all note rendering
-2. Temporal accidentals
-3. Device selection
-4. Note length animation bar
-5. Song selection data file
-6. GUI
-7. Hot reload shaders
+1. Temporal accidentals
+2. Device selection
+3. 3 strikes system
+4. Song selection data file
+5. Main menu GUI
+6. Game submodule with hot reload shaders

@@ -1,10 +1,20 @@
 import numpy
 from pathlib import Path
-from OpenGL.GL import *
-from OpenGL.GL import shaders
-from OpenGL.constant import Constant
-
 from settings import GameSettings
+from OpenGL.GL import (
+    glCreateProgram, glCreateShader,
+    glShaderSource,
+    glCompileShader, glAttachShader, glLinkProgram,
+    glGetProgramiv,
+    glGetActiveUniform,
+    glGetShaderInfoLog, glGetProgramInfoLog,
+    GL_VERTEX_SHADER, GL_FRAGMENT_SHADER,
+    GL_ACTIVE_UNIFORMS
+)
+from OpenGL.GL.shaders import (
+    compileProgram, compileShader
+)
+
 
 class Graphics:
     SHADER_PATH = "ext/shaders"
@@ -13,27 +23,27 @@ class Graphics:
         self.indices = numpy.array([0, 1, 2, 2, 3, 0], dtype=numpy.uint32)
 
         # Pre-compile multiple shaders for general purpose drawing
-        self.shader_texture = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.load_shader("texture.vert"), GL_VERTEX_SHADER), 
-            OpenGL.GL.shaders.compileShader(Graphics.load_shader("texture.frag"), GL_FRAGMENT_SHADER)
+        self.shader_texture = compileProgram(
+            compileShader(Graphics.load_shader("texture.vert"), GL_VERTEX_SHADER), 
+            compileShader(Graphics.load_shader("texture.frag"), GL_FRAGMENT_SHADER)
         )
 
-        self.shader_colour = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.load_shader("colour.vert"), GL_VERTEX_SHADER), 
-            OpenGL.GL.shaders.compileShader(Graphics.load_shader("colour.frag"), GL_FRAGMENT_SHADER)
+        self.shader_colour = compileProgram(
+            compileShader(Graphics.load_shader("colour.vert"), GL_VERTEX_SHADER), 
+            compileShader(Graphics.load_shader("colour.frag"), GL_FRAGMENT_SHADER)
         )
 
-        self.shader_font = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(Graphics.load_shader("font.vert"), GL_VERTEX_SHADER), 
-            OpenGL.GL.shaders.compileShader(Graphics.load_shader("font.frag"), GL_FRAGMENT_SHADER)
+        self.shader_font = compileProgram(
+            compileShader(Graphics.load_shader("font.vert"), GL_VERTEX_SHADER), 
+            compileShader(Graphics.load_shader("font.frag"), GL_FRAGMENT_SHADER)
         )
 
 
     @staticmethod
     def compile_shader(vertex_shader_source: str, pixel_shader_source: str):
-        return OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(vertex_shader_source, GL_VERTEX_SHADER), 
-            OpenGL.GL.shaders.compileShader(pixel_shader_source, GL_FRAGMENT_SHADER)
+        return compileProgram(
+            compileShader(vertex_shader_source, GL_VERTEX_SHADER), 
+            compileShader(pixel_shader_source, GL_FRAGMENT_SHADER)
         )
 
     @staticmethod

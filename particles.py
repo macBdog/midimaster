@@ -1,9 +1,14 @@
 from settings import GameSettings
 from graphics import Graphics
-from OpenGL.GL import *
-
 from texture import SpriteTexture, Texture
 
+from OpenGL.GL import (
+    glGetUniformLocation,
+    glUniform1f,
+    glUniform1fv,
+    glUniform2fv,
+    glUniform3fv
+)
 
 class Particles:
     """Simple shader only particles for the entire game."""
