@@ -1,3 +1,4 @@
+from copy import deepcopy
 from texture import SpriteShape
 from graphics import Graphics
 from staff import Staff
@@ -18,7 +19,7 @@ class Notes:
         self.num_barlines = 8
         self.barlines = []
         self.bartimes = []
-
+        self.notes = []
         self.note_positions = note_positions
         self.staff = staff
         self.ref_c4_pos = [Staff.Pos[0], note_positions[60]]
@@ -32,10 +33,8 @@ class Notes:
         
         self.reset()
 
-
     def reset(self):
         """Restore the note pool and barlines to their original state without clearing the music."""
-        
         self.notes_offset = 0
         self.notes_on = {}
 
@@ -45,9 +44,9 @@ class Notes:
         self.add_notes_to_render()
 
 
-    def assign_notes(self):
+    def assign_notes(self, notes: list):
         """Walk in sequence through the notes setting the decoration values for drawing."""
-
+        self.notes = deepcopy(notes)
         note_id = 0
         time = 0
         bar_time_max = 32 # TODO Derive number of 32s in a bar from time signature
@@ -64,6 +63,13 @@ class Notes:
         while note_id < num_notes:
             note = self.notes[note_id]
 
+            # Don't add notes that cannot be played
+            if note.note not in self.note_positions:
+                if GameSettings.DEV_MODE:
+                    print(f"Ignoring a note that is out of playable range: {note.note}") 
+                self.notes.remove(note)
+                self.num_notes -= 1
+            
             time_to_next = note.time - time
 
             # Handle rests greater than a bar
@@ -177,7 +183,7 @@ class Notes:
         self.add_notes_to_render()
  
     def add_notes_to_render(self, num_notes:int=-1):
-        # Add a number of notes to the render queue, -1 meaning add all."""
+        """Add a number of notes to the render queue, -1 meaning add all."""
         # TODO: Right now we are adding the max notes on load, this will have to be replaced with a ring buffer style update during rendering
 
         notes_len = len(self.notes)
@@ -190,15 +196,6 @@ class Notes:
 
         self.notes_offset += num_to_add
 
-
-    def add(self, pitch: int, time: int, length: int):
-        # Don't display notes that cannot be played
-        if pitch in self.note_positions:
-            self.notes.append(Note(pitch, time, length))
-        elif GameSettings.DEV_MODE:
-            print(f"Ignoring a note that is out of playable range: {pitch}") 
-    
-    
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
         """Draw and update the bar lines and all notes on the GPU.
         Return a dictionary keyed on note numbers with value of the end music time note length."""

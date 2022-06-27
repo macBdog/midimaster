@@ -13,6 +13,7 @@ class MidiDevices:
         self.input_port = None
         self.output_port = None
 
+
     def open_input(self, input_name):
         if self.input_port is None:
             self.input_device_name = input_name
@@ -23,6 +24,7 @@ class MidiDevices:
                 except Exception as excpt:
                     print(f"Could not open MIDI input port: {input_name}")
                     print(excpt)
+
 
     def open_output(self, output_name):
         if self.output_port is None:
@@ -35,6 +37,7 @@ class MidiDevices:
                     print(f"Could not open MIDI ouput port: {output_name}")
                     print(excpt)
 
+
     def open_input_default(self):
         try:
             self.input_port = mido.open_input()
@@ -43,6 +46,7 @@ class MidiDevices:
         except Exception as excpt:
             print(f"Could not open default MIDI input port.")
             print(excpt)
+
 
     def open_output_default(self):
         try:
@@ -53,6 +57,7 @@ class MidiDevices:
             print("Could not open default MIDI output port.")
             print(excpt)
 
+
     def update(self):
         if self.input_device_name:
             for message in self.input_port.iter_pending():
@@ -62,6 +67,7 @@ class MidiDevices:
             for message in self.output_messages:               
                 self.output_port.send(message)
             self.output_messages = []
+
 
     def quit(self):
         if self.output_port is not None:

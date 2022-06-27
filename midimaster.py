@@ -4,6 +4,8 @@ from gui import Gui
 from input import InputActionKey, InputActionModifier
 from key_signature import KeySignature
 from scrolling_background import ScrollingBackground
+from song import Song
+from song_book import SongBook
 from widget import AlignX
 from widget import AlignY
 from animation import Animation
@@ -107,12 +109,23 @@ class MidiMaster(Game):
 
         self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
 
-        # Read a midi file and load the notes
-        level = "mary.mid"
-        level_path = os.path.join("music", level)
-        if os.path.exists(level_path):
-            self.music = Music(self.graphics, self.note_render, self.staff, level_path, 1)
+        # Read the songbook and load the first song
+        self.songbook = SongBook()
+        self.songbook.load()
+        if self.songbook.is_empty():
+            #TODO Supply new songs on the command line
+            level_path = os.path.join("music", "mary.mid")    
+            if os.path.exists(level_path):
+                new_song = Song()
+                new_song.from_midi_file(level_path, 1)
+                self.songbook.add_song(new_song)
+            else:
+                print("Cannot find any songs to load! Exiting.")
+                exit()
 
+        self.music = Music(self.graphics, self.note_render, self.staff)
+        self.music.load(self.songbook.get_default_song())
+        
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
         self.devices.open_input_default()
@@ -165,7 +178,7 @@ class MidiMaster(Game):
             music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
             self.profile.end()
 
-            music_time_advance = dt * Music.SDQNotesPerBeat * (tempo_recip_60 * self.music.tempo_bpm)
+            music_time_advance = dt * Song.SDQNotesPerBeat * (tempo_recip_60 * self.music.tempo_bpm)
             if self.music_running:
                 self.music_time += music_time_advance
 
@@ -260,6 +273,7 @@ class MidiMaster(Game):
         self.profile.end()
 
     def end(self):
+        self.songbook.save()
         super().end()
         self.devices.quit()
 
@@ -377,7 +391,7 @@ def main():
     """Entry point that creates the MidiMaster object only."""
 
     if len(sys.argv) > 1:
-        GameSettings.DEV_MODE = sys.argv[1].find("debug") or sys.argv[1].find("dev")
+        GameSettings.DEV_MODE = sys.argv[1].find("--debug") or sys.argv[1].find("--dev")
 
     mm = MidiMaster()
     mm.prepare()
