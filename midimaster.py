@@ -112,15 +112,22 @@ class MidiMaster(Game):
         # Read the songbook and load the first song
         self.songbook = SongBook()
         self.songbook.load()
-        if self.songbook.is_empty():
-            #TODO Supply new songs on the command line
-            level_path = os.path.join("music", "mary.mid")    
-            if os.path.exists(level_path):
+
+        #Add a new song supplied on the command line
+        song_args = {
+            "--song-add": "",
+            "--song-track": "1",
+        }
+        if get_cmd_argument(song_args):
+            song_path = os.path.join(".", song_args["--song-add"])
+            song_track = int(song_args["--song-track"])
+            if os.path.exists(song_path):
                 new_song = Song()
-                new_song.from_midi_file(level_path, 1)
+                new_song.from_midi_file(song_path, song_track)
                 self.songbook.add_song(new_song)
+                print(f"Succesfully added {song_path} to data file.")
             else:
-                print("Cannot find any songs to load! Exiting.")
+                print(f"Cannot find specificed midi file {song_path}! Exiting.")
                 exit()
 
         self.music = Music(self.graphics, self.note_render, self.staff)
@@ -386,12 +393,29 @@ class MidiMaster(Game):
             add_note_key_mapping(55, Staff.OriginNote + 10)  # Bb
             add_note_key_mapping(85, Staff.OriginNote + 11)  # B
 
+@staticmethod
+def get_cmd_argument(args: dict) -> bool:
+    """Search the command line args """
+    found_arg = False
+    num_args = len(sys.argv)
+    for i in range(num_args-1):
+        arg = sys.argv[i+1]
+        argpos = arg.find(arg)
+        if argpos > 0:
+            found_arg = True
+            args[arg] = sys.argv[i+1]
+    return found_arg
+
 
 def main():
     """Entry point that creates the MidiMaster object only."""
 
     if len(sys.argv) > 1:
-        GameSettings.DEV_MODE = sys.argv[1].find("--debug") or sys.argv[1].find("--dev")
+        dev_mode_args = {
+            "--debug": "",
+            "--dev": ""
+        }
+        GameSettings.DEV_MODE = get_cmd_argument(dev_mode_args)
 
     mm = MidiMaster()
     mm.prepare()
