@@ -153,3 +153,7 @@ cython_debug/
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+launch.json
+*.mid
+music/*.mid
