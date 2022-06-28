@@ -10,7 +10,6 @@ setup(name='midimaster',
       packages=['midimaster'],
       install_requires=[
           'glfw',
-          'pillow',
           'numpy',
           'mido',
           'python-rtmidi',

@@ -38,6 +38,22 @@ class MidiMaster(Game):
     Should always be small and concise, calling out to other managing
     modules and namespaces where possible."""
 
+    @staticmethod
+    def get_cmd_argument(values: dict) -> bool:
+        """Search the command line args and modify the supplied dictionary with values."""
+        found_arg = False
+        num_args = len(sys.argv)
+        for search in values:
+            for i, arg in enumerate(sys.argv):
+                if arg.find(search) >= 0:
+                    found_arg = True
+                    arg_parts = arg.split()
+                    if len(arg_parts) > 1:
+                        values[search] = arg_parts[1]
+                    elif i + 1 < num_args - 1:
+                        values[search] = sys.argv[i+1]
+        return found_arg
+
     def __init__(self):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
@@ -64,22 +80,34 @@ class MidiMaster(Game):
         gui_splash = Gui(self.window_width, self.window_height, "splash_screen")
         gui_splash.set_active(True, True)
         self.gui.add_child(gui_splash)
-        gui_splash.add_widget(self.textures.create_sprite_texture("menu_background.tga", (0, 0), (2.0, 2.0)))
+        gui_splash.add_widget(self.textures.create_sprite_texture("splash_background.png", (0, 0), (2.0, 2.0)))
 
         # Create a title image and fade it in
         title = gui_splash.add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", (0, 0), (0.6, 0.6)))
         title.animation = Animation(AnimType.InOutSmooth, GameSettings.DEV_MODE and 0.15 or 2.0)
 
+        # Create a menu gui
+        self.gui_menu = Gui(self.window_width, self.window_height, "menu_screen")
+        self.gui_menu.add_widget(self.textures.create_sprite_texture("menu_background.tga", (0, 0), (2.0, 2.0)))
+        self.gui.add_child(self.gui_menu)
+
         # Create the holder UI for the game play elements
         self.gui_game = Gui(self.window_width, self.window_height, "game_screen")
         self.gui.add_child(self.gui_game)
 
-        # Move to the game when the splash is over
+        def transition_to_menu():
+            gui_splash.set_active(False, False)
+            self.gui_menu.set_active(True, True)
+
         def transition_to_game():
             gui_splash.set_active(False, False)
             self.gui_game.set_active(True, True)
-
-        title.animation.set_action(-1, transition_to_game)
+                
+        # Move to the game or menu when the splash is over
+        if GameSettings.DEV_MODE:
+            title.animation.set_action(-1, transition_to_game)
+        else:
+            title.animation.set_action(-1, transition_to_menu)
  
         self.gui_game.add_widget(
             self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
@@ -118,7 +146,7 @@ class MidiMaster(Game):
             "--song-add": "",
             "--song-track": "1",
         }
-        if get_cmd_argument(song_args):
+        if MidiMaster.get_cmd_argument(song_args):
             song_path = os.path.join(".", song_args["--song-add"])
             song_track = int(song_args["--song-track"])
             if os.path.exists(song_path):
@@ -130,6 +158,10 @@ class MidiMaster(Game):
                 print(f"Cannot find specificed midi file {song_path}! Exiting.")
                 exit()
 
+        num_songs = self.songbook.get_num_songs()
+        for i in range(num_songs):
+            self.gui_menu.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (-0.5, 0.8 - i * 0.125), (0.125, 0.1)))
+
         self.music = Music(self.graphics, self.note_render, self.staff)
         self.music.load(self.songbook.get_default_song())
         
@@ -139,8 +171,6 @@ class MidiMaster(Game):
         self.devices.open_output_default()
 
     def update(self, dt):
-        self.bg.draw(self.dt if self.music_running else self.dt * 0.1)
-
         self.profile.begin("midi")
 
         def score_vfx(note_id = None):
@@ -181,6 +211,8 @@ class MidiMaster(Game):
         tempo_recip_60 = 1.0 / 60.0
         game_draw, game_input = self.gui_game.is_active()
         if game_draw:
+            self.bg.draw(self.dt if self.music_running else self.dt * 0.1)
+
             self.profile.begin("music")
             music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
             self.profile.end()
@@ -393,20 +425,6 @@ class MidiMaster(Game):
             add_note_key_mapping(55, Staff.OriginNote + 10)  # Bb
             add_note_key_mapping(85, Staff.OriginNote + 11)  # B
 
-@staticmethod
-def get_cmd_argument(args: dict) -> bool:
-    """Search the command line args """
-    found_arg = False
-    num_args = len(sys.argv)
-    for i in range(num_args-1):
-        arg = sys.argv[i+1]
-        argpos = arg.find(arg)
-        if argpos > 0:
-            found_arg = True
-            args[arg] = sys.argv[i+1]
-    return found_arg
-
-
 def main():
     """Entry point that creates the MidiMaster object only."""
 
@@ -415,7 +433,7 @@ def main():
             "--debug": "",
             "--dev": ""
         }
-        GameSettings.DEV_MODE = get_cmd_argument(dev_mode_args)
+        GameSettings.DEV_MODE = MidiMaster.get_cmd_argument(dev_mode_args)
 
     mm = MidiMaster()
     mm.prepare()

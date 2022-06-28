@@ -30,7 +30,7 @@ class Game:
         self.dt = 0.03
         self.fps = 0
         self.fps_last_update = 1
-
+    
     def prepare(self, texture_path: str = "tex"):
         if not glfw.init():
             return

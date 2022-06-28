@@ -14,6 +14,10 @@ class SongBook:
         self.output_device = ""
 
 
+    def get_num_songs(self):
+        return len(self.songs)
+
+        
     def is_empty(self):
         return len(self.songs) == 0
 
