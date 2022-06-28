@@ -138,8 +138,9 @@ class MidiMaster(Game):
         self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
 
         # Read the songbook and load the first song
-        self.songbook = SongBook()
-        self.songbook.load()
+        self.songbook = SongBook.load()
+        if self.songbook is None:
+            self.songbook = SongBook()
 
         #Add a new song supplied on the command line
         song_args = {
@@ -312,7 +313,9 @@ class MidiMaster(Game):
         self.profile.end()
 
     def end(self):
-        self.songbook.save()
+        self.songbook.input_device = self.devices.input_device_name
+        self.songbook.output_device = self.devices.output_device_name
+        SongBook.save(self.songbook)
         super().end()
         self.devices.quit()
 
