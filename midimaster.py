@@ -90,7 +90,7 @@ class MidiMaster(GameJam):
 
         # Create a title image and fade it in
         title = gui_splash.add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", (0, 0), (0.6, 0.6)))
-        title.animation = Animation(AnimType.InOutSmooth, GameSettings.DEV_MODE and 0.15 or 2.0)
+        title.animation = Animation(AnimType.InOutSmooth, 0.15 if GameSettings.DEV_MODE else 2.0)
 
         # Create a menu gui
         self.gui_menu = Gui(self.window_width, self.window_height, "menu_screen")
@@ -167,7 +167,12 @@ class MidiMaster(GameJam):
 
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):
-            self.gui_menu.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (-0.5, 0.8 - i * 0.125), (0.125, 0.1)))
+            song = self.songbook.get_song(i)
+            song_widget = self.gui_menu.add_widget(
+                self.textures.create_sprite_texture("gui/btnplay.tga", (-0.5, 0.8 - i * 0.125), (0.125, 0.1)),
+                self.font_game
+            )
+            song_widget.set_text(song.get_name(), 12)
 
         self.music = Music(self.graphics, self.note_render, self.staff)
         self.music.load(self.songbook.get_default_song())

@@ -51,6 +51,10 @@ class SongBook:
             self.__dict__ = dict_
 
 
+    def get_song(self, id: int) -> Song:
+        return self.songs[id]
+
+
     def get_num_songs(self):
         return len(self.songs)
 
