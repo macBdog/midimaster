@@ -1,7 +1,8 @@
 
+from gamejam.graphics import Graphics
+
 from midi_devices import MidiDevices
 from notes import Notes
-from graphics import Graphics
 from note_render import NoteRender
 from staff import Staff
 from song import Song

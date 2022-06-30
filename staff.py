@@ -1,6 +1,8 @@
-from gui import Gui
-from texture import TextureManager
+from gamejam.gui import Gui
+from gamejam.texture import TextureManager
+
 from key_signature import KeySignature
+
 
 class Staff:
     """A class to encapsulate:

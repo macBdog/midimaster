@@ -1,16 +1,19 @@
-from staff import Staff
-from settings import GameSettings
-from graphics import Graphics
-from texture import SpriteTexture, Texture
-from note import Note
-from key_signature import KeySignature
-from staff import Staff
+from pathlib import Path
 from OpenGL.GL import (
     glGetUniformLocation,
     glUniform1iv,
     glUniform1f, 
     glUniform1fv, glUniform2fv, glUniform4fv,
 )
+
+from gamejam.settings import GameSettings
+from gamejam.graphics import Graphics, Shader, ShaderType
+from gamejam.texture import SpriteTexture, Texture
+
+from staff import Staff
+from note import Note
+from key_signature import KeySignature
+from staff import Staff
 
 
 class NoteRender:
@@ -45,8 +48,9 @@ class NoteRender:
             "#define staff_width 1.0": f"#define staff_width {Staff.Width * 0.5}",
             "#define staff_note_spacing 0.03": f"#define staff_note_spacing {Staff.NoteSpacing * 0.5}"
         }
-        note_shader = Graphics.process_shader_source(Graphics.load_shader("notes.frag"), shader_substitutes)
-        self.shader = Graphics.compile_shader(Graphics.load_shader("texture.vert"), note_shader)
+        note_shader_path = Path(__file__).parent / "ext" / "shaders" / "notes.frag"
+        note_shader = Graphics.process_shader_source(Graphics.load_shader(note_shader_path), shader_substitutes)
+        self.shader = Graphics.create_shader(graphics.builtin_shader(Shader.TEXTURE, ShaderType.VERTEX), note_shader)
         
         self.texture = Texture("")
         self.sprite = SpriteTexture(graphics, self.texture, [1.0, 1.0, 1.0, 1.0], [0.0, 0.0], [2.0, 2.0], self.shader)

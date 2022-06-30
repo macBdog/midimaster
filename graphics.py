@@ -40,7 +40,7 @@ class Graphics:
 
 
     @staticmethod
-    def compile_shader(vertex_shader_source: str, pixel_shader_source: str):
+    def create_shader(vertex_shader_source: str, pixel_shader_source: str):
         return compileProgram(
             compileShader(vertex_shader_source, GL_VERTEX_SHADER), 
             compileShader(pixel_shader_source, GL_FRAGMENT_SHADER)

@@ -1,10 +1,13 @@
 from copy import deepcopy
-from texture import SpriteShape
-from graphics import Graphics
+
+from gamejam.texture import SpriteShape
+from gamejam.graphics import Graphics
+from gamejam.settings import GameSettings
+
 from staff import Staff
 from note import Note, NoteDecoration
 from note_render import NoteRender
-from settings import GameSettings
+
 
 class Notes:
     """Notes manages all the on-screen note representations for a game.

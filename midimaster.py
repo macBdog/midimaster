@@ -1,23 +1,25 @@
 import math
 import sys
-from gui import Gui
-from input import InputActionKey, InputActionModifier
+
+from gamejam.font import Font
+from gamejam.gamejam import GameJam
+from gamejam.settings import GameSettings
+from gamejam.widget import AlignX
+from gamejam.widget import AlignY
+from gamejam.animation import Animation
+from gamejam.animation import AnimType
+from gamejam.gui import Gui
+from gamejam.input import InputActionKey, InputActionModifier
+
 from key_signature import KeySignature
 from scrolling_background import ScrollingBackground
 from song import Song
 from song_book import SongBook
-from widget import AlignX
-from widget import AlignY
-from animation import Animation
-from animation import AnimType
 from music import Music
 from staff import Staff
 from note_render import NoteRender
 from mido import Message
 from midi_devices import MidiDevices
-from font import Font
-from game import Game
-from settings import GameSettings
 from enum import Enum
 from enum import auto
 import os.path
@@ -33,7 +35,8 @@ class MusicMode(Enum):
     PERFORMANCE = auto()
 
 
-class MidiMaster(Game):
+class MidiMaster(GameJam):
+
     """The controlling object and main loop for the game.
     Should always be small and concise, calling out to other managing
     modules and namespaces where possible."""
@@ -54,6 +57,7 @@ class MidiMaster(Game):
                         values[search] = sys.argv[i+1]
         return found_arg
 
+
     def __init__(self):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
@@ -64,6 +68,7 @@ class MidiMaster(Game):
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
         self.reset()
 
+
     def reset(self):
         self.score = 0
         self.music_time = 0.0  # The number of elapsed 32nd notes as a factor of absolute time
@@ -71,6 +76,7 @@ class MidiMaster(Game):
         self.midi_notes = {}
         self.scored_notes = {}
         self.music_running = False
+
 
     def prepare(self):
         super().prepare()
@@ -113,7 +119,7 @@ class MidiMaster(Game):
             self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
         )
 
-        self.bg = ScrollingBackground(self.textures, "menu_glyphs.tga")
+        self.bg = ScrollingBackground(self.graphics, self.textures, "menu_glyphs.tga")
 
         self.staff = Staff()
         

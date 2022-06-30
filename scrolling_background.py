@@ -1,15 +1,18 @@
-from graphics import Graphics
+from gamejam.graphics import Graphics
 from OpenGL.GL import glUniform1f, glGetUniformLocation
-from texture import TextureManager
-from graphics import Graphics
+from gamejam.texture import TextureManager
+from gamejam.graphics import Graphics, Shader, ShaderType
 
 class ScrollingBackground:
     """Draw a texture that continuously scrolls."""
 
-    def __init__(self, textures: TextureManager, texture: str):
+    def __init__(self, graphics: Graphics, textures: TextureManager, texture: str):
         self.time = 0.0
 
-        self.shader = Graphics.compile_shader(Graphics.load_shader("texture.vert"), Graphics.load_shader("texture_anim.frag"))
+        self.shader = Graphics.create_shader(
+            graphics.builtin_shader(Shader.TEXTURE_ANIM, ShaderType.VERTEX), 
+            graphics.builtin_shader(Shader.TEXTURE_ANIM, ShaderType.PIXEL)
+        )
         self.time_id = glGetUniformLocation(self.shader, "Time")
         self.bg = textures.create_sprite_texture(texture, (0.0, 0.0), (2.0, 2.0), self.shader)
         
