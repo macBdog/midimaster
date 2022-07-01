@@ -69,3 +69,8 @@ class SongBook:
 
     def add_song(self, song:Song):
         self.songs.append(song)
+
+
+    def delete_song(self, song_id:int):
+        self.songs.remove(self.songs[song_id])
+        
