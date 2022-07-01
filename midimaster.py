@@ -165,6 +165,11 @@ class MidiMaster(GameJam):
                 print(f"Cannot find specificed midi file {song_path}! Exiting.")
                 exit()
 
+        def play_song(song_id: int):
+            self.music.load(self.songbook.get_song(song_id))
+            gui_splash.set_active(False, False)
+            self.gui_game.set_active(True, True)
+
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):
             song = self.songbook.get_song(i)
@@ -172,10 +177,13 @@ class MidiMaster(GameJam):
                 self.textures.create_sprite_texture("gui/btnplay.tga", (-0.5, 0.8 - i * 0.125), (0.125, 0.1)),
                 self.font_game
             )
-            song_widget.set_text(song.get_name(), 12)
+            song_widget.set_text(song.get_name(), 12, [0.05, -0.02])
+            song_widget.set_action(play_song, i)
 
         self.music = Music(self.graphics, self.note_render, self.staff)
-        self.music.load(self.songbook.get_default_song())
+
+        if GameSettings.DEV_MODE:
+            self.music.load(self.songbook.get_default_song())
         
         # Connect midi inputs and outputs
         self.devices = MidiDevices()

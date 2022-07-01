@@ -27,6 +27,7 @@ class Music:
 
     def load(self, song:Song):
         """ Post-process the raw note data of the music, adding rests and decoration"""
+        self.reset()
         self.song = song
         self.tempo_bpm = song.tempo_bpm
         self.ticks_per_beat = song.ticks_per_beat

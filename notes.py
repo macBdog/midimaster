@@ -71,7 +71,8 @@ class Notes:
                 if GameSettings.DEV_MODE:
                     print(f"Ignoring a note that is out of playable range: {note.note}") 
                 self.notes.remove(note)
-                self.num_notes -= 1
+                num_notes -= 1
+                continue
             
             time_to_next = note.time - time
 
@@ -156,7 +157,7 @@ class Notes:
 
             if note.length <= 8:
                 if hat_num < hat_max:
-                    if hat_num == 0:
+                    if hat_num <= 1:
                         hats.append(note)
                     else:
                         same_length = hats[hat_num - 1].length == note.length
@@ -172,7 +173,7 @@ class Notes:
                 if len(hats) >= hat_max:
                     add_all_hats(hats, self.note_positions)
                     hats = []
-            elif hat_num > 0:
+            elif hat_num > 1:
                 add_all_hats(hats, self.note_positions)
                 hats = []
                             
