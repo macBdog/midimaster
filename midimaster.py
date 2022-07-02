@@ -1,5 +1,6 @@
 import math
 import sys
+import os
 
 from gamejam.font import Font
 from gamejam.gamejam import GameJam
@@ -22,7 +23,7 @@ from mido import Message
 from midi_devices import MidiDevices
 from enum import Enum
 from enum import auto
-import os.path
+
 
 
 class KeyboardMapping(Enum):
@@ -147,8 +148,9 @@ class MidiMaster(GameJam):
         self.songbook = SongBook.load()
         if self.songbook is None:
             self.songbook = SongBook()
+        self.songbook.validate()
 
-        #Add a new song supplied on the command line
+        # Add a new song supplied on the command line
         song_args = {
             "--song-add": "",
             "--song-track": "1",
@@ -156,13 +158,23 @@ class MidiMaster(GameJam):
         if MidiMaster.get_cmd_argument(song_args):
             song_path = os.path.join(".", song_args["--song-add"])
             song_track = int(song_args["--song-track"])
-            if os.path.exists(song_path):
+            
+            def add_song(path:str, track=None):
                 new_song = Song()
-                new_song.from_midi_file(song_path, song_track)
+                new_song.from_midi_file(path, track)
                 self.songbook.add_song(new_song)
                 print(f"Succesfully added {song_path} to data file.")
+
+            if os.path.exists(song_path):
+                if os.path.isdir(song_path):
+                    for file in os.listdir(song_path):
+                        full_path = os.path.join(song_path, file)
+                        if os.path.isfile(full_path) and file.find("mid") >= 0:
+                            add_song(full_path, song_track)    
+                elif os.path.isfile(song_path):
+                    add_song(song_path, song_track)                
             else:
-                print(f"Cannot find specificed midi file {song_path}! Exiting.")
+                print(f"Cannot find specificed midi file or folder {song_path}! Exiting.")
                 exit()
 
         def play_song(song_id: int):
@@ -171,21 +183,31 @@ class MidiMaster(GameJam):
             self.gui_game.set_active(True, True)
 
         def delete_song(song_id: int):
+            widgets = self.song_widgets[song_id]
+            self.gui_menu.delete_widget(widgets["play"])
+            self.gui_menu.delete_widget(widgets["delete"])
             self.songbook.delete_song(song_id)
-            self.gui_menu.delete_widget(song_id)
 
+        self.song_widgets = []
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):
             song = self.songbook.get_song(i)
-            song_widget = self.gui_menu.add_widget(
-                self.textures.create_sprite_texture("gui/btnplay.tga", (-0.5, 0.8 - i * 0.125), (0.125, 0.1)),
+
+            song_pos = (-0.5, 0.8 - i * 0.125)
+            play_widget = self.gui_menu.add_widget(
+                self.textures.create_sprite_texture("gui/btnplay.tga", song_pos, (0.125, 0.1)),
                 self.font_game
             )
-            song_widget.set_text(song.get_name(), 12, [0.08, -0.02])
-            song_widget.set_action(play_song, i)
+            play_widget.set_text(song.get_name(), 12, [0.08, -0.02])
+            play_widget.set_action(play_song, i)
 
-            song_widget = self.gui_menu.add_widget(self.textures.create_sprite_texture("gui/btntrash.png", (-0.58, 0.8 - i * 0.125), (0.05, 0.05 * self.window_ratio)))
-            song_widget.set_action(delete_song, i)
+            delete_widget = self.gui_menu.add_widget(self.textures.create_sprite_texture("gui/btntrash.png", (song_pos[0]-0.09, song_pos[1]), (0.05, 0.05 * self.window_ratio)))
+            delete_widget.set_action(delete_song, i)
+
+            self.song_widgets.append({
+                "play": play_widget,
+                "delete": delete_widget,
+            })
 
         self.music = Music(self.graphics, self.note_render, self.staff)
 

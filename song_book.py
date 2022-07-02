@@ -29,12 +29,18 @@ class SongBook:
 
 
     def __init__(self):
-        self.songs = []
-        self.default_song = 0
-        self.input_device = ""
-        self.output_device = ""
-        self.book_version = SongBook.VERSION
+        self.validate()
 
+
+    def validate(self):
+        "Set any missing data that would occur as a result of a bad load or load from an outdated file."
+        self.book_version = SongBook.VERSION
+        if not hasattr(self, "songs"): self.songs = []
+        if not hasattr(self, "default_song"): self.default_song = 0
+        if not hasattr(self, "input_device"): self.input_device = ""
+        if not hasattr(self, "output_device"): self.output_device = ""
+        if not hasattr(self, "song_scores"): self.song_scores = ""
+        
 
     def __getstate__(self):
         if hasattr(self, "book_version"):
@@ -73,4 +79,3 @@ class SongBook:
 
     def delete_song(self, song_id:int):
         self.songs.remove(self.songs[song_id])
-        

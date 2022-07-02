@@ -19,6 +19,7 @@ class Song:
         self.artist = "Unknown Artist"
         self.title = "Song"
         self.score = {}
+        self.max_score = 0
         self.player_track_id = 0
         self.tempo_bpm = 60
         self.time_signature = (4, 4)
@@ -29,8 +30,16 @@ class Song:
         self.backing_tracks = {}
         self.notes = []
 
+
     def get_name(self):
         return f"{self.title} - {self.artist}"
+
+
+    def _set_max_score(self):
+        for note in self.notes:
+            self.max_score += note.length
+        
+
 
     def from_midi_file(self, filepath: str, player_track_id: int = 0):
         keys = {}
@@ -38,14 +47,20 @@ class Song:
             return
 
         # Derive track name from filename
-        last_dir_sep = filepath.rfind('\\')
+        last_dir_sep = filepath.rfind(os.sep)
+        lsep = filepath.rfind('/')
+        wsep = filepath.rfind('\\')
+        last_dir_sep = max(last_dir_sep, lsep, wsep)
         songname = filepath if last_dir_sep <= 0 else filepath[last_dir_sep + 1:]
         self.title = songname.replace('.mid', '')
         self.artist = "MidiFile"
-        if songname.find("-") >= 0:
-            song_name_elems = songname.split("-")
-            self.artist = song_name_elems[0]
-            self.title = song_name_elems[1]
+        
+        for sep in ['-', ':', "_"]:
+            if self.title.find(sep) >= 0:
+                song_name_elems = self.title.split(sep)
+                self.artist = song_name_elems[0]
+                self.title = song_name_elems[1]
+                break
 
         mid = MidiFile(filepath)
         self.ticks_per_beat = mid.ticks_per_beat

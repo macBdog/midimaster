@@ -22,7 +22,7 @@ class Staff:
     Pos = [-1.0 + (2.0 - Width), 0.0]    
     DrawColour = [0.075, 0.075, 0.075, 0.8]
     FillColour = [0.78, 0.78, 0.78, 0.75]
-    NoteWidth32nd = 0.02
+    NoteWidth32nd = 0.025
     NoteSpacing = 0.055
     StaffSpacing = NoteSpacing * 2
     OctaveSpacing = NoteSpacing * 7
@@ -139,4 +139,3 @@ class Staff:
             self.score_box[i].sprite.set_alpha(self.score_highlight[i])
             self.note_highlight[i] = max(Staff.BaseAlphaNote, self.note_highlight[i] - 0.8 * dt)
             self.score_highlight[i] = max(Staff.BaseAlphaScore, self.score_highlight[i] - 0.7 * dt)
-
