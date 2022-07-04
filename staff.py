@@ -27,6 +27,7 @@ class Staff:
     StaffSpacing = NoteSpacing * 2
     OctaveSpacing = NoteSpacing * 7
 
+
     def __init__(self):
         self.key_signature = KeySignature()
         Staff.NoteColours = [[i / 255 for i in j] for j in Staff.NoteColours]
@@ -42,6 +43,7 @@ class Staff:
         self.note_positions = {}
         self.playing_notes = {}
         
+
     def prepare(self, gui:Gui, textures:TextureManager):
         """Calculate and add two rows of virtual keys aligned with the staff drawn separately.
         [black_keys]            [score box]
@@ -101,25 +103,31 @@ class Staff:
             if not black_key:
                 tone_count += 1
 
+
     def get_note_positions(self):
         """:return: A dictionary of absolute note Y positions keyed by MIDI note id centered in the staff"""
         return self.note_positions
+
 
     def set_score(self, note: int):
         score_id = note - Staff.OriginNote
         if score_id >= 0 and score_id < Staff.NumNotes:
             self.score_highlight[score_id] = 1.0
 
+
     def note_on(self, note: int):
         self.playing_notes[note] = True
         highlight_id = note - Staff.OriginNote
         self.note_highlight[highlight_id] = 1.0
     
+
     def note_off(self, note: int):
         del self.playing_notes[note]
 
+
     def get_playing_notes(self):
         return self.playing_notes
+
 
     def is_scoring(self):
         """Are there notes playing in the music and the input at the same time.
@@ -130,6 +138,7 @@ class Staff:
                 return True
 
         return False
+    
     
     def draw(self, dt: float):
         """Pull the playing note and scoring box alpha down to 0"""

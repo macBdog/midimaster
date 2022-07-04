@@ -69,7 +69,7 @@ class MidiDevices:
             self.output_messages = []
 
 
-    def quit(self):
+    def end(self):
         if self.output_port is not None:
             self.output_port.close()
             if not self.output_port.closed:

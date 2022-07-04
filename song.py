@@ -19,7 +19,6 @@ class Song:
         self.artist = "Unknown Artist"
         self.title = "Song"
         self.score = {}
-        self.max_score = 0
         self.player_track_id = 0
         self.tempo_bpm = 60
         self.time_signature = (4, 4)
@@ -35,12 +34,10 @@ class Song:
         return f"{self.title} - {self.artist}"
 
 
-    def _set_max_score(self):
-        for note in self.notes:
-            self.max_score += note.length
+    def get_max_score(self):
+        return len(self.notes)
         
-
-
+        
     def from_midi_file(self, filepath: str, player_track_id: int = 0):
         keys = {}
         if not os.path.exists(filepath):
@@ -58,8 +55,8 @@ class Song:
         for sep in ['-', ':', "_"]:
             if self.title.find(sep) >= 0:
                 song_name_elems = self.title.split(sep)
-                self.artist = song_name_elems[0]
-                self.title = song_name_elems[1]
+                self.artist = song_name_elems[0].strip()
+                self.title = song_name_elems[1].strip()
                 break
 
         mid = MidiFile(filepath)

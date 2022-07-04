@@ -7,13 +7,10 @@ from gamejam.gamejam import GameJam
 from gamejam.settings import GameSettings
 from gamejam.widget import AlignX
 from gamejam.widget import AlignY
-from gamejam.animation import Animation
-from gamejam.animation import AnimType
-from gamejam.gui import Gui
 from gamejam.input import InputActionKey, InputActionModifier
 
 from key_signature import KeySignature
-from scrolling_background import ScrollingBackground
+from menu import Menu, Menus
 from song import Song
 from song_book import SongBook
 from music import Music
@@ -21,9 +18,7 @@ from staff import Staff
 from note_render import NoteRender
 from mido import Message
 from midi_devices import MidiDevices
-from enum import Enum
-from enum import auto
-
+from enum import Enum, auto
 
 
 class KeyboardMapping(Enum):
@@ -37,34 +32,14 @@ class MusicMode(Enum):
 
 
 class MidiMaster(GameJam):
-
     """The controlling object and main loop for the game.
     Should always be small and concise, calling out to other managing
     modules and namespaces where possible."""
 
-    @staticmethod
-    def get_cmd_argument(values: dict) -> bool:
-        """Search the command line args and modify the supplied dictionary with values."""
-        found_arg = False
-        num_args = len(sys.argv)
-        for search in values:
-            for i, arg in enumerate(sys.argv):
-                if arg.find(search) >= 0:
-                    found_arg = True
-                    arg_parts = arg.split()
-                    if len(arg_parts) > 1:
-                        values[search] = arg_parts[1]
-                    elif i + 1 < num_args - 1:
-                        values[search] = sys.argv[i+1]
-        return found_arg
-
-
     def __init__(self):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
-        self.note_width_32nd = Staff.NoteWidth32nd
-        self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
-        self.note_bg_colour = [0.5] * 4
+        self.note_width_32nd = Staff.NoteWidth32nd       
         self.mode = MusicMode.PAUSE_AND_LEARN
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
         self.reset()
@@ -72,6 +47,7 @@ class MidiMaster(GameJam):
 
     def reset(self):
         self.score = 0
+        self.score_fade = 0.0
         self.music_time = 0.0  # The number of elapsed 32nd notes as a factor of absolute time
         self.player_notes_down = {}
         self.midi_notes = {}
@@ -81,74 +57,13 @@ class MidiMaster(GameJam):
 
     def prepare(self):
         super().prepare()
-        self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
-
-        # Create a background image stretched to the size of the window
-        gui_splash = Gui(self.window_width, self.window_height, "splash_screen")
-        gui_splash.set_active(True, True)
-        self.gui.add_child(gui_splash)
-        gui_splash.add_widget(self.textures.create_sprite_texture("splash_background.png", (0, 0), (2.0, 2.0)))
-
-        # Create a title image and fade it in
-        title = gui_splash.add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", (0, 0), (0.6, 0.6)))
-        title.animation = Animation(AnimType.InOutSmooth, 0.15 if GameSettings.DEV_MODE else 2.0)
-
-        # Create a menu gui
-        self.gui_menu = Gui(self.window_width, self.window_height, "menu_screen")
-        self.gui_menu.add_widget(self.textures.create_sprite_texture("menu_background.tga", (0, 0), (2.0, 2.0)))
-        self.gui.add_child(self.gui_menu)
-
-        # Create the holder UI for the game play elements
-        self.gui_game = Gui(self.window_width, self.window_height, "game_screen")
-        self.gui.add_child(self.gui_game)
-
-        def transition_to_menu():
-            gui_splash.set_active(False, False)
-            self.gui_menu.set_active(True, True)
-
-        def transition_to_game():
-            gui_splash.set_active(False, False)
-            self.gui_game.set_active(True, True)
-                
-        # Move to the game or menu when the splash is over
-        if GameSettings.DEV_MODE:
-            title.animation.set_action(-1, transition_to_game)
-        else:
-            title.animation.set_action(-1, transition_to_menu)
- 
-        self.gui_game.add_widget(
-            self.textures.create_sprite_texture("game_background.tga", (0.0, 0.0), (2.0, 2.0))
-        )
-
-        self.bg = ScrollingBackground(self.graphics, self.textures, "menu_glyphs.tga")
-
-        self.staff = Staff()
         
-        bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
-        bg_size_top = 0.65
-        bg_size_btm = 1.25
-        self.note_bg_top = self.gui_game.add_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)), (Staff.Width, bg_size_top * -1.0))
-        )
-        self.note_bg_btm = self.gui_game.add_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, (bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5), (Staff.Width, bg_size_btm))
-        )
-        self.note_bg = self.gui_game.add_widget(
-            self.textures.create_sprite_shape(self.note_bg_colour, [Staff.Pos[0] + Staff.Width * 0.5, Staff.Pos[1] + Staff.StaffSpacing * 2.0], (Staff.Width, Staff.StaffSpacing * 4.0))
-        )
-
-        self.staff.prepare(self.gui_game, self.textures)
-        
-        self.score_fade = 0.0
-        self.setup_input()
-
-        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
-
         # Read the songbook and load the first song
         self.songbook = SongBook.load()
         if self.songbook is None:
             self.songbook = SongBook()
         self.songbook.validate()
+        self.songbook.sort()
 
         # Add a new song supplied on the command line
         song_args = {
@@ -177,54 +92,35 @@ class MidiMaster(GameJam):
                 print(f"Cannot find specificed midi file or folder {song_path}! Exiting.")
                 exit()
 
-        def play_song(song_id: int):
-            self.music.load(self.songbook.get_song(song_id))
-            gui_splash.set_active(False, False)
-            self.gui_game.set_active(True, True)
-
-        def delete_song(song_id: int):
-            widgets = self.song_widgets[song_id]
-            self.gui_menu.delete_widget(widgets["play"])
-            self.gui_menu.delete_widget(widgets["delete"])
-            self.songbook.delete_song(song_id)
-
-        self.song_widgets = []
-        num_songs = self.songbook.get_num_songs()
-        for i in range(num_songs):
-            song = self.songbook.get_song(i)
-
-            song_pos = (-0.5, 0.8 - i * 0.125)
-            play_widget = self.gui_menu.add_widget(
-                self.textures.create_sprite_texture("gui/btnplay.tga", song_pos, (0.125, 0.1)),
-                self.font_game
-            )
-            play_widget.set_text(song.get_name(), 12, [0.08, -0.02])
-            play_widget.set_action(play_song, i)
-
-            delete_widget = self.gui_menu.add_widget(self.textures.create_sprite_texture("gui/btntrash.png", (song_pos[0]-0.09, song_pos[1]), (0.05, 0.05 * self.window_ratio)))
-            delete_widget.set_action(delete_song, i)
-
-            self.song_widgets.append({
-                "play": play_widget,
-                "delete": delete_widget,
-            })
-
+        # Setup all the game systems
+        self.staff = Staff()
+        self.menu = Menu(self.graphics, self.gui, self.window_width, self.window_height, self.textures)
+        self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
+        self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
+        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
         self.music = Music(self.graphics, self.note_render, self.staff)
-
-        if GameSettings.DEV_MODE:
-            self.music.load(self.songbook.get_default_song())
+        self.menu.prepare(self.font_game, self.music, self.songbook)
         
-        # Connect midi inputs and outputs
+        if GameSettings.DEV_MODE:
+            default_song = self.songbook.get_default_song()
+            if default_song is None:
+                print("Invalid or missing song data file, unable to continue!")
+            else:
+                self.music.load(default_song)
+        
+        # Connect midi inputs and outputs and player input
         self.devices = MidiDevices()
         self.devices.open_input_default()
         self.devices.open_output_default()
+        self.setup_input()
 
     def update(self, dt):
-        self.profile.begin("midi")
+
+        self.menu.update(dt, self.music_running)
 
         def score_vfx(note_id = None):
             self.score_fade = 1.0
-            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
+            self.menu.set_event("score_vfx")
             if note_id is not None:
                 spawn_pos = [-0.71, self.staff.note_positions[note_id]]
                 self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0])
@@ -253,18 +149,13 @@ class MidiMaster(GameJam):
         for note, velocity in self.player_notes_down.items():
             if velocity > 0.0:
                 self.staff.set_score(note)
-        self.profile.end()
 
         self.devices.input_messages = []
 
         tempo_recip_60 = 1.0 / 60.0
-        game_draw, game_input = self.gui_game.is_active()
+        game_draw, _ = self.menu.is_menu_active(Menus.GAME)
         if game_draw:
-            self.bg.draw(self.dt if self.music_running else self.dt * 0.1)
-
-            self.profile.begin("music")
             music_notes = self.music.draw(dt, self.music_time, self.note_width_32nd)
-            self.profile.end()
 
             music_time_advance = dt * Song.SDQNotesPerBeat * (tempo_recip_60 * self.music.tempo_bpm)
             if self.music_running:
@@ -272,10 +163,8 @@ class MidiMaster(GameJam):
 
             # Play the backing track in sync with the player
             self.music.update(self.dt, self.music_time, self.devices)
-            self.profile.end()
 
             # Process all notes that have hit the play head
-            self.profile.begin("note_replay")
             music_notes_off = {}
             for k in music_notes:
                 note_off_time = 0
@@ -313,9 +202,6 @@ class MidiMaster(GameJam):
                 self.devices.output_messages.append(new_note_off)
                 self.midi_notes.pop(k)
 
-            self.profile.end()
-
-            self.profile.begin("scoring")
             if self.mode == MusicMode.PERFORMANCE:
                 if self.staff.is_scoring():
                     if self.score_fade < 0.5:
@@ -327,16 +213,8 @@ class MidiMaster(GameJam):
                 if len(self.scored_notes) > 0 and self.music_running:
                     self.music_time -= music_time_advance
 
-            # Highlight staff background to show score
-            self.note_bg_btm.sprite.set_colour(self.note_correct_colour)
-            self.note_bg_top.sprite.set_colour(self.note_correct_colour)
             self.staff.draw(dt)
-            self.profile.end()
-
-            self.profile.begin("text")
-            # Same with the note highlight background
-            self.note_correct_colour = [max(0.65, i - 0.5 * self.dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
-
+ 
             # Show the play mode
             mode_string = "Performance" if self.mode == MusicMode.PERFORMANCE else "Pause & Learn"
             self.font_game.draw(f"{mode_string}", 16, [0.5, 0.8], [0.6, 0.6, 0.6, 1.0])
@@ -344,28 +222,25 @@ class MidiMaster(GameJam):
             # Show the score on top of everything
             self.score_fade -= dt * 0.5
             self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
-            self.profile.end()
 
-        self.profile.begin("dev_mode")
         # Show developer stats
         if GameSettings.DEV_MODE:
             cursor_pos = self.input.cursor.pos
             self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
             self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
-        self.profile.end()
 
-        self.profile.begin("devices")
         # Update and flush out the buffers
         self.devices.update()
         self.devices.output_messages = []
-        self.profile.end()
+
 
     def end(self):
         self.songbook.input_device = self.devices.input_device_name
         self.songbook.output_device = self.devices.output_device_name
         SongBook.save(self.songbook)
         super().end()
-        self.devices.quit()
+        self.devices.end()
+
 
     def setup_input(self):
         def play(self):
@@ -383,8 +258,9 @@ class MidiMaster(GameJam):
 
         def back_to_menu(self):
             pause(self)
-            self.gui_menu.set_active(True, True)
-            self.gui_game.set_active(False, False)
+            existing_score = self.music.song.score[self.mode] if self.mode in self.music.song.score else 0
+            self.music.song.score[self.mode] = max(self.score, existing_score)
+            self.menu.transition(Menus.GAME, Menus.SONGS)
 
         def play_button_colour(self):
             return [0.1, 0.87, 0.11, 1.0] if self.music_running else [0.8, 0.8, 0.8, 1.0]
@@ -397,11 +273,12 @@ class MidiMaster(GameJam):
 
         playback_button_size = (0.15, 0.125)
         controls_height = -0.85
-        btn_play = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
-        btn_pause = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, controls_height), playback_button_size))
-        btn_stop = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
-        btn_mode = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/panel_long.png", (0.655, 0.825), (0.32, 0.15)))
-        btn_menu = self.gui_game.add_widget(self.textures.create_sprite_texture("gui/btnback.png", (-0.85, 0.85), (0.075, 0.075 * self.window_ratio)))
+        gui = self.menu.get_menu(Menus.GAME)
+        btn_play = gui.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
+        btn_pause = gui.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, controls_height), playback_button_size))
+        btn_stop = gui.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
+        btn_mode = gui.add_widget(self.textures.create_sprite_texture("gui/panel_long.png", (0.655, 0.825), (0.32, 0.15)))
+        btn_menu = gui.add_widget(self.textures.create_sprite_texture("gui/btnback.png", (-0.85, 0.85), (0.075, 0.075 * self.window_ratio)))
 
         btn_play.set_action(play, self)
         btn_play.set_colour_func(play_button_colour, self)
@@ -411,7 +288,7 @@ class MidiMaster(GameJam):
         btn_mode.set_action(mode_toggle, self)
         btn_menu.set_action(back_to_menu, self)
 
-        self.bg_score = self.gui_game.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, controls_height - 0.10), (0.5, 0.25)))
+        self.bg_score = gui.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, controls_height - 0.10), (0.5, 0.25)))
         self.bg_score.set_colour_func(score_bg_colour, self)
         self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
@@ -437,13 +314,14 @@ class MidiMaster(GameJam):
         self.input.add_key_mapping(263, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_fwd)  # -> Manually advance backwards in time
 
         def create_key_note(note_val: int, note_on: bool):
-            note_name = "note_on"
-            if note_on == False:
-                note_name = "note_off"
-            new_note = Message(note_name)
-            new_note.note = note_val
-            new_note.velocity = 100
-            self.devices.input_messages.append(new_note)
+            if self.menu.is_menu_active(Menus.GAME):
+                note_name = "note_on"
+                if note_on == False:
+                    note_name = "note_off"
+                new_note = Message(note_name)
+                new_note.note = note_val
+                new_note.velocity = 100
+                self.devices.input_messages.append(new_note)
 
         def create_key_note_on(note_val: int):
             create_key_note(note_val, True)
@@ -483,15 +361,32 @@ class MidiMaster(GameJam):
             add_note_key_mapping(55, Staff.OriginNote + 10)  # Bb
             add_note_key_mapping(85, Staff.OriginNote + 11)  # B
 
+
+    @staticmethod
+    def get_cmd_argument(values: dict) -> bool:
+        """Search the command line args and modify the supplied dictionary with values."""
+        found_arg = False
+        num_args = len(sys.argv)
+        for search in values:
+            for i, arg in enumerate(sys.argv):
+                if arg.find(search) >= 0:
+                    found_arg = True
+                    arg_parts = arg.split()
+                    if len(arg_parts) > 1:
+                        values[search] = arg_parts[1]
+                    elif i + 1 < num_args - 1:
+                        values[search] = sys.argv[i+1]
+        return found_arg
+
+
 def main():
     """Entry point that creates the MidiMaster object only."""
 
-    if len(sys.argv) > 1:
-        dev_mode_args = {
-            "--debug": "",
-            "--dev": ""
-        }
-        GameSettings.DEV_MODE = MidiMaster.get_cmd_argument(dev_mode_args)
+    dev_mode_args = {
+        "--debug": "",
+        "--dev": ""
+    }
+    GameSettings.DEV_MODE = MidiMaster.get_cmd_argument(dev_mode_args)
 
     mm = MidiMaster()
     mm.prepare()

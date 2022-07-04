@@ -32,16 +32,6 @@ class SongBook:
         self.validate()
 
 
-    def validate(self):
-        "Set any missing data that would occur as a result of a bad load or load from an outdated file."
-        self.book_version = SongBook.VERSION
-        if not hasattr(self, "songs"): self.songs = []
-        if not hasattr(self, "default_song"): self.default_song = 0
-        if not hasattr(self, "input_device"): self.input_device = ""
-        if not hasattr(self, "output_device"): self.output_device = ""
-        if not hasattr(self, "song_scores"): self.song_scores = ""
-        
-
     def __getstate__(self):
         if hasattr(self, "book_version"):
             return self.__dict__
@@ -57,6 +47,20 @@ class SongBook:
             self.__dict__ = dict_
 
 
+    def validate(self):
+        "Set any missing data that would occur as a result of a bad load or load from an outdated file."
+        self.book_version = SongBook.VERSION
+        if not hasattr(self, "songs"): self.songs = []
+        if not hasattr(self, "default_song"): self.default_song = 0
+        if not hasattr(self, "input_device"): self.input_device = ""
+        if not hasattr(self, "output_device"): self.output_device = ""
+        if not hasattr(self, "song_scores"): self.song_scores = ""
+        
+
+    def sort(self):
+        sorted(self.songs, key=lambda song: song.get_max_score())
+
+
     def get_song(self, id: int) -> Song:
         return self.songs[id]
 
@@ -69,8 +73,15 @@ class SongBook:
         return len(self.songs) == 0
 
 
-    def get_default_song(self):
-        return self.songs[self.default_song]
+    def get_default_song(self) -> Song:
+        num_songs = len(self.songs)
+        if self.default_song >= 0 and self.default_song < len(self.songs):
+            return self.songs[self.default_song]
+        else:
+            self.default_song = 0
+            if num_songs > 0:
+                return self.songs[0]
+        return None
 
 
     def add_song(self, song:Song):

@@ -141,6 +141,7 @@ cython_debug/
 .vs
 
 # Visual Studio Code cruft
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
