@@ -117,6 +117,8 @@ class MidiMaster(GameJam):
     def update(self, dt):
 
         self.menu.update(dt, self.music_running)
+        if self.menu.running == False:
+            self.quit()
 
         def score_vfx(note_id = None):
             self.score_fade = 1.0

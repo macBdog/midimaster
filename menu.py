@@ -51,7 +51,7 @@ class Menu():
         menu_thirds = 2.0 / 4
         menu_item_size = (0.31, 0.18)
         self.menus[Menus.SONGS] = Gui(self.window_width, self.window_height, "menu_screen")
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("menu_background.tga", (0, 0), (2.0, 2.0)))
+        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/menu_bg.png", (0, 0), (2.0, 2.0)))
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", (-1.0 + menu_thirds * 1, menu_row), menu_item_size))
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", (-1.0 + menu_thirds * 2, menu_row), menu_item_size))
         btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", (-1.0 + menu_thirds * 3, menu_row), menu_item_size))
