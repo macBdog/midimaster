@@ -40,13 +40,19 @@ class Music:
         self.notes.assign_notes(song.notes)
 
 
-    def reset(self):
-        """Restore all the notes in the music to the state just after loading."""
-        self.notes.reset()
+    def rewind(self):
+        """Restore all the notes and backing in the music to the state just after loading."""
+        self.notes.rewind()
         self.backing_index = {track: 0 for track in self.backing_index}
         self.backing_time = {track: 0.0 for track in self.backing_time}
+
+
+    def reset(self):
+        self.notes.reset()
+        self.backing_index = {}
+        self.backing_time = {}
         
-        
+    
     def update(self, dt: float, music_time: float, devices: MidiDevices):
         """Play MIDI messages that are not for interactive scoring by the player."""
         music_time_in_ticks = (music_time / Song.SDQNotesPerBeat) * self.ticks_per_beat

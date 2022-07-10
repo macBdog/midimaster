@@ -14,7 +14,7 @@ class ScrollingBackground:
             graphics.builtin_shader(Shader.TEXTURE_ANIM, ShaderType.PIXEL)
         )
         self.time_id = glGetUniformLocation(self.shader, "Time")
-        self.bg = textures.create_sprite_texture(texture, (0.0, 0.0), (2.0, 2.0), self.shader)
+        self.bg = textures.create_sprite_texture(texture, [0, 0], [2, 2], self.shader)
         
     def draw(self, dt):
         self.time += dt

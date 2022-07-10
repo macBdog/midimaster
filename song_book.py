@@ -84,8 +84,18 @@ class SongBook:
         return None
 
 
-    def add_song(self, song:Song):
+    def add_update_song(self, song:Song):
+        """Return True if a song with matching title and artist exists, saving the track ID."""
+        for count, existing_song in enumerate(self.songs):
+            if existing_song.artist.find(song.artist) >= 0 and existing_song.title.find(song.title) >= 0:
+                song.player_track_id = self.songs[count].player_track_id
+                self.songs[count] = song
+                print(f"SongBook updated {song.get_name()}")
+                return True
+
         self.songs.append(song)
+        print(f"SongBook added {song.path} to data file.")
+        return False
 
 
     def delete_song(self, song_id:int):

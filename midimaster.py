@@ -77,8 +77,7 @@ class MidiMaster(GameJam):
             def add_song(path:str, track=None):
                 new_song = Song()
                 new_song.from_midi_file(path, track)
-                self.songbook.add_song(new_song)
-                print(f"Succesfully added {song_path} to data file.")
+                self.songbook.add_update_song(new_song)
 
             if os.path.exists(song_path):
                 if os.path.isdir(song_path):
@@ -94,7 +93,7 @@ class MidiMaster(GameJam):
 
         # Setup all the game systems
         self.staff = Staff()
-        self.menu = Menu(self.graphics, self.gui, self.window_width, self.window_height, self.textures)
+        self.menu = Menu(self.graphics, self.input, self.gui, self.window_width, self.window_height, self.textures)
         self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
         self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
         self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
@@ -225,12 +224,6 @@ class MidiMaster(GameJam):
             self.score_fade -= dt * 0.5
             self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
 
-        # Show developer stats
-        if GameSettings.DEV_MODE:
-            cursor_pos = self.input.cursor.pos
-            self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
-
         # Update and flush out the buffers
         self.devices.update()
         self.devices.output_messages = []
@@ -253,7 +246,7 @@ class MidiMaster(GameJam):
 
         def stop_rewind(self):
             self.reset()
-            self.music.reset()
+            self.music.rewind()
 
         def mode_toggle(self):
             self.mode = MusicMode.PAUSE_AND_LEARN if self.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
@@ -262,6 +255,8 @@ class MidiMaster(GameJam):
             pause(self)
             existing_score = self.music.song.score[self.mode] if self.mode in self.music.song.score else 0
             self.music.song.score[self.mode] = max(self.score, existing_score)
+            self.reset()
+            self.music.reset()
             self.menu.transition(Menus.GAME, Menus.SONGS)
 
         def play_button_colour(self):
@@ -273,14 +268,14 @@ class MidiMaster(GameJam):
         def score_bg_colour(self):
             return [1.0, 1.0, 1.0, max(self.score_fade, 0.65)]
 
-        playback_button_size = (0.15, 0.125)
+        playback_button_size = [0.15, 0.125]
         controls_height = -0.85
         gui = self.menu.get_menu(Menus.GAME)
-        btn_play = gui.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", (0.62, controls_height), playback_button_size))
-        btn_pause = gui.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", (0.45, controls_height), playback_button_size))
-        btn_stop = gui.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", (0.28, controls_height), playback_button_size))
-        btn_mode = gui.add_widget(self.textures.create_sprite_texture("gui/panel_long.png", (0.655, 0.825), (0.32, 0.15)))
-        btn_menu = gui.add_widget(self.textures.create_sprite_texture("gui/btnback.png", (-0.85, 0.85), (0.075, 0.075 * self.window_ratio)))
+        btn_play = gui.add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", [0.62, controls_height], playback_button_size))
+        btn_pause = gui.add_widget(self.textures.create_sprite_texture("gui/btnpause.tga", [0.45, controls_height], playback_button_size))
+        btn_stop = gui.add_widget(self.textures.create_sprite_texture("gui/btnstop.tga", [0.28, controls_height], playback_button_size))
+        btn_mode = gui.add_widget(self.textures.create_sprite_texture("gui/panel_long.png", [0.655, 0.825], [0.32, 0.15]))
+        btn_menu = gui.add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.85, 0.85], [0.075, 0.075 * self.window_ratio]))
 
         btn_play.set_action(play, self)
         btn_play.set_colour_func(play_button_colour, self)
@@ -290,7 +285,7 @@ class MidiMaster(GameJam):
         btn_mode.set_action(mode_toggle, self)
         btn_menu.set_action(back_to_menu, self)
 
-        self.bg_score = gui.add_widget(self.textures.create_sprite_texture("score_bg.tga", (-0.33, controls_height - 0.10), (0.5, 0.25)))
+        self.bg_score = gui.add_widget(self.textures.create_sprite_texture("score_bg.tga", [-0.33, controls_height - 0.10], [0.5, 0.25]))
         self.bg_score.set_colour_func(score_bg_colour, self)
         self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
