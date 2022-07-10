@@ -36,10 +36,17 @@ class Notes:
         
         self.reset()
 
+
     def reset(self):
+        self.notes = []
+        self.rewind()
+
+
+    def rewind(self):
         """Restore the note pool and barlines to their original state without clearing the music."""
         self.notes_offset = 0
         self.notes_on = {}
+        self.note_render.reset()
 
         for i in range(self.num_barlines):
             self.bartimes[i] = i * 32.0

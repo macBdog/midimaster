@@ -29,15 +29,7 @@ class NoteRender:
         self.display_ratio = 1.0 / display_ratio
         self.ref_c4_pos = [Staff.Pos[0], staff.note_positions[60]]
         self.note_width = Staff.NoteWidth32nd
-        self.note = -1
-        self.notes = [None] * NoteRender.NumNotes
-        self.note_positions = [0.0] * NoteRender.NumNotes * 2
-        self.note_colours = [0.0] * NoteRender.NumNotes * 4
-        self.note_types = [0] * NoteRender.NumNotes
-        self.note_decoration = [0] * NoteRender.NumNotes
-        self.note_hats = [0.0] * NoteRender.NumNotes * 2
-        self.note_ties = [0.0] * NoteRender.NumNotes
-        self.note_extra = [0.0] * NoteRender.NumNotes * 2
+        self.reset()
 
         # Notation shader draws from 0->1 on XY, left->right, down->up
         shader_substitutes = {
@@ -65,6 +57,19 @@ class NoteRender:
         self.note_hats_id = glGetUniformLocation(self.shader, "NoteHats")
         self.note_ties_id = glGetUniformLocation(self.shader, "NoteTies")
         self.note_extra_id = glGetUniformLocation(self.shader, "NoteExtra")
+
+
+    def reset(self):
+        self.note = -1
+        self.notes = [None] * NoteRender.NumNotes
+        self.note_positions = [0.0] * NoteRender.NumNotes * 2
+        self.note_colours = [0.0] * NoteRender.NumNotes * 4
+        self.note_types = [0] * NoteRender.NumNotes
+        self.note_decoration = [0] * NoteRender.NumNotes
+        self.note_hats = [0.0] * NoteRender.NumNotes * 2
+        self.note_ties = [0.0] * NoteRender.NumNotes
+        self.note_extra = [0.0] * NoteRender.NumNotes * 2
+        
 
     def _assign_calibration_notes(self):
         """Add five notes with separate colours to each extent of the screen."""

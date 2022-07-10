@@ -77,10 +77,7 @@ class MidiMaster(GameJam):
             def add_song(path:str, track=None):
                 new_song = Song()
                 new_song.from_midi_file(path, track)
-                if self.songbook.add_song(new_song):
-                    print(f"Succesfully updated {new_song.get_name()}")
-                else:
-                    print(f"Succesfully added {path} to data file.")
+                self.songbook.add_update_song(new_song)
 
             if os.path.exists(song_path):
                 if os.path.isdir(song_path):
@@ -96,7 +93,7 @@ class MidiMaster(GameJam):
 
         # Setup all the game systems
         self.staff = Staff()
-        self.menu = Menu(self.graphics, self.gui, self.window_width, self.window_height, self.textures)
+        self.menu = Menu(self.graphics, self.input, self.gui, self.window_width, self.window_height, self.textures)
         self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
         self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
         self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
@@ -227,12 +224,6 @@ class MidiMaster(GameJam):
             self.score_fade -= dt * 0.5
             self.font_game.draw(f"{math.floor(self.score)} XP", 22, [self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03], [0.1, 0.1, 0.1, 1.0])
 
-        # Show developer stats
-        if GameSettings.DEV_MODE:
-            cursor_pos = self.input.cursor.pos
-            self.font_game.draw(f"FPS: {math.floor(self.fps)}", 12, [0.65, 0.75], [0.81, 0.81, 0.81, 1.0])
-            self.font_game.draw(f"X: {math.floor(cursor_pos[0] * 100) / 100}\nY: {math.floor(cursor_pos[1] * 100) / 100}", 10, cursor_pos, [0.81, 0.81, 0.81, 1.0])
-
         # Update and flush out the buffers
         self.devices.update()
         self.devices.output_messages = []
@@ -255,7 +246,7 @@ class MidiMaster(GameJam):
 
         def stop_rewind(self):
             self.reset()
-            self.music.reset()
+            self.music.rewind()
 
         def mode_toggle(self):
             self.mode = MusicMode.PAUSE_AND_LEARN if self.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
@@ -264,6 +255,8 @@ class MidiMaster(GameJam):
             pause(self)
             existing_score = self.music.song.score[self.mode] if self.mode in self.music.song.score else 0
             self.music.song.score[self.mode] = max(self.score, existing_score)
+            self.reset()
+            self.music.reset()
             self.menu.transition(Menus.GAME, Menus.SONGS)
 
         def play_button_colour(self):

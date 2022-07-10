@@ -18,6 +18,7 @@ class Song:
     def __init__(self):
         self.artist = "Unknown Artist"
         self.title = "Song"
+        self.path = ""
         self.score = {}
         self.player_track_id = 0
         self.tempo_bpm = 60
@@ -42,6 +43,8 @@ class Song:
         keys = {}
         if not os.path.exists(filepath):
             return
+
+        self.path = filepath
 
         # Derive track name from filename
         last_dir_sep = filepath.rfind(os.sep)
