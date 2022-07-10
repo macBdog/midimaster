@@ -27,6 +27,10 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
 * PrintScreen - Print out frame timings in dev mode
 * Keys ABCDEFG to play MIDI notes Shift is Sharp (#), Ctrl is Flat (b)
 
+## Screenshots
+![MidiMaster menu screenshot](https://github.com/macBdog/midimaster/blob/main/tex/screenshot_menu.png?raw=true)
+![MidiMaster game screenshot](https://github.com/macBdog/midimaster/blob/main/tex/screenshot_game.png?raw=true)
+
 ## Task Queue:
 1. Temporal accidentals
 2. Device selection
