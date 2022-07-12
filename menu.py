@@ -4,6 +4,7 @@ from gamejam.animation import Animation, AnimType
 from gamejam.gui import Gui
 from gamejam.input import Input
 from gamejam.settings import GameSettings
+from gamejam.quickmaff import lerp, clamp
 
 from song import Song
 from staff import Staff
@@ -37,6 +38,7 @@ class Menu():
         self.textures = textures
         self.song_widgets = []
         self.song_scroll = 0.0
+        self.song_scroll_target = 0.0
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
         self.running = True
 
@@ -102,7 +104,7 @@ class Menu():
     def _set_song_menu_pos(self):
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):
-            song_pos = [-0.333, self.song_scroll + (0.4 - i * Menu.SONG_SPACING)]
+            song_pos = [-0.333, (0.4 - i * Menu.SONG_SPACING) + self.song_scroll]
             track_pos = [song_pos[0] + 0.125, song_pos[1] - 0.1]
             widgets_for_song = self.song_widgets[i]
             widgets_for_song["play"].set_pos(song_pos)
@@ -152,8 +154,7 @@ class Menu():
 
         def song_list_scroll(dir: float):
             scroll_max = len(self.song_widgets) * Menu.SONG_SPACING
-            self.song_scroll = max(0, min(self.song_scroll + dir, scroll_max))
-            self.scroll_widget.set_pos([0.9, 0.73 - (1.44 * (self.song_scroll / scroll_max))])
+            self.song_scroll_target = clamp(self.song_scroll_target + dir, 0, scroll_max)
             self._set_song_menu_pos()
 
         def get_track_display_text(song) -> str:
@@ -167,9 +168,9 @@ class Menu():
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], [0.9, 0.0], [0.05, 1.6]))
         self.scroll_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/sliderknob.png", [0.9, 0.73], [0.035, 0.035 * self.window_ratio]))
         scroll_up_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9, 0.8], [0.05, 0.05 * self.window_ratio]))
-        scroll_up_widget.set_action(song_list_scroll, -0.1)
+        scroll_up_widget.set_action(song_list_scroll, -0.333)
         scroll_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9,-0.8], [0.05, -0.05 * self.window_ratio]))
-        scroll_down_widget.set_action(song_list_scroll, 0.1)
+        scroll_down_widget.set_action(song_list_scroll, 0.333)
 
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):
@@ -219,15 +220,24 @@ class Menu():
 
     def update(self, dt: float, music_running: bool):
         """Element specific per-frame updates"""
-        for _, (type, menu) in enumerate(self.elements.items()):
-            if self.is_menu_active(type):
-                for _, (name, widget) in enumerate(menu.items()):
-                    if menu is Menus.GAME:
-                        if name == "bg": widget.draw(dt if music_running else dt * 0.1)
-                        if name == "note_bg_btm": widget.sprite.set_colour(self.note_correct_colour)
-                        if name == "note_bg_top": widget.sprite.set_colour(self.note_correct_colour)
-
-                        self.note_correct_colour = [max(0.65, i - 0.5 * dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
+        input, draw = self.is_menu_active(Menus.GAME)
+        if input or draw:
+            for _, (type, menu) in enumerate(self.elements.items()):
+                if self.is_menu_active(type):
+                    for _, (name, widget) in enumerate(menu.items()):
+                        if menu is Menus.GAME:
+                            if name == "bg": widget.draw(dt if music_running else dt * 0.1)
+                            if name == "note_bg_btm": widget.sprite.set_colour(self.note_correct_colour)
+                            if name == "note_bg_top": widget.sprite.set_colour(self.note_correct_colour)
+                            self.note_correct_colour = [max(0.65, i - 0.5 * dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
+        
+        input, draw = self.is_menu_active(Menus.SONGS)
+        if input or draw:
+            self.song_scroll = lerp(self.song_scroll, self.song_scroll_target, dt * 5.0)
+            if abs(self.song_scroll - self.song_scroll_target) > 0.01:
+                scroll_max = len(self.song_widgets) * Menu.SONG_SPACING
+                self.scroll_widget.set_pos([0.9, 0.73 - (1.44 * (self.song_scroll / scroll_max))])
+                self._set_song_menu_pos()
 
 
     def set_event(self, name:str):
