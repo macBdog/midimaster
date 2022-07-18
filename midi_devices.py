@@ -14,7 +14,7 @@ class MidiDevices:
         self.output_port = None
 
 
-    def open_input(self, input_name):
+    def open_input(self, input_name:str):
         if self.input_port is None:
             self.input_device_name = input_name
             if input_name in self.input_devices:
@@ -26,7 +26,7 @@ class MidiDevices:
                     print(excpt)
 
 
-    def open_output(self, output_name):
+    def open_output(self, output_name:str):
         if self.output_port is None:
             self.output_device_name = output_name
             if output_name in self.output_devices:
@@ -69,13 +69,20 @@ class MidiDevices:
             self.output_messages = []
 
 
-    def end(self):
+    def close_input(self):
+        if self.input_port is not None:
+            self.input_port.close()
+            if not self.input_port.closed:
+                print ("Unable to close input MIDI port {0}.".format(self.input_device_name))  
+
+
+    def close_output(self):
         if self.output_port is not None:
             self.output_port.close()
             if not self.output_port.closed:
                 print("Unable to close output MIDI port {0}.".format(self.output_device_name))
 
-        if self.input_port is not None:
-            self.input_port.close()
-            if not self.input_port.closed:
-                print ("Unable to close input MIDI port {0}.".format(self.input_device_name))                
+
+    def end(self):
+        self.close_output()
+        self.close_input()

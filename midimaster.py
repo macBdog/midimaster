@@ -91,9 +91,14 @@ class MidiMaster(GameJam):
                 print(f"Cannot find specificed midi file or folder {song_path}! Exiting.")
                 exit()
 
+        # Connect midi inputs and outputs
+        self.devices = MidiDevices()
+        self.devices.open_input_default()
+        self.devices.open_output_default()
+
         # Setup all the game systems
         self.staff = Staff()
-        self.menu = Menu(self.graphics, self.input, self.gui, self.window_width, self.window_height, self.textures)
+        self.menu = Menu(self.graphics, self.input, self.gui, self.devices, self.window_width, self.window_height, self.textures)
         self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
         self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
         self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
@@ -106,11 +111,7 @@ class MidiMaster(GameJam):
                 print("Invalid or missing song data file, unable to continue!")
             else:
                 self.music.load(default_song)
-        
-        # Connect midi inputs and outputs and player input
-        self.devices = MidiDevices()
-        self.devices.open_input_default()
-        self.devices.open_output_default()
+
         self.setup_input()
 
     def update(self, dt):
@@ -296,10 +297,10 @@ class MidiMaster(GameJam):
             self.note_width_32nd = max(0.0, self.note_width_32nd - (self.dt * 0.1))
 
         def music_time_fwd():
-            self.music_time += self.dt * 30.0
+            self.music_time += self.dt * 300.0
 
         def music_time_back():
-            self.music_time -= self.dt * 30.0
+            self.music_time -= self.dt * 300.0
 
         def music_pause():
             self.music_running = not self.music_running
@@ -307,8 +308,8 @@ class MidiMaster(GameJam):
         self.input.add_key_mapping(32, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, music_pause)  # space for Pause on keyup
         self.input.add_key_mapping(61, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, note_width_inc)  # + Add more space in a bar
         self.input.add_key_mapping(45, InputActionKey.ACTION_KEYDOWN, InputActionModifier.NONE, note_width_dec)  # - Add less space in a bar
-        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_back)  # -> Manually advance forward in time
-        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_fwd)  # -> Manually advance backwards in time
+        self.input.add_key_mapping(262, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_fwd)  # -> Manually advance forward in time
+        self.input.add_key_mapping(263, InputActionKey.ACTION_KEYREPEAT, InputActionModifier.NONE, music_time_back)  # -> Manually retreat backwards in time
 
         def create_key_note(note_val: int, note_on: bool):
             if self.menu.is_menu_active(Menus.GAME):

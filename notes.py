@@ -14,7 +14,7 @@ class Notes:
     It is intended to be called by a music manager that creates the notes
     for each piece of music, then notes manages when they should be on-screen.
     """
-    BarlineWidth = 0.004
+    BarlineWidth = 0.005
     def __init__(self, graphics:Graphics, note_render: NoteRender, staff: Staff, note_positions: list):
         self.graphics = graphics
         self.note_render = note_render
@@ -146,7 +146,7 @@ class Notes:
                 if num_hats == 2:
                     hat_note = hats[0]
                     hat_note_next = hats[1]
-                    y_diff = note_positions[hat_note.note_drawn] - note_positions[hat_note_next.note_drawn]
+                    y_diff = note_positions[hat_note_next.note_drawn] - note_positions[hat_note.note_drawn]
                     hat_note.hat = [hat_note.length, y_diff]
                     hat_note_next.hat = [0.0, 0.0]
                 elif straight_hat:

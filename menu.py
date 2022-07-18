@@ -8,6 +8,7 @@ from gamejam.quickmaff import lerp, clamp
 
 from song import Song
 from staff import Staff
+from midi_devices import MidiDevices
 from scrolling_background import ScrollingBackground
 
 
@@ -24,14 +25,16 @@ class Dialogs(Enum):
 
 class Menu():
     SONG_SPACING = 0.25
+    DIALOG_COLOUR = [0.26, 0.15, 0.32, 1.0]
 
     """Utility class to separate all the gui element drawing from main game logic."""
-    def __init__(self, graphics, input: Input, gui: Gui, width: int, height: int, textures):
+    def __init__(self, graphics, input: Input, gui: Gui, devices: MidiDevices, width: int, height: int, textures):
         self.menus = {}
         self.dialogs = {}
-        self.elements = {m:{} for m in Menus}
+        self.elements = {m:{} for m in Menus}        
         self.graphics = graphics
         self.input = input
+        self.devices = devices
         self.window_width = width
         self.window_height = height
         self.window_ratio = width / height
@@ -48,7 +51,7 @@ class Menu():
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", [0, 0], [0.25, 0.25 * self.window_ratio]))
 
         # Create sub-guis for each screen of the game, starting with active splash screen
-        self.menus[Menus.SPLASH] = Gui(self.window_width, self.window_height, "splash_screen")
+        self.menus[Menus.SPLASH] = Gui("splash_screen")
         self.menus[Menus.SPLASH].set_active(True, True)
         self.menus[Menus.SPLASH].add_widget(self.textures.create_sprite_texture("splash_background.png", [0, 0], [2.0, 2.0]))
         gui.add_child(self.menus[Menus.SPLASH])
@@ -60,16 +63,17 @@ class Menu():
         menu_row = 0.8
         menu_thirds = 2.0 / 4
         menu_item_size = [0.31, 0.18]
-        self.menus[Menus.SONGS] = Gui(self.window_width, self.window_height, "menu_screen")
+        self.menus[Menus.SONGS] = Gui("menu_screen")
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/menu_bg.png", [0, 0], [2.0, 2.0]))
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
+        btn_devices = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
+        btn_devices.set_action(self.show_dialog, Dialogs.DEVICES)
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
         btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
         btn_quit.set_action(quit, self)
         gui.add_child(self.menus[Menus.SONGS])
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
-        self.menus[Menus.GAME] = Gui(self.window_width, self.window_height, "game_screen")
+        self.menus[Menus.GAME] = Gui("game_screen")
         self.menus[Menus.GAME].add_widget(self.textures.create_sprite_texture("game_background.tga", [0, 0], [2.0, 2.0]))
         self.menus[Menus.GAME].add_widget(self.textures.create_sprite_shape([0.5] * 4, [game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0], [Staff.Width, Staff.StaffSpacing * 4.0]))
         gui.add_child(self.menus[Menus.GAME])
@@ -85,6 +89,14 @@ class Menu():
         self._set_elem(Menus.GAME, "note_bg_top", note_bg_top)
         self._set_elem(Menus.GAME, "note_bg_btm", note_bg_btm)
         self._set_elem(Menus.GAME, "bg", ScrollingBackground(self.graphics, self.textures, "menu_glyphs.tga"))
+
+        # Create the dialogs
+        dialog_size = [1.0, 1.1]
+        self.dialogs[Dialogs.DEVICES] = Gui("devices")
+        self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_shape(Menu.DIALOG_COLOUR, [0, 0], dialog_size))
+        delete_widget = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", [dialog_size[0] * 0.5, dialog_size[1] * 0.5], [0.05, 0.05 * self.window_ratio]))
+        delete_widget.set_action(self.hide_dialog, Dialogs.DEVICES)
+        gui.add_child(self.dialogs[Dialogs.DEVICES])
 
         # Move to the game or menu when the splash is over
         if GameSettings.DEV_MODE:
@@ -196,7 +208,7 @@ class Menu():
 
             track_display_widget = self.menus[Menus.SONGS].add_widget(None, self.font)
             track_display_widget.set_text(get_track_display_text(song), 9, [0,0])
-            track_display_widget.set_text_colour([0.7, 0.7, 0.7, 0.7])
+            track_display_widget.set_text_colour([0.7] * 4)
 
             track_button_size = 0.035
             track_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [track_button_size, track_button_size * self.window_ratio]))
@@ -216,6 +228,61 @@ class Menu():
             })
 
         self._set_song_menu_pos()
+
+        def set_devices_input(dir):
+            devices = self.devices.input_devices
+            cur_device_id = devices.index(self.devices.input_device_name)
+            cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
+            self.devices.input_device_name = devices[cur_device_id]
+            self.device_input_widget.set_text(self.devices.input_device_name, 10, [-0.05,0.3])
+
+        def set_devices_output(dir):
+            devices = self.devices.output_devices
+            cur_device_id = devices.index(self.devices.output_device_name)
+            cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
+            self.devices.output_device_name = devices[cur_device_id]
+            self.device_output_widget.set_text(self.devices.output_device_name, 10, [-0.05,0.2])
+
+        def devices_refresh(sleep_delay_ms: int):
+            self.devices.close_input()
+            self.devices.close_output()
+            self.devices.open_input(self.devices.input_device_name)
+            self.devices.open_output(self.devices.output_device_name)
+            
+        # Add device params
+        device_button_size = 0.035
+        input_label = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        input_label.set_text(f"Input ", 10, [-0.3,0.3])
+        input_label.set_text_colour([0.7] * 4)
+
+        self.device_input_widget = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        self.device_input_widget.set_text(self.devices.input_device_name, 10, [-0.05,0.3])
+        self.device_input_widget.set_text_colour([0.9] * 4)
+
+        input_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.315], [device_button_size, device_button_size * self.window_ratio]))
+        input_down.set_action(set_devices_input, -1)
+
+        input_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.315], [-device_button_size, device_button_size * self.window_ratio]))
+        input_up.set_action(set_devices_input, 1)
+
+        output_label = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        output_label.set_text(f"Output: ", 10, [-0.3, 0.2])
+        output_label.set_text_colour([0.7] * 4)
+
+        self.device_output_widget = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        self.device_output_widget.set_text(self.devices.output_device_name, 10, [-0.05,0.2])
+        self.device_output_widget.set_text_colour([0.9] * 4)
+
+        output_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.215], [device_button_size, device_button_size * self.window_ratio]))
+        output_down.set_action(set_devices_output, -1)
+
+        input_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.215], [-device_button_size, device_button_size * self.window_ratio]))
+        input_up.set_action(set_devices_output, 1)
+
+        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [0.25,0.0], [0.08, 0.06 * self.window_ratio]))
+        self.devices_apply.set_text(f"Apply", 12, [0.0, 0.0])
+        self.devices_apply.set_text_colour([0.5] * 4)
+        self.devices_apply.set_action(devices_refresh, 0)
 
 
     def update(self, dt: float, music_running: bool):
@@ -268,3 +335,12 @@ class Menu():
 
     def is_dialog_active(self, type: Dialogs):
         return False
+
+
+    def show_dialog(self, type: Dialogs):
+        self.dialogs[type].set_active(True, True)
+
+
+    def hide_dialog(self, type: Dialogs):
+        self.dialogs[type].set_active(False, False)
+
