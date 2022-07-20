@@ -1,4 +1,6 @@
+import time
 from enum import Enum, auto
+from mido import Message
 
 from gamejam.animation import Animation, AnimType
 from gamejam.gui import Gui
@@ -91,7 +93,7 @@ class Menu():
         self._set_elem(Menus.GAME, "bg", ScrollingBackground(self.graphics, self.textures, "menu_glyphs.tga"))
 
         # Create the dialogs
-        dialog_size = [1.0, 1.1]
+        dialog_size = [0.8, 1.1]
         self.dialogs[Dialogs.DEVICES] = Gui("devices")
         self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_shape(Menu.DIALOG_COLOUR, [0, 0], dialog_size))
         delete_widget = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", [dialog_size[0] * 0.5, dialog_size[1] * 0.5], [0.05, 0.05 * self.window_ratio]))
@@ -188,9 +190,7 @@ class Menu():
         for i in range(num_songs):
             song = self.songbook.get_song(i)
 
-            play_widget = self.menus[Menus.SONGS].add_widget(
-                self.textures.create_sprite_texture("gui/btnplay.tga", [0,0], [0.125, 0.1]), self.font
-            )
+            play_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", [0,0], [0.125, 0.1]), self.font)
             play_widget.set_text(song.get_name(), 12, [0.08, -0.02])
             play_widget.set_text_colour([0.85, 0.85, 0.85, 0.85])
             play_widget.set_action(song_play, i)
@@ -229,12 +229,21 @@ class Menu():
 
         self._set_song_menu_pos()
 
-        def set_devices_input(dir):
+        def set_devices_input(dir:int):
             devices = self.devices.input_devices
             cur_device_id = devices.index(self.devices.input_device_name)
             cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
             self.devices.input_device_name = devices[cur_device_id]
             self.device_input_widget.set_text(self.devices.input_device_name, 10, [-0.05,0.3])
+            self.songbook.input_device = self.devices.input_device_name
+
+        def get_device_input_dir(dir:int) -> bool:
+            devices = self.devices.input_devices
+            cur_device_id = devices.index(self.devices.input_device_name)
+            return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
+
+        def get_device_input_col(dir) -> list:
+            return [1.0] * 4 if get_device_input_dir(dir) else [0.4] * 4
 
         def set_devices_output(dir):
             devices = self.devices.output_devices
@@ -242,12 +251,33 @@ class Menu():
             cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
             self.devices.output_device_name = devices[cur_device_id]
             self.device_output_widget.set_text(self.devices.output_device_name, 10, [-0.05,0.2])
+            self.songbook.output_device = self.devices.output_device_name
+
+        def get_device_output_dir(dir:int) -> bool:
+            devices = self.devices.output_devices
+            cur_device_id = devices.index(self.devices.output_device_name)
+            return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
+
+        def get_device_output_col(dir) -> list:
+            return [1.0] * 4 if get_device_output_dir(dir) else [0.4] * 4
 
         def devices_refresh(sleep_delay_ms: int):
             self.devices.close_input()
             self.devices.close_output()
+            time.sleep(0.5)
             self.devices.open_input(self.devices.input_device_name)
             self.devices.open_output(self.devices.output_device_name)
+
+        def devices_output_test(args):
+            note_on = Message("note_on")
+            note_on.note = 60
+            note_on.velocity = 100
+            self.devices.output_messages.append(note_on)
+            time.sleep(1.0)
+            note_off = Message("note_off")
+            note_off.note = 60
+            note_off.velocity = 100
+            self.devices.output_messages.append(note_off)
             
         # Add device params
         device_button_size = 0.035
@@ -256,33 +286,42 @@ class Menu():
         input_label.set_text_colour([0.7] * 4)
 
         self.device_input_widget = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
-        self.device_input_widget.set_text(self.devices.input_device_name, 10, [-0.05,0.3])
+        self.device_input_widget.set_text(self.devices.input_device_name, 8, [-0.05,0.3])
         self.device_input_widget.set_text_colour([0.9] * 4)
 
         input_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.315], [device_button_size, device_button_size * self.window_ratio]))
         input_down.set_action(set_devices_input, -1)
+        input_down.set_colour_func(get_device_input_col, -1)
 
         input_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.315], [-device_button_size, device_button_size * self.window_ratio]))
         input_up.set_action(set_devices_input, 1)
+        input_up.set_colour_func(get_device_input_col, 1)
 
         output_label = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
         output_label.set_text(f"Output: ", 10, [-0.3, 0.2])
         output_label.set_text_colour([0.7] * 4)
 
         self.device_output_widget = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
-        self.device_output_widget.set_text(self.devices.output_device_name, 10, [-0.05,0.2])
+        self.device_output_widget.set_text(self.devices.output_device_name, 8, [-0.05,0.2])
         self.device_output_widget.set_text_colour([0.9] * 4)
 
         output_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.215], [device_button_size, device_button_size * self.window_ratio]))
         output_down.set_action(set_devices_output, -1)
+        output_down.set_colour_func(get_device_output_col, -1)
 
-        input_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.215], [-device_button_size, device_button_size * self.window_ratio]))
-        input_up.set_action(set_devices_output, 1)
+        output_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.215], [-device_button_size, device_button_size * self.window_ratio]))
+        output_up.set_action(set_devices_output, 1)
+        output_up.set_colour_func(get_device_output_col, 1)
 
-        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [0.25,0.0], [0.08, 0.06 * self.window_ratio]))
-        self.devices_apply.set_text(f"Apply", 12, [0.0, 0.0])
-        self.devices_apply.set_text_colour([0.5] * 4)
+        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [0.2,-0.2], [0.2, 0.08 * self.window_ratio]), self.font)
+        self.devices_apply.set_text(f"Reconnect", 11, [-0.07, -0.015])
+        self.devices_apply.set_text_colour([0.9] * 4)
         self.devices_apply.set_action(devices_refresh, 0)
+
+        self.devices_test = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [-0.2,-0.2], [0.25, 0.08 * self.window_ratio]), self.font)
+        self.devices_test.set_text(f"Test Output", 11, [-0.1, -0.015])
+        self.devices_test.set_text_colour([0.9] * 4)
+        self.devices_test.set_action(devices_output_test, 0)
 
 
     def update(self, dt: float, music_running: bool):
