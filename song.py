@@ -29,6 +29,7 @@ class Song:
         self.track_names = {}
         self.backing_tracks = {}
         self.notes = []
+        self.dirty = False
 
 
     def get_name(self):
@@ -36,7 +37,7 @@ class Song:
 
 
     def get_max_score(self):
-        return len(self.notes)
+        return max(len(self.notes), 1)
         
         
     def from_midi_file(self, filepath: str, player_track_id: int = 0):

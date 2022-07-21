@@ -1,6 +1,5 @@
 import time
 from enum import Enum, auto
-from mido import Message
 
 from gamejam.animation import Animation, AnimType
 from gamejam.gui import Gui
@@ -157,12 +156,14 @@ class Menu():
         def song_track_up(song_id: int):
             song = self.songbook.get_song(song_id)
             song.player_track_id += 1
+            song.dirty = True
             widget = self.song_widgets[song_id]
             widget["track_display"].set_text(get_track_display_text(song), 9, None)
 
         def song_track_down(song_id: int):
             song = self.songbook.get_song(song_id)
             song.player_track_id = max(song.player_track_id-1, 0)
+            song.dirty = True
             widget = self.song_widgets[song_id]
             widget["track_display"].set_text(get_track_display_text(song), 9, None)
 
@@ -262,22 +263,11 @@ class Menu():
             return [1.0] * 4 if get_device_output_dir(dir) else [0.4] * 4
 
         def devices_refresh(sleep_delay_ms: int):
-            self.devices.close_input()
-            self.devices.close_output()
-            time.sleep(0.5)
-            self.devices.open_input(self.devices.input_device_name)
-            self.devices.open_output(self.devices.output_device_name)
+            self.devices.refresh_io()
 
         def devices_output_test(args):
-            note_on = Message("note_on")
-            note_on.note = 60
-            note_on.velocity = 100
-            self.devices.output_messages.append(note_on)
-            time.sleep(1.0)
-            note_off = Message("note_off")
-            note_off.note = 60
-            note_off.velocity = 100
-            self.devices.output_messages.append(note_off)
+            self.devices.output_test()
+
             
         # Add device params
         device_button_size = 0.035

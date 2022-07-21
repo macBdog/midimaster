@@ -1,3 +1,5 @@
+import time
+from threading import Thread
 import mido
 
 class MidiDevices:
@@ -12,6 +14,44 @@ class MidiDevices:
         self.output_messages = []
         self.input_port = None
         self.output_port = None
+        self.io_thread = None
+
+
+    def output_test(self):
+        if self.io_thread is None:
+            self.io_thread = Thread(target=self._create_test_output)
+            self.io_thread.daemon = False
+            self.io_thread.start()
+
+
+    def _create_test_output(self):
+        note_on = mido.Message("note_on")
+        note_on.note = 60
+        note_on.velocity = 100
+        self.output_messages.append(note_on)
+        
+        time.sleep(2.0)
+
+        note_off = mido.Message("note_off")
+        note_off.note = 60
+        note_off.velocity = 100
+        self.output_messages.append(note_off)
+        self.io_thread = None
+
+
+    def refresh_io(self):
+        if self.io_thread is None:
+            self.io_thread = Thread(target=self._reconnect)
+            self.io_thread.daemon = False
+            self.io_thread.start()
+
+
+    def _reconnect(self):
+        self.close_input()
+        self.close_output()
+        time.sleep(1.0)
+        self.open_input(self.input_device_name)
+        self.open_output(self.output_device_name)
 
 
     def open_input(self, input_name:str):
