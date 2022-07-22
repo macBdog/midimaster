@@ -147,7 +147,7 @@ class Notes:
                     hat_note = hats[0]
                     hat_note_next = hats[1]
                     y_diff = note_positions[hat_note_next.note_drawn] - note_positions[hat_note.note_drawn]
-                    hat_note.hat = [hat_note.length, y_diff]
+                    hat_note.hat = [hat_note.length, y_diff * 0.5]
                     hat_note_next.hat = [0.0, 0.0]
                 elif straight_hat:
                     for count in range(num_hats):
@@ -177,7 +177,7 @@ class Notes:
                             hats.append(note)
                 
                 # 4 notes max in one hat chain
-                if len(hats) >= hat_max:
+                if len(hats) >= hat_max or note_id == num_notes - 1:
                     add_all_hats(hats, self.note_positions)
                     hats = []
             elif hat_num > 1:

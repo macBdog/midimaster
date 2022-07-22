@@ -98,13 +98,13 @@ float drawLineRounded(in vec2 uv, in vec2 start, in vec2 end, in float width)
     return mix(0.0, 1.0, 1.0-smoothstep(width-antialias*0.02,width, distanceToSegment(start, end, uv)));
 }
 
-float drawLineSquare(in vec2 uv, in vec2 start, in vec2 end, in float width)
+float drawLineSquare(in vec2 uv, in vec2 start, in vec2 end, in float width, bool vertical)
 {
     float col = drawLineRounded(uv, start, end, width);
     vec2 clip_box = vec2(0.015, width * 4.0);
     float leftBox = drawRect(uv, start + vec2(clip_box.x * -0.5, 0.0), clip_box);
     float rightBox = drawRect(uv, end + vec2(clip_box.x * 0.5, 0.0), clip_box);
-    if (abs(end.y - start.y) > abs(end.x - start.x))
+    if (vertical)
     {
         clip_box = vec2(width * 4.0, 0.02);
         leftBox = drawRect(uv, start, clip_box);
@@ -131,8 +131,8 @@ float drawAccidental(in vec2 uv, in vec2 p, int val, bool note_relative_pos)
         float boxY = 0.01;
         col += drawRect(uv, acc_pos + vec2(0.0, -0.005), vec2(0.001, width));
         col += drawRect(uv, acc_pos - vec2(boxX, -0.02), vec2(0.001, width));
-        col += drawLineSquare(uv, acc_pos + vec2(-boxX, -boxY), acc_pos + vec2(0.0, -0.00), thickness);
-        col += drawLineSquare(uv, acc_pos + vec2(-boxX, boxY), acc_pos + vec2(0.0, 0.02), thickness);
+        col += drawLineSquare(uv, acc_pos + vec2(-boxX, -boxY), acc_pos + vec2(0.0, -0.00), thickness, false);
+        col += drawLineSquare(uv, acc_pos + vec2(-boxX, boxY), acc_pos + vec2(0.0, 0.02), thickness, false);
     }
     else if (val == 1)
     {
@@ -141,8 +141,8 @@ float drawAccidental(in vec2 uv, in vec2 p, int val, bool note_relative_pos)
         float hashY = 0.01;
         col += drawRect(uv, acc_pos - vec2(0.004, 0.0), vec2(0.0025, width));
         col += drawRect(uv, acc_pos - vec2(0.012, 0.005), vec2(0.0025, width));
-        col += drawLineSquare(uv, acc_pos - vec2(hashX, -0.002), acc_pos + vec2(0.005, 0.023), thickness);
-        col += drawLineSquare(uv, acc_pos - vec2(hashX, 0.022), acc_pos + vec2(0.005, -0.003), thickness);
+        col += drawLineSquare(uv, acc_pos - vec2(hashX, -0.002), acc_pos + vec2(0.005, 0.023), thickness, false);
+        col += drawLineSquare(uv, acc_pos - vec2(hashX, 0.022), acc_pos + vec2(0.005, -0.003), thickness, false);
     }
     
     else if (val == -1)
@@ -208,7 +208,7 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_
     else if (note_type == note_type_rest_quarter)
     {
         float col = drawLineRounded(uv, vec2(p.x - 0.015, staff_pos_y + 0.22), vec2(p.x - 0.001, staff_pos_y + 0.18), 0.0025);
-        col += drawLineSquare(uv, vec2(p.x-0.006, staff_pos_y + 0.19), vec2(p.x - 0.02, staff_pos_y + 0.11), 0.009);
+        col += drawLineSquare(uv, vec2(p.x-0.006, staff_pos_y + 0.19), vec2(p.x - 0.02, staff_pos_y + 0.11), 0.009, true);
         col += drawLineRounded(uv, vec2(p.x - 0.025, staff_pos_y + 0.12), vec2(p.x - 0.011, staff_pos_y + 0.072), 0.0025);
         col += drawEllipse(uv, vec2(p.x - 0.022, staff_pos_y + 0.07), vec2(0.11, 0.14));
         col -= drawEllipse(uv, vec2(p.x - 0.019, staff_pos_y + 0.062), vec2(0.1, 0.13));
@@ -348,7 +348,7 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_
         float hat_width = 0.012;
         vec2 hat_start = p + stalk_pos + vec2(stalk_width * -0.05, (stalk_size.y * stalk_y_mult) - hat_width);
         vec2 hat_end = hat_start + hat_size + vec2(0.002, 0.0);
-        hat = drawLineSquare(uv, hat_start, hat_end, hat_width);
+        hat = drawLineSquare(uv, hat_start, hat_end, hat_width, false);
     }
     
     return clamp(blob + lines + tie + stalk + hat + decoration, 0.0, 1.0);   
