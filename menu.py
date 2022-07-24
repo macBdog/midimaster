@@ -57,21 +57,13 @@ class Menu():
         self.menus[Menus.SPLASH].add_widget(self.textures.create_sprite_texture("splash_background.png", [0, 0], [2.0, 2.0]))
         gui.add_child(self.menus[Menus.SPLASH])
 
+        self.menus[Menus.SONGS] = Gui("menu_screen")
+        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/menu_bg.png", [0, 0], [2.0, 2.0]))
+        gui.add_child(self.menus[Menus.SONGS])
+
         title = self.menus[Menus.SPLASH].add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", [0, 0], [0.6, 0.6]))
         title.animation = Animation(AnimType.InOutSmooth, 0.15 if GameSettings.DEV_MODE else 2.0)
         self._set_elem(Menus.SPLASH, "title", title)
-
-        menu_row = 0.8
-        menu_thirds = 2.0 / 4
-        menu_item_size = [0.31, 0.18]
-        self.menus[Menus.SONGS] = Gui("menu_screen")
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/menu_bg.png", [0, 0], [2.0, 2.0]))
-        btn_devices = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
-        btn_devices.set_action(self.show_dialog, Dialogs.DEVICES)
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
-        btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
-        btn_quit.set_action(quit, self)
-        gui.add_child(self.menus[Menus.SONGS])
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
         self.menus[Menus.GAME] = Gui("game_screen")
@@ -229,6 +221,19 @@ class Menu():
             })
 
         self._set_song_menu_pos()
+
+        menu_row = 0.8
+        menu_thirds = 2.0 / 4
+        menu_item_size = [0.31, 0.18]
+        self.menus[Menus.SONGS].add_widget(
+            self.textures.create_sprite_texture_tinted("vgradient.png", [0.7, 0.5, 0.7, 0.6], [0.0, menu_row], [2.0, 0.5])
+        )
+
+        btn_devices = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
+        btn_devices.set_action(self.show_dialog, Dialogs.DEVICES)
+        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
+        btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
+        btn_quit.set_action(quit, self)
 
         def set_devices_input(dir:int):
             devices = self.devices.input_devices
