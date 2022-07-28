@@ -96,6 +96,11 @@ class NoteRender:
         npos, cpos = add_calibration_note(npos, cpos, [-1.0, 1.0], [1.0, 1.0, 0.0, 1.0])
         npos, cpos = add_calibration_note(npos, cpos, [0.0, 0.0], [1.0, 0.0, 1.0, 1.0])
 
+
+    def get_num_free_notes(self):
+        return NoteRender.NumNotes - self.note
+        
+
     def assign(self, note: Note):
         """Add a new note to an empty note slot."""
 
@@ -104,7 +109,7 @@ class NoteRender:
         while self.notes[new_note] is not None:
             search += 1
             new_note = (self.note + search) % NoteRender.NumNotes
-            if search >= NoteRender.NumNotes:
+            if search >= NoteRender.NumNotes // 2:
                 if GameSettings.DEV_MODE:
                     print(f"Note render has run out of active notes!")
                 break
@@ -129,6 +134,7 @@ class NoteRender:
         self.note_ties[self.note] = note.tie
         self.note_extra[npos] = note.extra[0]
         self.note_extra[npos + 1] = note.extra[1]
+
 
     def draw(self, dt: float, music_time: float, note_width: float, notes_on: dict) -> dict:
         """Process note timing then upload the note data state to the shader every frame."""

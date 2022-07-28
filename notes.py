@@ -193,19 +193,22 @@ class Notes:
 
         self.add_notes_to_render()
  
+
     def add_notes_to_render(self, num_notes:int=-1):
-        """Add a number of notes to the render queue, -1 meaning add all."""
-        # TODO: Right now we are adding the max notes on load, this will have to be replaced with a ring buffer style update during rendering
+        """Add a number of notes to the render queue, -1 meaning add the maximum."""
 
         notes_len = len(self.notes)
-        num_to_add = num_notes if num_notes > 0 else notes_len - self.notes_offset
+        num_notes = NoteRender.NumNotes // 2 if num_notes < 0 else num_notes
+        num_to_add = min(num_notes, notes_len - self.notes_offset)
         for count in range(num_to_add):
-            note = self.notes[count]
+            index = self.notes_offset + count
+            note = self.notes[index]
             self.note_render.assign(note)
             if GameSettings.DEV_MODE and not note.is_decorated():
                 print(f"Error: Undecorated note added to note rendering!")
 
         self.notes_offset += num_to_add
+
 
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
         """Draw and update the bar lines and all notes on the GPU.
@@ -226,5 +229,10 @@ class Notes:
                           
         # Draw all the notes and return times for the ones that are playing
         self.note_render.draw(dt, music_time, note_width, self.notes_on)
+
+        # Start adding new notes when halfway through the display buffer
+        if len(self.notes) > 0:
+            if self.note_render.get_num_free_notes() >= NoteRender.NumNotes // 2 and self.notes[self.notes_offset].time < music_time + 16:
+                self.add_notes_to_render()
 
         return self.notes_on

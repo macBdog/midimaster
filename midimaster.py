@@ -128,12 +128,12 @@ class MidiMaster(GameJam):
                 self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0])
 
         # Handle events from MIDI input, echo to output so player can hear
-        for message in self.devices.input_messages:
+        for message in self.devices.get_input_messages():
             if message.type == "note_on" or message.type == "note_off":
-                self.devices.output_messages.append(message)
+                self.devices.output(message)
 
         # Process any output messages and transfer them to player notes down
-        for message in self.devices.output_messages:
+        for message in self.devices.get_output_messages():
             if message.type == "note_on":
                 self.player_notes_down[message.note] = 1.0
 
@@ -152,7 +152,7 @@ class MidiMaster(GameJam):
             if velocity > 0.0:
                 self.staff.set_score(note)
 
-        self.devices.input_messages = []
+        self.devices.input_flush()
 
         tempo_recip_60 = 1.0 / 60.0
         game_draw, _ = self.menu.is_menu_active(Menus.GAME)
@@ -186,7 +186,7 @@ class MidiMaster(GameJam):
                     new_note_on = Message("note_on")
                     new_note_on.note = k
                     new_note_on.velocity = 100
-                    self.devices.output_messages.append(new_note_on)
+                    self.devices.output(new_note_on)
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:
@@ -201,7 +201,7 @@ class MidiMaster(GameJam):
                 self.staff.note_off(k)
                 new_note_off = Message("note_off")
                 new_note_off.note = k
-                self.devices.output_messages.append(new_note_off)
+                self.devices.output(new_note_off)
                 self.midi_notes.pop(k)
 
             if self.mode == MusicMode.PERFORMANCE:
@@ -227,7 +227,6 @@ class MidiMaster(GameJam):
 
         # Update and flush out the buffers
         self.devices.update()
-        self.devices.output_messages = []
 
 
     def end(self):
@@ -319,7 +318,7 @@ class MidiMaster(GameJam):
                 new_note = Message(note_name)
                 new_note.note = note_val
                 new_note.velocity = 100
-                self.devices.input_messages.append(new_note)
+                self.devices.input(new_note)
 
         def create_key_note_on(note_val: int):
             create_key_note(note_val, True)

@@ -66,8 +66,7 @@ class Music:
 
             next_event = self.song.backing_tracks[id][b_index]
             while b_time <= ticks_time:
-                if devices.output_port:
-                    devices.output_port.send(next_event)
+                devices.output(next_event)
                 self.backing_index[id] += 1
                 b_index = self.backing_index[id]
                 if b_index >= b_len:
