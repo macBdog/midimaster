@@ -46,9 +46,6 @@ class Menu():
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
         self.running = True
 
-        def quit(self):
-            self.running = False
-
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", [0, 0], [0.25, 0.25 * self.window_ratio]))
 
         # Create sub-guis for each screen of the game, starting with active splash screen
@@ -233,7 +230,7 @@ class Menu():
         btn_devices.set_action(self.show_dialog, Dialogs.DEVICES)
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
         btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
-        btn_quit.set_action(quit, self)
+        btn_quit.set_action(self.quit_from_menu, self)
 
         def set_devices_input(dir:int):
             devices = self.devices.input_devices
@@ -378,3 +375,6 @@ class Menu():
     def hide_dialog(self, type: Dialogs):
         self.dialogs[type].set_active(False, False)
 
+
+    def quit_from_menu(self, args):
+            self.running = False
