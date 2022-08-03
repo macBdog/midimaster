@@ -156,10 +156,14 @@ class Menu():
             widget = self.song_widgets[song_id]
             widget["track_display"].set_text(get_track_display_text(song), 9, None)
 
-        def song_list_scroll(dir: float):
+        def song_list_scroll(dir: float, xpos, ypos):
+            # When called from scroll callback, dir is suppled as None
+            if dir is None:
+                dir = -0.1 * ypos  
             scroll_max = len(self.song_widgets) * Menu.SONG_SPACING
             self.song_scroll_target = clamp(self.song_scroll_target + dir, 0, scroll_max)
             self._set_song_menu_pos()
+
 
         def get_track_display_text(song) -> str:
             track = song.player_track_id
@@ -175,6 +179,7 @@ class Menu():
         scroll_up_widget.set_action(song_list_scroll, -0.333)
         scroll_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9,-0.8], [0.05, -0.05 * self.window_ratio]))
         scroll_down_widget.set_action(song_list_scroll, 0.333)
+        self.input.add_scroll_mapping(song_list_scroll, None)
 
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):

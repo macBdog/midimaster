@@ -61,6 +61,7 @@ class NoteRender:
 
     def reset(self):
         self.note = -1
+        self.notes_assigned = 0
         self.notes = [None] * NoteRender.NumNotes
         self.note_positions = [0.0] * NoteRender.NumNotes * 2
         self.note_colours = [0.0] * NoteRender.NumNotes * 4
@@ -80,6 +81,7 @@ class NoteRender:
 
         def add_calibration_note(npos, cpos, pos: list, col: list):
             self.note +=1
+            self.notes_assigned += 1
             self.notes[self.note] = Note(60, 0, 32)
             self.note_positions[npos] = pos[0]
             self.note_positions[npos + 1] = pos[1]
@@ -98,7 +100,7 @@ class NoteRender:
 
 
     def get_num_free_notes(self):
-        return NoteRender.NumNotes - self.note
+        return NoteRender.NumNotes - self.notes_assigned
         
 
     def assign(self, note: Note):
@@ -115,6 +117,7 @@ class NoteRender:
                 break
         
         self.note = new_note
+        self.notes_assigned += 1
         self.notes[self.note] = note
 
         col = [NoteRender.BaseColour, NoteRender.BaseColour, NoteRender.BaseColour, 1.0]
@@ -175,6 +178,7 @@ class NoteRender:
                         self.note_positions[npos] = -99.0
                         self.note_colours[cpos + 3] = 0.0
                         self.notes[i] = None
+                        self.notes_assigned -= 1
                 else:
                     self.note_colours[cpos + 3] = 0.0
 

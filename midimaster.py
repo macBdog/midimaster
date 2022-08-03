@@ -40,7 +40,7 @@ class MidiMaster(GameJam):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
         self.note_width_32nd = Staff.NoteWidth32nd       
-        self.mode = MusicMode.PAUSE_AND_LEARN
+        self.mode = MusicMode.PERFORMANCE
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
         self.reset()
 
@@ -220,6 +220,10 @@ class MidiMaster(GameJam):
             # Show the play mode
             mode_string = "Performance" if self.mode == MusicMode.PERFORMANCE else "Pause & Learn"
             self.font_game.draw(f"{mode_string}", 16, [0.5, 0.8], [0.6, 0.6, 0.6, 1.0])
+
+            # Show music time
+            if GameSettings.DEV_MODE:
+                self.font_game.draw(f"Music Time: {round(self.music_time, 2)}", 12, (0.0, 0.8), [0.6, 0.6, 0.6, 1.0])
 
             # Show the score on top of everything
             self.score_fade -= dt * 0.5

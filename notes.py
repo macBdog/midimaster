@@ -231,8 +231,8 @@ class Notes:
         self.note_render.draw(dt, music_time, note_width, self.notes_on)
 
         # Start adding new notes when halfway through the display buffer
-        if len(self.notes) > 0:
-            if self.note_render.get_num_free_notes() >= NoteRender.NumNotes // 2 and self.notes[self.notes_offset].time < music_time + 16:
+        if len(self.notes) > 0 and self.notes_offset < len(self.notes):
+            if self.note_render.get_num_free_notes() >= NoteRender.NumNotes // 2 and self.notes[self.notes_offset].time < music_time * 8:
                 self.add_notes_to_render()
 
         return self.notes_on
