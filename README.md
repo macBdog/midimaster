@@ -32,9 +32,7 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
 ![MidiMaster game screenshot](https://github.com/macBdog/midimaster/blob/main/tex/screenshot_game.png?raw=true)
 
 ## Task Queue:
+0. Devices menu shows incoming notes
 1. Temporal accidentals
-2. Device selection
-3. 3 strikes system
-4. Song selection data file
-5. Main menu GUI
-6. Game submodule with hot reload shaders
+2. Options menu with instructions
+3. Trophy unlocks

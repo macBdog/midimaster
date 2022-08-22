@@ -143,11 +143,17 @@ class Notes:
                             hat_tallest_note = h.note_drawn
                     hcount += 1
 
+                max_hat_diff = 0.125
                 if num_hats == 2:
                     hat_note = hats[0]
                     hat_note_next = hats[1]
                     y_diff = note_positions[hat_note_next.note_drawn] - note_positions[hat_note.note_drawn]
-                    hat_note.hat = [hat_note.length, y_diff * 0.5]
+                    if abs(y_diff) >= max_hat_diff:
+                        capped_y = -max_hat_diff if y_diff < 0 else max_hat_diff
+                        hat_note.hat = [hat_note.length, capped_y * 0.5]
+                        hat_note_next.extra[1] = -(y_diff - max_hat_diff)
+                    else:
+                        hat_note.hat = [hat_note.length, y_diff * 0.5]
                     hat_note_next.hat = [0.0, 0.0]
                 elif straight_hat:
                     for count in range(num_hats):
