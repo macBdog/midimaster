@@ -1,5 +1,5 @@
 import time
-from enum import Enum, auto
+
 
 from gamejam.animation import Animation, AnimType
 from gamejam.gui import Gui
@@ -11,17 +11,10 @@ from song import Song
 from staff import Staff
 from midi_devices import MidiDevices
 from scrolling_background import ScrollingBackground
-
-
-class Menus(Enum):
-    SPLASH = auto()
-    SONGS = auto()
-    GAME = auto()
-
-
-class Dialogs(Enum):
-    DEVICES = auto()
-    GAME_OVER = auto()
+from menu_func import (
+    Menus, Dialogs,
+    song_play, song_reload,
+)
 
 
 class Menu():
@@ -123,17 +116,6 @@ class Menu():
         self.music = music
         self.songbook = songbook
 
-        def song_play(song_id: int):
-            self.music.load(self.songbook.get_song(song_id))
-            self.transition(Menus.SONGS, Menus.GAME)
-
-        def song_reload(song_id: int):
-            existing_song = self.songbook.get_song(song_id)
-            new_song = Song()
-            new_song.from_midi_file(existing_song.path, existing_song.player_track_id)
-            self.songbook.add_update_song(new_song)
-            self._set_song_menu_pos()
-
         def song_delete(song_id: int):
             widgets = self.song_widgets[song_id]
             for elem in widgets:
@@ -188,7 +170,7 @@ class Menu():
             play_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", [0,0], [0.125, 0.1]), self.font)
             play_widget.set_text(song.get_name(), 12, [0.08, -0.02])
             play_widget.set_text_colour([0.85, 0.85, 0.85, 0.85])
-            play_widget.set_action(song_play, i)
+            play_widget.set_action(song_play, {"menu":self, "song_id":i})
 
             score_widget = self.menus[Menus.SONGS].add_widget(None, self.font)
 
@@ -196,10 +178,10 @@ class Menu():
             score_widget.set_text(f"{round((performance_score / song.get_max_score()) * 100.0, 1)}%", 14, [0,0])
 
             delete_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btntrash.png", [0,0], [0.05, 0.05 * self.window_ratio]))
-            delete_widget.set_action(song_delete, i)
+            delete_widget.set_action(song_delete, {"menu":self, "song_id":i})
 
             reload_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnreload.png", [0,0], [0.05, 0.05 * self.window_ratio]))
-            reload_widget.set_action(song_reload, i)
+            reload_widget.set_action(song_reload, {"menu": self, "song_id":i})
 
             track_display_widget = self.menus[Menus.SONGS].add_widget(None, self.font)
             track_display_widget.set_text(get_track_display_text(song), 9, [0,0])
@@ -207,10 +189,10 @@ class Menu():
 
             track_button_size = 0.035
             track_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [track_button_size, track_button_size * self.window_ratio]))
-            track_down_widget.set_action(song_track_down, i)
+            track_down_widget.set_action(song_track_down, {"menu": self, "song_id":i})
 
             track_up_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [-track_button_size, track_button_size * self.window_ratio]))
-            track_up_widget.set_action(song_track_up, i)
+            track_up_widget.set_action(song_track_up, {"menu": self, "song_id":i})
 
             self.song_widgets.append({
                 "play": play_widget,

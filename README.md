@@ -36,3 +36,4 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
 1. Temporal accidentals
 2. Options menu with instructions
 3. Trophy unlocks
+
