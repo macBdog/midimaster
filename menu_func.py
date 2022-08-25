@@ -151,3 +151,61 @@ def devices_refresh(**kwargs):
 def devices_output_test(**kwargs):
     menu=kwargs["menu"]
     menu.devices.output_test()
+
+
+def set_devices_input(**kwargs):
+    menu=kwargs["menu"]
+    dir=kwargs["dir"]
+    devices = menu.devices.input_devices
+    cur_device_id = devices.index(menu.devices.input_device_name)
+    cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
+    menu.devices.input_device_name = devices[cur_device_id]
+    menu.device_input_widget.set_text(menu.devices.input_device_name, 10, [-0.05,0.3])
+    menu.songbook.input_device = menu.devices.input_device_name
+
+
+def get_device_input_dir(**kwargs) -> bool:
+    menu=kwargs["menu"]
+    dir=kwargs["dir"]
+    devices = menu.devices.input_devices
+    cur_device_id = devices.index(menu.devices.input_device_name)
+    return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
+
+
+def get_device_input_col(**kwargs) -> list:
+    return [1.0] * 4 if get_device_input_dir(dir) else [0.4] * 4
+
+
+def set_devices_output(**kwargs):
+    menu=kwargs["menu"]
+    dir=kwargs["dir"]
+    devices = menu.devices.output_devices
+    cur_device_id = devices.index(menu.devices.output_device_name)
+    cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
+    menu.devices.output_device_name = devices[cur_device_id]
+    menu.device_output_widget.set_text(menu.devices.output_device_name, 10, [-0.05,0.2])
+    menu.songbook.output_device = menu.devices.output_device_name
+
+
+def get_device_output_dir(**kwargs) -> bool:
+    menu=kwargs["menu"]
+    dir=kwargs["dir"]
+    devices = menu.devices.output_devices
+    cur_device_id = devices.index(menu.devices.output_device_name)
+    return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
+
+
+def get_device_output_col(**kwargs) -> list:
+    dir=kwargs["dir"]
+    return [1.0] * 4 if get_device_output_dir(dir) else [0.4] * 4
+
+
+def devices_refresh(**kwargs):
+    menu=kwargs["menu"]
+    sleep_delay_ms=kwargs["sleep_delay_ms"]
+    menu.devices.refresh_io()
+
+
+def devices_output_test(**kwargs):
+    menu=kwargs["menu"]
+    menu.devices.output_test()
