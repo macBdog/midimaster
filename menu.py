@@ -13,7 +13,12 @@ from midi_devices import MidiDevices
 from scrolling_background import ScrollingBackground
 from menu_func import (
     Menus, Dialogs,
-    song_play, song_reload,
+    song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
+    get_track_display_text,
+    set_devices_input, get_device_input_col, 
+    set_devices_output, get_device_output_col,
+    devices_refresh, devices_output_test, set_devices_output,
+    get_device_output_col, devices_refresh, devices_output_test
 )
 
 
@@ -116,44 +121,6 @@ class Menu():
         self.music = music
         self.songbook = songbook
 
-        def song_delete(song_id: int):
-            widgets = self.song_widgets[song_id]
-            for elem in widgets:
-                self.menus[Menus.SONGS].delete_widget(widgets[elem])
-            self.song_widgets.pop(song_id)
-            self.songbook.delete_song(song_id)
-            self._set_song_menu_pos()
-
-        def song_track_up(song_id: int):
-            song = self.songbook.get_song(song_id)
-            song.player_track_id += 1
-            song.dirty = True
-            widget = self.song_widgets[song_id]
-            widget["track_display"].set_text(get_track_display_text(song), 9, None)
-
-        def song_track_down(song_id: int):
-            song = self.songbook.get_song(song_id)
-            song.player_track_id = max(song.player_track_id-1, 0)
-            song.dirty = True
-            widget = self.song_widgets[song_id]
-            widget["track_display"].set_text(get_track_display_text(song), 9, None)
-
-        def song_list_scroll(dir: float, xpos, ypos):
-            # When called from scroll callback, dir is suppled as None
-            if dir is None:
-                dir = -0.1 * ypos  
-            scroll_max = len(self.song_widgets) * Menu.SONG_SPACING
-            self.song_scroll_target = clamp(self.song_scroll_target + dir, 0, scroll_max)
-            self._set_song_menu_pos()
-
-
-        def get_track_display_text(song) -> str:
-            track = song.player_track_id
-            if track in song.track_names:
-                return f"{song.player_track_id}: ({song.track_names[song.player_track_id]})"
-            else:
-                return f"Track {song.player_track_id} (Unknown)"
-
         # Scroll indicator for song list
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], [0.9, 0.0], [0.05, 1.6]))
         self.scroll_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/sliderknob.png", [0.9, 0.73], [0.035, 0.035 * self.window_ratio]))
@@ -231,7 +198,7 @@ class Menu():
 
         input_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.315], [device_button_size, device_button_size * self.window_ratio]))
         input_down.set_action(set_devices_input, {"menu":self, "dir":-1})
-        input_down.set_colour_func(get_device_input_col, -1)
+        input_down.set_colour_func(get_device_input_col, {"menu":self, "dir":-1})
 
         input_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.315], [-device_button_size, device_button_size * self.window_ratio]))
         input_up.set_action(set_devices_input, {"menu":self, "dir":1})
@@ -256,12 +223,12 @@ class Menu():
         self.devices_apply = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [0.2,-0.2], [0.2, 0.08 * self.window_ratio]), self.font)
         self.devices_apply.set_text(f"Reconnect", 11, [-0.07, -0.015])
         self.devices_apply.set_text_colour([0.9] * 4)
-        self.devices_apply.set_action(devices_refresh, 0)
+        self.devices_apply.set_action(devices_refresh, {"menu":self})
 
         self.devices_test = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [-0.2,-0.2], [0.25, 0.08 * self.window_ratio]), self.font)
         self.devices_test.set_text(f"Test Output", 11, [-0.1, -0.015])
         self.devices_test.set_text_colour([0.9] * 4)
-        self.devices_test.set_action(devices_output_test, 0)
+        self.devices_test.set_action(devices_output_test, {"menu":self})
 
 
     def update(self, dt: float, music_running: bool):
