@@ -1,17 +1,20 @@
-import time
 from enum import Enum, auto
-from typing import Any
-
-from gamejam.animation import Animation, AnimType
-from gamejam.gui import Gui
-from gamejam.input import Input
-from gamejam.settings import GameSettings
-from gamejam.quickmaff import lerp, clamp
-
+from gamejam.quickmaff import clamp
 from song import Song
-from staff import Staff
-from midi_devices import MidiDevices
 
+
+SONG_SPACING = 0.25
+DIALOG_COLOUR = [0.26, 0.15, 0.32, 1.0]
+
+
+class KeyboardMapping(Enum):
+    NOTE_NAMES = (0,)
+    QWERTY_PIANO = auto()
+
+
+class MusicMode(Enum):
+    PAUSE_AND_LEARN = (0,)
+    PERFORMANCE = auto()
 
 class Menus(Enum):
     SPLASH = auto()
@@ -81,7 +84,7 @@ def song_list_scroll(**kwargs):
     # When called from scroll callback, dir is suppled as None
     if dir is None:
         dir = -0.1 * ypos  
-    scroll_max = len(menu.song_widgets) * Menu.SONG_SPACING
+    scroll_max = len(menu.song_widgets) * SONG_SPACING
     menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
     menu._set_song_menu_pos()
 
@@ -144,7 +147,6 @@ def get_device_output_col(**kwargs) -> list:
 
 def devices_refresh(**kwargs):
     menu=kwargs["menu"]
-    sleep_delay_ms=kwargs["sleep_delay_ms"]
     menu.devices.refresh_io()
 
 
@@ -185,26 +187,61 @@ def set_devices_output(**kwargs):
     menu.devices.output_device_name = devices[cur_device_id]
     menu.device_output_widget.set_text(menu.devices.output_device_name, 10, [-0.05,0.2])
     menu.songbook.output_device = menu.devices.output_device_name
+   
+   
+def menu_quit(**kwargs):
+    menu = kwargs["menu"]
+    menu.running = False
 
 
-def get_device_output_dir(**kwargs) -> bool:
-    menu=kwargs["menu"]
-    dir=kwargs["dir"]
-    devices = menu.devices.output_devices
-    cur_device_id = devices.index(menu.devices.output_device_name)
-    return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
+def menu_transition(**kwargs):
+    menu = kwargs["menu"]
+    t_from = kwargs["from"]
+    t_to = kwargs["to"]
+    menu.transition(t_from, t_to)
 
 
-def get_device_output_col(**kwargs) -> list:
-    dir=kwargs["dir"]
-    return [1.0] * 4 if get_device_output_dir(dir) else [0.4] * 4
+def game_play(**kwargs):
+            game = kwargs["game"]
+            game.music_running = True
 
 
-def devices_refresh(**kwargs):
-    menu=kwargs["menu"]
-    menu.devices.refresh_io()
+def game_pause(**kwargs):
+    game = kwargs["game"]
+    game.music_running = False
 
 
-def devices_output_test(**kwargs):
-    menu=kwargs["menu"]
-    menu.devices.output_test()
+def game_stop_rewind(**kwargs):
+    game = kwargs["game"]
+    game.reset()
+    game.music.rewind()
+
+
+def game_mode_toggle(**kwargs):
+    game = kwargs["game"]
+    game.mode = MusicMode.PAUSE_AND_LEARN if game.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
+
+
+def game_back_to_menu(**kwargs):
+    game = kwargs["game"]
+    game_pause(**kwargs)
+    existing_score = game.music.song.score[game.mode] if game.mode in game.music.song.score else 0
+    game.music.song.score[game.mode] = max(game.score, existing_score)
+    game.reset()
+    game.music.reset()
+    game.menu.transition(Menus.GAME, Menus.SONGS)
+
+
+def game_play_button_colour(**kwargs):
+    game = kwargs["game"]
+    return [0.1, 0.87, 0.11, 1.0] if game.music_running else [0.8, 0.8, 0.8, 1.0]
+
+
+def game_pause_button_colour(**kwargs):
+    game = kwargs["game"]
+    return [0.3, 0.27, 0.81, 1.0] if not game.music_running else [0.8, 0.8, 0.8, 1.0]
+
+
+def game_score_bg_colour(**kwargs):
+    game = kwargs["game"]
+    return [1.0, 1.0, 1.0, max(game.score_fade, 0.65)]

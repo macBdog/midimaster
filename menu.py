@@ -1,36 +1,31 @@
-import time
-
-
 from gamejam.animation import Animation, AnimType
 from gamejam.gui import Gui
 from gamejam.input import Input
 from gamejam.settings import GameSettings
-from gamejam.quickmaff import lerp, clamp
+from gamejam.quickmaff import lerp
 
-from song import Song
 from staff import Staff
 from midi_devices import MidiDevices
 from scrolling_background import ScrollingBackground
 from menu_func import (
+    SONG_SPACING, DIALOG_COLOUR,
     Menus, Dialogs,
     song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
     get_track_display_text,
     set_devices_input, get_device_input_col, 
     set_devices_output, get_device_output_col,
     devices_refresh, devices_output_test, set_devices_output,
-    get_device_output_col, devices_refresh, devices_output_test
+    get_device_output_col, devices_refresh, devices_output_test,
+    menu_quit, menu_transition,
 )
 
 
 class Menu():
-    SONG_SPACING = 0.25
-    DIALOG_COLOUR = [0.26, 0.15, 0.32, 1.0]
-
     """Utility class to separate all the gui element drawing from main game logic."""
     def __init__(self, graphics, input: Input, gui: Gui, devices: MidiDevices, width: int, height: int, textures):
         self.menus = {}
         self.dialogs = {}
-        self.elements = {m:{} for m in Menus}        
+        self.elements = {m:{} for m in Menus}
         self.graphics = graphics
         self.input = input
         self.devices = devices
@@ -81,16 +76,16 @@ class Menu():
         # Create the dialogs
         dialog_size = [0.8, 1.1]
         self.dialogs[Dialogs.DEVICES] = Gui("devices")
-        self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_shape(Menu.DIALOG_COLOUR, [0, 0], dialog_size))
+        self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, [0, 0], dialog_size))
         delete_widget = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", [dialog_size[0] * 0.5, dialog_size[1] * 0.5], [0.05, 0.05 * self.window_ratio]))
-        delete_widget.set_action(self.hide_dialog, Dialogs.DEVICES)
+        delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
         gui.add_child(self.dialogs[Dialogs.DEVICES])
 
         # Move to the game or menu when the splash is over
         if GameSettings.DEV_MODE:
-            title.animation.set_action(-1, self.transition(Menus.SPLASH, Menus.GAME))
+            title.animation.set_action(-1, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": Menus.GAME})
         else:
-            title.animation.set_action(-1, self.transition(Menus.SPLASH, Menus.SONGS))
+            title.animation.set_action(-1, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": Menus.SONGS})
 
 
     def _get_elem(self, menu: Menus, name: str):
@@ -104,7 +99,7 @@ class Menu():
     def _set_song_menu_pos(self):
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):
-            song_pos = [-0.333, (0.4 - i * Menu.SONG_SPACING) + self.song_scroll]
+            song_pos = [-0.333, (0.4 - i * SONG_SPACING) + self.song_scroll]
             track_pos = [song_pos[0] + 0.125, song_pos[1] - 0.1]
             widgets_for_song = self.song_widgets[i]
             widgets_for_song["play"].set_pos(song_pos)
@@ -125,9 +120,9 @@ class Menu():
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], [0.9, 0.0], [0.05, 1.6]))
         self.scroll_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/sliderknob.png", [0.9, 0.73], [0.035, 0.035 * self.window_ratio]))
         scroll_up_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9, 0.8], [0.05, 0.05 * self.window_ratio]))
-        scroll_up_widget.set_action(song_list_scroll, -0.333)
+        scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
         scroll_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9,-0.8], [0.05, -0.05 * self.window_ratio]))
-        scroll_down_widget.set_action(song_list_scroll, 0.333)
+        scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
         self.input.add_scroll_mapping(song_list_scroll, None)
 
         num_songs = self.songbook.get_num_songs()
@@ -181,10 +176,10 @@ class Menu():
         )
 
         btn_devices = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
-        btn_devices.set_action(self.show_dialog, Dialogs.DEVICES)
+        btn_devices.set_action(self.show_dialog, {"menu": self, "tpye": Dialogs.DEVICES})
         self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
         btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
-        btn_quit.set_action(self.quit_from_menu, self)
+        btn_quit.set_action(menu_quit, {"menu": self})
             
         # Add device params
         device_button_size = 0.035
@@ -248,7 +243,7 @@ class Menu():
         if input or draw:
             self.song_scroll = lerp(self.song_scroll, self.song_scroll_target, dt * 5.0)
             if abs(self.song_scroll - self.song_scroll_target) > 0.01:
-                scroll_max = len(self.song_widgets) * Menu.SONG_SPACING
+                scroll_max = len(self.song_widgets) * SONG_SPACING
                 self.scroll_widget.set_pos([0.9, 0.73 - (1.44 * (self.song_scroll / scroll_max))])
                 self._set_song_menu_pos()
 
@@ -259,9 +254,9 @@ class Menu():
             self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]            
 
 
-    def transition(self, tfrom: Menus, tto: Menus):
-        self.menus[tfrom].set_active(False, False)
-        self.menus[tto].set_active(True, True)
+    def transition(self, from_menu: Menus, to_menu: Menus):
+        self.menus[from_menu].set_active(False, False)
+        self.menus[to_menu].set_active(True, True)
 
 
     def get_menu(self, type: Menus):
@@ -283,13 +278,14 @@ class Menu():
         return False
 
 
-    def show_dialog(self, type: Dialogs):
-        self.dialogs[type].set_active(True, True)
+    def show_dialog(**kwargs):
+        menu = kwargs["menu"]
+        type = kwargs["type"]
+        menu.dialogs[type].set_active(True, True)
 
 
-    def hide_dialog(self, type: Dialogs):
-        self.dialogs[type].set_active(False, False)
+    def hide_dialog(**kwargs):
+        menu = kwargs["menu"]
+        type = kwargs["type"]
+        menu.dialogs[type].set_active(False, False)
 
-
-    def quit_from_menu(self, args):
-            self.running = False

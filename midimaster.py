@@ -18,17 +18,11 @@ from staff import Staff
 from note_render import NoteRender
 from mido import Message
 from midi_devices import MidiDevices
-from enum import Enum, auto
-
-
-class KeyboardMapping(Enum):
-    NOTE_NAMES = (0,)
-    QWERTY_PIANO = auto()
-
-
-class MusicMode(Enum):
-    PAUSE_AND_LEARN = (0,)
-    PERFORMANCE = auto()
+from menu_func import (
+    KeyboardMapping, MusicMode,
+    game_play, game_pause, game_stop_rewind, game_back_to_menu, game_mode_toggle,
+    game_pause_button_colour, game_play_button_colour, game_score_bg_colour
+)
 
 
 class MidiMaster(GameJam):
@@ -242,36 +236,6 @@ class MidiMaster(GameJam):
 
 
     def setup_input(self):
-        def play(self):
-            self.music_running = True
-
-        def pause(self):
-            self.music_running = False
-
-        def stop_rewind(self):
-            self.reset()
-            self.music.rewind()
-
-        def mode_toggle(self):
-            self.mode = MusicMode.PAUSE_AND_LEARN if self.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
-
-        def back_to_menu(self):
-            pause(self)
-            existing_score = self.music.song.score[self.mode] if self.mode in self.music.song.score else 0
-            self.music.song.score[self.mode] = max(self.score, existing_score)
-            self.reset()
-            self.music.reset()
-            self.menu.transition(Menus.GAME, Menus.SONGS)
-
-        def play_button_colour(self):
-            return [0.1, 0.87, 0.11, 1.0] if self.music_running else [0.8, 0.8, 0.8, 1.0]
-
-        def pause_button_colour(self):
-            return [0.3, 0.27, 0.81, 1.0] if not self.music_running else [0.8, 0.8, 0.8, 1.0]
-
-        def score_bg_colour(self):
-            return [1.0, 1.0, 1.0, max(self.score_fade, 0.65)]
-
         playback_button_size = [0.15, 0.125]
         controls_height = -0.85
         gui = self.menu.get_menu(Menus.GAME)
@@ -281,16 +245,16 @@ class MidiMaster(GameJam):
         btn_mode = gui.add_widget(self.textures.create_sprite_texture("gui/panel_long.png", [0.655, 0.825], [0.32, 0.15]))
         btn_menu = gui.add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.85, 0.85], [0.075, 0.075 * self.window_ratio]))
 
-        btn_play.set_action(play, self)
-        btn_play.set_colour_func(play_button_colour, self)
-        btn_pause.set_action(pause, self)
-        btn_pause.set_colour_func(pause_button_colour, self)
-        btn_stop.set_action(stop_rewind, self)
-        btn_mode.set_action(mode_toggle, self)
-        btn_menu.set_action(back_to_menu, self)
+        btn_play.set_action(game_play, {"game":self})
+        btn_play.set_colour_func(game_play_button_colour, {"game":self})
+        btn_pause.set_action(game_pause, {"game":self})
+        btn_pause.set_colour_func(game_pause_button_colour, {"game":self})
+        btn_stop.set_action(game_stop_rewind, {"game":self})
+        btn_mode.set_action(game_mode_toggle, {"game":self})
+        btn_menu.set_action(game_back_to_menu, {"game":self})
 
         self.bg_score = gui.add_widget(self.textures.create_sprite_texture("score_bg.tga", [-0.33, controls_height - 0.10], [0.5, 0.25]))
-        self.bg_score.set_colour_func(score_bg_colour, self)
+        self.bg_score.set_colour_func(game_score_bg_colour, {"game":self})
         self.bg_score.align(AlignX.Centre, AlignY.Bottom)
 
         def note_width_inc():
