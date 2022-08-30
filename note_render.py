@@ -42,7 +42,7 @@ class NoteRender:
         }
         note_shader_path = Path(__file__).parent / "ext" / "shaders" / "notes.frag"
         note_shader = Graphics.process_shader_source(Graphics.load_shader(note_shader_path), shader_substitutes)
-        self.shader = Graphics.create_shader(graphics.builtin_shader(Shader.TEXTURE, ShaderType.VERTEX), note_shader)
+        self.shader = Graphics.create_program(graphics.builtin_shader(Shader.TEXTURE, ShaderType.VERTEX), note_shader)
         
         self.texture = Texture("")
         self.sprite = SpriteTexture(graphics, self.texture, [1.0, 1.0, 1.0, 1.0], [0.0, 0.0], [2.0, 2.0], self.shader)

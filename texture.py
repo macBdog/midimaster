@@ -2,7 +2,8 @@ from OpenGL.GL import *
 import os.path
 from PIL import Image
 import numpy
-from graphics import Graphics
+
+from graphics import Graphics, Shader
 
 
 class Texture:
@@ -73,9 +74,9 @@ class SpriteShape(Sprite):
         # Create EBO
         self.EBO = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.default_indices, GL_STATIC_DRAW)
 
-        self.shader = self.graphics.shader_colour if shader is None else shader
+        self.shader = self.graphics.get_program(Shader.COLOUR) if shader is None else shader
 
         self.vertex_pos_id = glGetAttribLocation(self.shader, "VertexPosition")
         glVertexAttribPointer(self.vertex_pos_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))
@@ -117,9 +118,9 @@ class SpriteTexture(Sprite):
         # Create EBO
         self.EBO = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.EBO)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.graphics.default_indices, GL_STATIC_DRAW)
 
-        self.shader = self.graphics.shader_texture if shader is None else shader
+        self.shader = self.graphics.get_program(Shader.Texture) if shader is None else shader
 
         self.vertex_pos_id = glGetAttribLocation(self.shader, "VertexPosition")
         glVertexAttribPointer(self.vertex_pos_id, 2, GL_FLOAT, GL_FALSE, 8, ctypes.c_void_p(0))

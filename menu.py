@@ -52,7 +52,7 @@ class Menu():
         gui.add_child(self.menus[Menus.SONGS])
 
         title = self.menus[Menus.SPLASH].add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", [0, 0], [0.6, 0.6]))
-        title.animation = Animation(AnimType.InOutSmooth, 0.15 if GameSettings.DEV_MODE else 2.0)
+        title.animate(AnimType.InOutSmooth, 0.15 if GameSettings.DEV_MODE else 2.0)
         self._set_elem(Menus.SPLASH, "title", title)
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
@@ -123,7 +123,7 @@ class Menu():
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
         scroll_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9,-0.8], [0.05, -0.05 * self.window_ratio]))
         scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
-        self.input.add_scroll_mapping(song_list_scroll, None)
+        self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
         num_songs = self.songbook.get_num_songs()
         for i in range(num_songs):

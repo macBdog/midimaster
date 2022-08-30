@@ -77,13 +77,14 @@ def song_track_down(**kwargs):
 
 def song_list_scroll(**kwargs):
     menu=kwargs["menu"]
-    dir=kwargs["dir"]
-    xpos=kwargs["xpos"]
-    ypos=kwargs["ypos"]
+    _=kwargs["x"]
+    y=kwargs["y"]
 
     # When called from scroll callback, dir is suppled as None
-    if dir is None:
-        dir = -0.1 * ypos  
+    dir = -0.1 * y 
+    if dir in kwargs:
+        dir=kwargs["dir"]
+        
     scroll_max = len(menu.song_widgets) * SONG_SPACING
     menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
     menu._set_song_menu_pos()
