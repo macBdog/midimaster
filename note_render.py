@@ -23,10 +23,10 @@ class NoteRender:
     HitColour = [BaseColour, 0.78, BaseColour, 1.0]
     MissColour = [0.78, BaseColour, BaseColour, 1.0]
 
-    def __init__(self, graphics: Graphics, display_ratio: float, staff: Staff):
+    def __init__(self, graphics: Graphics, staff: Staff):
         self.staff = staff
         self.calibration = False
-        self.display_ratio = 1.0 / display_ratio
+        self.display_ratio = graphics.display_ratio
         self.ref_c4_pos = [Staff.Pos[0], staff.note_positions[60]]
         self.note_width = Staff.NoteWidth32nd
         self.reset()

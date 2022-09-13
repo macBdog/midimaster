@@ -96,7 +96,7 @@ class MidiMaster(GameJam):
         self.menu = Menu(self.graphics, self.input, self.gui, self.devices, self.window_width, self.window_height, self.textures)
         self.font_game = Font(os.path.join("ext", "BlackMetalSans.ttf"), self.graphics, self.window)
         self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
-        self.note_render = NoteRender(self.graphics, self.window_width / self.window_height, self.staff)
+        self.note_render = NoteRender(self.graphics, self.staff)
         self.music = Music(self.graphics, self.note_render, self.staff)
         self.menu.prepare(self.font_game, self.music, self.songbook)
         
