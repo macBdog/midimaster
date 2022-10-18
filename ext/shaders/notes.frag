@@ -86,7 +86,7 @@ float drawRect(in vec2 uv, in vec2 center, in vec2 wh)
     return clamp(float(dis < 0.0), 0.0, 1.0);
 }
 
-float distanceToSegment( vec2 a, vec2 b, vec2 p )
+float distanceToSegment(vec2 a, vec2 b, vec2 p)
 {
     vec2 pa = p - a, ba = b - a;
     float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
