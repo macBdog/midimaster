@@ -143,7 +143,7 @@ def get_device_output_dir(**kwargs) -> bool:
 
 def get_device_output_col(**kwargs) -> list:
     dir=kwargs["dir"]
-    return [1.0] * 4 if get_device_output_dir({"dir": dir}) else [0.4] * 4
+    return [1.0] * 4 if get_device_output_dir(**kwargs) else [0.4] * 4
 
 
 def devices_refresh(**kwargs):
@@ -176,7 +176,7 @@ def get_device_input_dir(**kwargs) -> bool:
 
 
 def get_device_input_col(**kwargs) -> list:
-    return [1.0] * 4 if get_device_input_dir(dir) else [0.4] * 4
+    return [1.0] * 4 if get_device_input_dir(**kwargs) else [0.4] * 4
 
 
 def set_devices_output(**kwargs):

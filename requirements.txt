@@ -4,3 +4,4 @@ mido==1.2.10
 numpy==1.22.1
 PyOpenGL==3.1.6
 setuptools==58.1.0
+gamejam

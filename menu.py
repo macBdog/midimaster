@@ -1,4 +1,4 @@
-from gamejam.animation import Animation, AnimType
+from gamejam.animation import AnimType
 from gamejam.gui import Gui
 from gamejam.input import Input
 from gamejam.settings import GameSettings
@@ -44,29 +44,32 @@ class Menu():
         # Create sub-guis for each screen of the game, starting with active splash screen
         self.menus[Menus.SPLASH] = Gui("splash_screen")
         self.menus[Menus.SPLASH].set_active(True, True)
-        self.menus[Menus.SPLASH].add_widget(self.textures.create_sprite_texture("splash_background.png", [0, 0], [2.0, 2.0]))
+        self.menus[Menus.SPLASH].add_create_widget(self.textures.create_sprite_texture("splash_background.png", [0, 0], [2.0, 2.0]))
         gui.add_child(self.menus[Menus.SPLASH])
 
         self.menus[Menus.SONGS] = Gui("menu_screen")
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/menu_bg.png", [0, 0], [2.0, 2.0]))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/menu_bg.png", [0, 0], [2.0, 2.0]))
         gui.add_child(self.menus[Menus.SONGS])
 
-        title = self.menus[Menus.SPLASH].add_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", [0, 0], [0.6, 0.6]))
-        title.animate(AnimType.InOutSmooth, 0.15 if GameSettings.DEV_MODE else 2.0)
+        splash_anim_time = 0.15 if GameSettings.DEV_MODE else 2.0
+        splash_destination = Menus.GAME if GameSettings.DEV_MODE else Menus.SONGS
+        title = self.menus[Menus.SPLASH].add_create_widget(self.textures.create_sprite_texture("gui/imgtitle.tga", [0, 0], [0.6, 0.6]))
+        title.animate(AnimType.FadeInOutSmooth, splash_anim_time)
+        title.animation.set_action(splash_anim_time, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": splash_destination})
         self._set_elem(Menus.SPLASH, "title", title)
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
         self.menus[Menus.GAME] = Gui("game_screen")
-        self.menus[Menus.GAME].add_widget(self.textures.create_sprite_texture("game_background.tga", [0, 0], [2.0, 2.0]))
-        self.menus[Menus.GAME].add_widget(self.textures.create_sprite_shape([0.5] * 4, [game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0], [Staff.Width, Staff.StaffSpacing * 4.0]))
+        self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_texture("game_background.tga", [0, 0], [2.0, 2.0]))
+        self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_shape([0.5] * 4, [game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0], [Staff.Width, Staff.StaffSpacing * 4.0]))
         gui.add_child(self.menus[Menus.GAME])
 
         bg_size_top = 0.65
         bg_size_btm = 1.25
-        note_bg_top = self.menus[Menus.GAME].add_widget(
+        note_bg_top = self.menus[Menus.GAME].add_create_widget(
             self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, [game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)], [Staff.Width, bg_size_top * -1.0])
         )
-        note_bg_btm = self.menus[Menus.GAME].add_widget(
+        note_bg_btm = self.menus[Menus.GAME].add_create_widget(
             self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, [game_bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5], [Staff.Width, bg_size_btm])
         )
         self._set_elem(Menus.GAME, "note_bg_top", note_bg_top)
@@ -76,16 +79,11 @@ class Menu():
         # Create the dialogs
         dialog_size = [0.8, 1.1]
         self.dialogs[Dialogs.DEVICES] = Gui("devices")
-        self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, [0, 0], dialog_size))
-        delete_widget = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", [dialog_size[0] * 0.5, dialog_size[1] * 0.5], [0.05, 0.05 * self.window_ratio]))
+        self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, [0, 0], dialog_size))
+        delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", [dialog_size[0] * 0.5, dialog_size[1] * 0.5], [0.05, 0.05 * self.window_ratio]))
         delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
-        gui.add_child(self.dialogs[Dialogs.DEVICES])
-
-        # Move to the game or menu when the splash is over
-        if GameSettings.DEV_MODE:
-            title.animation.set_action(-1, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": Menus.GAME})
-        else:
-            title.animation.set_action(-1, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": Menus.SONGS})
+        gui.add_child(self.dialogs[Dialogs.DEVICES])     
+        
 
 
     def _get_elem(self, menu: Menus, name: str):
@@ -117,11 +115,11 @@ class Menu():
         self.songbook = songbook
 
         # Scroll indicator for song list
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], [0.9, 0.0], [0.05, 1.6]))
-        self.scroll_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/sliderknob.png", [0.9, 0.73], [0.035, 0.035 * self.window_ratio]))
-        scroll_up_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9, 0.8], [0.05, 0.05 * self.window_ratio]))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], [0.9, 0.0], [0.05, 1.6]))
+        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/sliderknob.png", [0.9, 0.73], [0.035, 0.035 * self.window_ratio]))
+        scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9, 0.8], [0.05, 0.05 * self.window_ratio]))
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
-        scroll_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9,-0.8], [0.05, -0.05 * self.window_ratio]))
+        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnup.png", [0.9,-0.8], [0.05, -0.05 * self.window_ratio]))
         scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
@@ -129,31 +127,31 @@ class Menu():
         for i in range(num_songs):
             song = self.songbook.get_song(i)
 
-            play_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnplay.tga", [0,0], [0.125, 0.1]), self.font)
+            play_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnplay.tga", [0,0], [0.125, 0.1]), self.font)
             play_widget.set_text(song.get_name(), 12, [0.08, -0.02])
             play_widget.set_text_colour([0.85, 0.85, 0.85, 0.85])
             play_widget.set_action(song_play, {"menu":self, "song_id":i})
 
-            score_widget = self.menus[Menus.SONGS].add_widget(None, self.font)
+            score_widget = self.menus[Menus.SONGS].add_create_widget(None, self.font)
 
             performance_score = 0
             score_widget.set_text(f"{round((performance_score / song.get_max_score()) * 100.0, 1)}%", 14, [0,0])
 
-            delete_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btntrash.png", [0,0], [0.05, 0.05 * self.window_ratio]))
+            delete_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btntrash.png", [0,0], [0.05, 0.05 * self.window_ratio]))
             delete_widget.set_action(song_delete, {"menu":self, "song_id":i})
 
-            reload_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnreload.png", [0,0], [0.05, 0.05 * self.window_ratio]))
+            reload_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnreload.png", [0,0], [0.05, 0.05 * self.window_ratio]))
             reload_widget.set_action(song_reload, {"menu": self, "song_id":i})
 
-            track_display_widget = self.menus[Menus.SONGS].add_widget(None, self.font)
+            track_display_widget = self.menus[Menus.SONGS].add_create_widget(None, self.font)
             track_display_widget.set_text(get_track_display_text(song), 9, [0,0])
             track_display_widget.set_text_colour([0.7] * 4)
 
             track_button_size = 0.035
-            track_down_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [track_button_size, track_button_size * self.window_ratio]))
+            track_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [track_button_size, track_button_size * self.window_ratio]))
             track_down_widget.set_action(song_track_down, {"menu": self, "song_id":i})
 
-            track_up_widget = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [-track_button_size, track_button_size * self.window_ratio]))
+            track_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [0,0], [-track_button_size, track_button_size * self.window_ratio]))
             track_up_widget.set_action(song_track_up, {"menu": self, "song_id":i})
 
             self.song_widgets.append({
@@ -171,56 +169,56 @@ class Menu():
         menu_row = 0.8
         menu_thirds = 2.0 / 4
         menu_item_size = [0.31, 0.18]
-        self.menus[Menus.SONGS].add_widget(
+        self.menus[Menus.SONGS].add_create_widget(
             self.textures.create_sprite_texture_tinted("vgradient.png", [0.7, 0.5, 0.7, 0.6], [0.0, menu_row], [2.0, 0.5])
         )
 
-        btn_devices = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
-        btn_devices.set_action(self.show_dialog, {"menu": self, "tpye": Dialogs.DEVICES})
-        self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
-        btn_quit = self.menus[Menus.SONGS].add_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
+        btn_devices = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btn_devices.png", [-1.0 + menu_thirds * 1, menu_row], menu_item_size))
+        btn_devices.set_action(self.show_dialog, {"menu": self, "type": Dialogs.DEVICES})
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btn_options.png", [-1.0 + menu_thirds * 2, menu_row], menu_item_size))
+        btn_quit = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btn_quit.png", [-1.0 + menu_thirds * 3, menu_row], menu_item_size))
         btn_quit.set_action(menu_quit, {"menu": self})
             
         # Add device params
         device_button_size = 0.035
-        input_label = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        input_label = self.dialogs[Dialogs.DEVICES].add_create_widget(None, self.font)
         input_label.set_text(f"Input ", 10, [-0.3,0.3])
         input_label.set_text_colour([0.7] * 4)
 
-        self.device_input_widget = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        self.device_input_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(None, self.font)
         self.device_input_widget.set_text(self.devices.input_device_name, 8, [-0.05,0.3])
         self.device_input_widget.set_text_colour([0.9] * 4)
 
-        input_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.315], [device_button_size, device_button_size * self.window_ratio]))
+        input_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.315], [device_button_size, device_button_size * self.window_ratio]))
         input_down.set_action(set_devices_input, {"menu":self, "dir":-1})
         input_down.set_colour_func(get_device_input_col, {"menu":self, "dir":-1})
 
-        input_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.315], [-device_button_size, device_button_size * self.window_ratio]))
+        input_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.315], [-device_button_size, device_button_size * self.window_ratio]))
         input_up.set_action(set_devices_input, {"menu":self, "dir":1})
         input_up.set_colour_func(get_device_input_col, {"menu":self, "dir":1})
 
-        output_label = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        output_label = self.dialogs[Dialogs.DEVICES].add_create_widget(None, self.font)
         output_label.set_text(f"Output: ", 10, [-0.3, 0.2])
         output_label.set_text_colour([0.7] * 4)
 
-        self.device_output_widget = self.dialogs[Dialogs.DEVICES].add_widget(None, self.font)
+        self.device_output_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(None, self.font)
         self.device_output_widget.set_text(self.devices.output_device_name, 8, [-0.05,0.2])
         self.device_output_widget.set_text_colour([0.9] * 4)
 
-        output_down = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.215], [device_button_size, device_button_size * self.window_ratio]))
+        output_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.1,0.215], [device_button_size, device_button_size * self.window_ratio]))
         output_down.set_action(set_devices_output, {"menu":self, "dir":-1})
         output_down.set_colour_func(get_device_output_col, {"menu":self, "dir":-1})
 
-        output_up = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.215], [-device_button_size, device_button_size * self.window_ratio]))
+        output_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [0.35,0.215], [-device_button_size, device_button_size * self.window_ratio]))
         output_up.set_action(set_devices_output, {"menu":self, "dir":1})
         output_up.set_colour_func(get_device_output_col, {"menu":self, "dir":1})
 
-        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [0.2,-0.2], [0.2, 0.08 * self.window_ratio]), self.font)
+        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/panel.tga", [0.2,-0.2], [0.2, 0.08 * self.window_ratio]), self.font)
         self.devices_apply.set_text(f"Reconnect", 11, [-0.07, -0.015])
         self.devices_apply.set_text_colour([0.9] * 4)
         self.devices_apply.set_action(devices_refresh, {"menu":self})
 
-        self.devices_test = self.dialogs[Dialogs.DEVICES].add_widget(self.textures.create_sprite_texture("gui/panel.tga", [-0.2,-0.2], [0.25, 0.08 * self.window_ratio]), self.font)
+        self.devices_test = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/panel.tga", [-0.2,-0.2], [0.25, 0.08 * self.window_ratio]), self.font)
         self.devices_test.set_text(f"Test Output", 11, [-0.1, -0.015])
         self.devices_test.set_text_colour([0.9] * 4)
         self.devices_test.set_action(devices_output_test, {"menu":self})
@@ -278,13 +276,13 @@ class Menu():
         return False
 
 
-    def show_dialog(**kwargs):
+    def show_dialog(self, **kwargs):
         menu = kwargs["menu"]
         type = kwargs["type"]
         menu.dialogs[type].set_active(True, True)
 
 
-    def hide_dialog(**kwargs):
+    def hide_dialog(self, **kwargs):
         menu = kwargs["menu"]
         type = kwargs["type"]
         menu.dialogs[type].set_active(False, False)

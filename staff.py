@@ -92,11 +92,11 @@ class Staff:
             score_size = [box_width, score_height]
 
             if black_key:
-                self.note_box.append(gui.add_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5], note_size)))
-                self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos - Staff.NoteSpacing * 0.5], score_size)))
+                self.note_box.append(gui.add_create_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5], note_size)))
+                self.score_box.append(gui.add_create_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos - Staff.NoteSpacing * 0.5], score_size)))
             else:
-                self.note_box.append(gui.add_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_start_x, note_pos], note_size)))
-                self.score_box.append(gui.add_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos], score_size)))
+                self.note_box.append(gui.add_create_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_start_x, note_pos], note_size)))
+                self.score_box.append(gui.add_create_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos], score_size)))
             
             self.note_positions[note] = note_pos
             
