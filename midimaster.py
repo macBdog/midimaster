@@ -263,10 +263,10 @@ class MidiMaster(GameJam):
 
         trophy_size = [0.175, 0.175 * self.window_ratio]
         trophy_pos_x = 0.0
-        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", [trophy_pos_x - 0.15, controls_pos_y], trophy_size))
-        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", [trophy_pos_x, controls_pos_y], trophy_size))
-        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", [trophy_pos_x + 0.15, controls_pos_y], trophy_size))
-        self.trophy1.animate(AnimType.Rotate, 2.15)
+        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", [trophy_pos_x - 0.15, controls_pos_y], trophy_size, wrap=False))
+        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", [trophy_pos_x, controls_pos_y], trophy_size, wrap=False))
+        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", [trophy_pos_x + 0.15, controls_pos_y], trophy_size, wrap=False))
+        self.trophy1.animate(AnimType.Rotate)
 
         score_pos_x = -0.53
         self.bg_score = gui.add_create_widget(self.textures.create_sprite_texture("score_bg.tga", [score_pos_x, controls_pos_y - 0.10], [0.5, 0.25]))
