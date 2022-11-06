@@ -42,12 +42,12 @@ class Menu():
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", [0, 0], [0.25, 0.25 * self.window_ratio]))
 
         # Create sub-guis for each screen of the game, starting with active splash screen
-        self.menus[Menus.SPLASH] = Gui("splash_screen")
+        self.menus[Menus.SPLASH] = Gui("splash_screen", self.graphics)
         self.menus[Menus.SPLASH].set_active(True, True)
         self.menus[Menus.SPLASH].add_create_widget(self.textures.create_sprite_texture("splash_background.png", [0, 0], [2.0, 2.0]))
         gui.add_child(self.menus[Menus.SPLASH])
 
-        self.menus[Menus.SONGS] = Gui("menu_screen")
+        self.menus[Menus.SONGS] = Gui("menu_screen", self.graphics)
         self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/menu_bg.png", [0, 0], [2.0, 2.0]))
         gui.add_child(self.menus[Menus.SONGS])
 
@@ -59,7 +59,7 @@ class Menu():
         self._set_elem(Menus.SPLASH, "title", title)
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
-        self.menus[Menus.GAME] = Gui("game_screen")
+        self.menus[Menus.GAME] = Gui("game_screen", self.graphics)
         self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_texture("game_background.tga", [0, 0], [2.0, 2.0]))
         self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_shape([0.5] * 4, [game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0], [Staff.Width, Staff.StaffSpacing * 4.0]))
         gui.add_child(self.menus[Menus.GAME])
@@ -78,7 +78,7 @@ class Menu():
 
         # Create the dialogs
         dialog_size = [0.8, 1.1]
-        self.dialogs[Dialogs.DEVICES] = Gui("devices")
+        self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics)
         self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, [0, 0], dialog_size))
         delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", [dialog_size[0] * 0.5, dialog_size[1] * 0.5], [0.05, 0.05 * self.window_ratio]))
         delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
