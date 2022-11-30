@@ -266,7 +266,8 @@ class MidiMaster(GameJam):
         self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", [trophy_pos_x - 0.15, controls_pos_y], trophy_size, wrap=False))
         self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", [trophy_pos_x, controls_pos_y], trophy_size, wrap=False))
         self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", [trophy_pos_x + 0.15, controls_pos_y], trophy_size, wrap=False))
-        self.trophy1.animate(AnimType.Rotate)
+        trophy1_anim = self.trophy1.animate(AnimType.FillRadial)
+        trophy1_anim.set_animation(AnimType.Throb)
 
         score_pos_x = -0.53
         self.bg_score = gui.add_create_widget(self.textures.create_sprite_texture("score_bg.tga", [score_pos_x, controls_pos_y - 0.10], [0.5, 0.25]))
@@ -304,15 +305,17 @@ class MidiMaster(GameJam):
                 new_note.velocity = 100
                 self.devices.input(new_note)
 
-        def create_key_note_on(note_val: int):
+        def create_key_note_on(**kwargs):
+            note_val = kwargs["note"]
             create_key_note(note_val, True)
 
-        def create_key_note_off(note_val: int):
+        def create_key_note_off(**kwargs):
+            note_val = kwargs["note"]
             create_key_note(note_val, False)
 
         def add_note_key_mapping(key_val, note_val, modifier=InputActionModifier.NONE):
-            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, modifier, create_key_note_on, note_val)
-            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, modifier, create_key_note_off, note_val)
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYDOWN, modifier, create_key_note_on, {"note": note_val})
+            self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, modifier, create_key_note_off, {"note": note_val})
 
         # Playing notes with the keyboard note names
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES:
