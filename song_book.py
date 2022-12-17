@@ -50,6 +50,7 @@ class SongBook:
     def validate(self):
         "Set any missing data that would occur as a result of a bad load or load from an outdated file."
         self.book_version = SongBook.VERSION
+        if not hasattr(self, "albums"): self.albums = {}
         if not hasattr(self, "songs"): self.songs = []
         if not hasattr(self, "default_song"): self.default_song = 0
         if not hasattr(self, "input_device"): self.input_device = ""
@@ -84,6 +85,13 @@ class SongBook:
         return None
 
 
+    def find_song(self, title:str, artist:str) -> Song:
+        """Return a song where the title and artist matches."""
+        for song in self.songs:
+            if song.artist.find(artist) >= 0 and song.title.find(title) >= 0:
+                return song
+
+
     def add_update_song(self, song:Song):
         """Return True if a song with matching title and artist exists, saving the track ID."""
         for count, existing_song in enumerate(self.songs):
@@ -100,3 +108,21 @@ class SongBook:
 
     def delete_song(self, song_id:int):
         self.songs.remove(self.songs[song_id])
+
+
+    def add_album(self, name:str):
+        """Albums are collections of songs that can be unlocked."""
+        self.albums[name] = []
+    
+
+    def add_song_to_album(self, album:str, title:str, artist:str):
+        if album not in self.albums:
+            self.add_album(album)
+        if song := self.find_song(title=title, artist=artist):
+            self.albums[album].append(song)
+
+    
+    def add_song_to_album(self, album:str, song:Song):
+        if album not in self.albums:
+            self.add_album(album)
+        self.albums[album].append(song)

@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from gamejam.coord import Coord2d
 from gamejam.quickmaff import clamp
 from song import Song
 
@@ -62,7 +63,7 @@ def song_track_up(**kwargs):
     song.player_track_id += 1
     song.dirty = True
     widget = menu.song_widgets[song_id]
-    widget["track_display"].set_text(get_track_display_text(song), 9, None)
+    widget["track_display"].set_text(get_track_display_text(song), 9)
 
 
 def song_track_down(**kwargs):
@@ -72,7 +73,7 @@ def song_track_down(**kwargs):
     song.player_track_id = max(song.player_track_id-1, 0)
     song.dirty = True
     widget = menu.song_widgets[song_id]
-    widget["track_display"].set_text(get_track_display_text(song), 9, None)
+    widget["track_display"].set_text(get_track_display_text(song), 9)
 
 
 def song_list_scroll(**kwargs):
@@ -105,7 +106,7 @@ def set_devices_input(**kwargs):
     cur_device_id = devices.index(menu.devices.input_device_name)
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.input_device_name = devices[cur_device_id]
-    menu.device_input_widget.set_text(menu.devices.input_device_name, 10, [-0.05,0.3])
+    menu.device_input_widget.set_text(menu.devices.input_device_name, 10, Coord2d(-0.05, 0.3))
     menu.songbook.input_device = menu.devices.input_device_name
 
 
@@ -129,7 +130,7 @@ def set_devices_output(**kwargs):
     cur_device_id = devices.index(menu.devices.output_device_name)
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.output_device_name = devices[cur_device_id]
-    menu.device_output_widget.set_text(menu.devices.output_device_name, 10, [-0.05,0.2])
+    menu.device_output_widget.set_text(menu.devices.output_device_name, 10, Coord2d(-0.05, 0.2))
     menu.songbook.output_device = menu.devices.output_device_name
 
 
@@ -163,7 +164,7 @@ def set_devices_input(**kwargs):
     cur_device_id = devices.index(menu.devices.input_device_name)
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.input_device_name = devices[cur_device_id]
-    menu.device_input_widget.set_text(menu.devices.input_device_name, 10, [-0.05,0.3])
+    menu.device_input_widget.set_text(menu.devices.input_device_name, 10, Coord2d(-0.05,0.3))
     menu.songbook.input_device = menu.devices.input_device_name
 
 
@@ -186,7 +187,7 @@ def set_devices_output(**kwargs):
     cur_device_id = devices.index(menu.devices.output_device_name)
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.output_device_name = devices[cur_device_id]
-    menu.device_output_widget.set_text(menu.devices.output_device_name, 10, [-0.05,0.2])
+    menu.device_output_widget.set_text(menu.devices.output_device_name, 10, Coord2d(-0.05, 0.2))
     menu.songbook.output_device = menu.devices.output_device_name
    
    
@@ -203,8 +204,8 @@ def menu_transition(**kwargs):
 
 
 def game_play(**kwargs):
-            game = kwargs["game"]
-            game.music_running = True
+    game = kwargs["game"]
+    game.music_running = True
 
 
 def game_pause(**kwargs):

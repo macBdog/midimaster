@@ -1,3 +1,4 @@
+from gamejam.coord import Coord2d
 from gamejam.gui import Gui
 from gamejam.texture import TextureManager
 
@@ -88,15 +89,15 @@ class Staff:
                     score_height -= black_key_height * 0.5
                     score_pos += black_key_height * 0.25
 
-            note_size = [box_width, note_height]
-            score_size = [box_width, score_height]
+            note_size = Coord2d(box_width, note_height)
+            score_size = Coord2d(box_width, score_height)
 
             if black_key:
-                self.note_box.append(gui.add_create_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5], note_size)))
-                self.score_box.append(gui.add_create_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos - Staff.NoteSpacing * 0.5], score_size)))
+                self.note_box.append(gui.add_create_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], Coord2d(note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5), note_size)))
+                self.score_box.append(gui.add_create_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], Coord2d(score_start_x, score_pos - Staff.NoteSpacing * 0.5), score_size)))
             else:
-                self.note_box.append(gui.add_create_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], [note_start_x, note_pos], note_size)))
-                self.score_box.append(gui.add_create_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], [score_start_x, score_pos], score_size)))
+                self.note_box.append(gui.add_create_widget(textures.create_sprite_shape(Staff.NoteColours[note_lookup], Coord2d(note_start_x, note_pos), note_size)))
+                self.score_box.append(gui.add_create_widget(textures.create_sprite_texture_tinted(Staff.ScoreBoxTexture, Staff.NoteColours[note_lookup], Coord2d(score_start_x, score_pos), score_size)))
             
             self.note_positions[note] = note_pos
             
@@ -122,7 +123,8 @@ class Staff:
     
 
     def note_off(self, note: int):
-        del self.playing_notes[note]
+        if note in self.playing_notes:
+            del self.playing_notes[note]
 
 
     def get_playing_notes(self):
