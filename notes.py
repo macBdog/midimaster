@@ -1,5 +1,5 @@
 from copy import deepcopy
-
+from gamejam.coord import Coord2d
 from gamejam.texture import SpriteShape
 from gamejam.graphics import Graphics
 from gamejam.settings import GameSettings
@@ -30,7 +30,7 @@ class Notes:
         # Create the barlines with 0 being the immovable 0 bar
         staff_width = Staff.StaffSpacing * 4.0
         for i in range(self.num_barlines):
-            barline = SpriteShape(self.graphics, [0.1, 0.1, 0.1, 0.75], [0.0, 0.0], [Notes.BarlineWidth, staff_width])
+            barline = SpriteShape(self.graphics, [0.1, 0.1, 0.1, 0.75], Coord2d(0.0, 0.0), Coord2d(Notes.BarlineWidth, staff_width))
             self.barlines.append(barline)
             self.bartimes.append(i * 32.0)
         
@@ -224,10 +224,10 @@ class Notes:
         for i in range(self.num_barlines):
             bar_start = self.ref_c4_pos[0]
             rel_time = self.bartimes[i] - music_time
-            self.barlines[i].pos[0] = bar_start + (rel_time * note_width) - (note_width * 3)
-            self.barlines[i].pos[1] = Staff.Pos[1] + Staff.StaffSpacing * 2.0           
+            self.barlines[i].pos.x = bar_start + (rel_time * note_width) - (note_width * 3)
+            self.barlines[i].pos.y = Staff.Pos[1] + Staff.StaffSpacing * 2.0           
             
-            if self.barlines[i].pos[0] > bar_start:
+            if self.barlines[i].pos.x > bar_start:
                 self.barlines[i].draw()
 
             if self.bartimes[i] < music_time:   

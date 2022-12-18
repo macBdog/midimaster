@@ -229,7 +229,7 @@ class MidiMaster(GameJam):
 
             # Show the score on top of everything
             self.score_fade -= dt * 0.5
-            self.font_game.draw(f"{math.floor(self.score)} XP", 22, Coord2d(self.bg_score.sprite.pos[0] - 0.025, self.bg_score.sprite.pos[1] - 0.03), [0.1, 0.1, 0.1, 1.0])
+            self.font_game.draw(f"{math.floor(self.score)} XP", 22, self.bg_score.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])
 
         # Update and flush out the buffers
         self.devices.update()
@@ -245,15 +245,15 @@ class MidiMaster(GameJam):
 
     def setup_input(self):
         gui = self.menu.get_menu(Menus.GAME)
-        btn_mode = gui.add_create_widget(self.textures.create_sprite_texture("gui/panel_long.png", [0.655, 0.825], [0.32, 0.15]))
+        btn_mode = gui.add_create_widget(self.textures.create_sprite_texture("gui/panel_long.png", Coord2d(0.655, 0.825), Coord2d(0.32, 0.15)))
         btn_mode.set_action(game_mode_toggle, {"game":self})
         
-        playback_button_size = [0.15, 0.125]
+        playback_button_size = Coord2d(0.15, 0.125)
         controls_pos_x = 0.775
         controls_pos_y = -0.85
-        btn_play = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnplay.tga", [controls_pos_x - 0.035, controls_pos_y], playback_button_size))
-        btn_pause = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnpause.tga", [controls_pos_x - 0.205, controls_pos_y], playback_button_size))
-        btn_stop = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnstop.tga", [controls_pos_x - 0.375, controls_pos_y], playback_button_size))
+        btn_play = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnplay.tga", Coord2d(controls_pos_x - 0.035, controls_pos_y), playback_button_size))
+        btn_pause = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnpause.tga", Coord2d(controls_pos_x - 0.205, controls_pos_y), playback_button_size))
+        btn_stop = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnstop.tga", Coord2d(controls_pos_x - 0.375, controls_pos_y), playback_button_size))
         
         btn_play.set_action(game_play, {"game":self})
         btn_play.set_colour_func(game_play_button_colour, {"game":self})
@@ -261,20 +261,20 @@ class MidiMaster(GameJam):
         btn_pause.set_colour_func(game_pause_button_colour, {"game":self})
         btn_stop.set_action(game_stop_rewind, {"game":self})
         
-        btn_menu = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", [-0.85, 0.85], [0.075, 0.075 * self.window_ratio]))
+        btn_menu = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
         btn_menu.set_action(game_back_to_menu, {"game":self})
 
-        trophy_size = [0.175, 0.175 * self.window_ratio]
+        trophy_size = Coord2d(0.175, 0.175 * self.window_ratio)
         trophy_pos_x = 0.0
-        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", [trophy_pos_x - 0.15, controls_pos_y], trophy_size, wrap=False))
-        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", [trophy_pos_x, controls_pos_y], trophy_size, wrap=False))
-        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", [trophy_pos_x + 0.15, controls_pos_y], trophy_size, wrap=False))
+        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", Coord2d(trophy_pos_x - 0.15, controls_pos_y), trophy_size, wrap=False))
+        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", Coord2d(trophy_pos_x, controls_pos_y), trophy_size, wrap=False))
+        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", Coord2d(trophy_pos_x + 0.15, controls_pos_y), trophy_size, wrap=False))
         trophy1_anim = self.trophy1.animate(AnimType.FillRadial)
         trophy1_anim.time = -1
         trophy1_anim.frac = 0.0
 
         score_pos_x = -0.53
-        self.bg_score = gui.add_create_widget(self.textures.create_sprite_texture("score_bg.tga", [score_pos_x, controls_pos_y - 0.10], [0.5, 0.25]))
+        self.bg_score = gui.add_create_widget(self.textures.create_sprite_texture("score_bg.tga", Coord2d(score_pos_x, controls_pos_y - 0.10), Coord2d(0.5, 0.25)))
         self.bg_score.set_colour_func(game_score_bg_colour, {"game":self})
         self.bg_score.set_align(Alignment(AlignX.Centre, AlignY.Bottom))
 
