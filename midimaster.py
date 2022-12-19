@@ -124,7 +124,7 @@ class MidiMaster(GameJam):
             self.menu.set_event("score_vfx")
             if note_id is not None:
                 spawn_pos = [-0.71, self.staff.note_positions[note_id]]
-                self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0])
+                self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0], 1.0, self.trophy_positions[0].to_list())
 
         # Handle events from MIDI input, echo to output so player can hear
         for message in self.devices.get_input_messages():
@@ -265,13 +265,26 @@ class MidiMaster(GameJam):
         btn_menu.set_action(game_back_to_menu, {"game":self})
 
         trophy_size = Coord2d(0.175, 0.175 * self.window_ratio)
-        trophy_pos_x = 0.0
-        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", Coord2d(trophy_pos_x - 0.15, controls_pos_y), trophy_size, wrap=False))
-        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", Coord2d(trophy_pos_x, controls_pos_y), trophy_size, wrap=False))
-        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", Coord2d(trophy_pos_x + 0.15, controls_pos_y), trophy_size, wrap=False))
+
+        self.trophy_positions = [
+            Coord2d(-0.15, controls_pos_y),
+            Coord2d(0.0, controls_pos_y),
+            Coord2d(0.15, controls_pos_y),
+        ]
+        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", self.trophy_positions[0], trophy_size, wrap=False))
         trophy1_anim = self.trophy1.animate(AnimType.FillRadial)
         trophy1_anim.time = -1
         trophy1_anim.frac = 0.0
+
+        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", self.trophy_positions[1], trophy_size, wrap=False))
+        trophy2_anim = self.trophy2.animate(AnimType.FillRadial)
+        trophy2_anim.time = -1
+        trophy2_anim.frac = 0.0
+
+        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", self.trophy_positions[2], trophy_size, wrap=False))
+        trophy3_anim = self.trophy3.animate(AnimType.FillRadial)
+        trophy3_anim.time = -1
+        trophy3_anim.frac = 0.0
 
         score_pos_x = -0.53
         self.bg_score = gui.add_create_widget(self.textures.create_sprite_texture("score_bg.tga", Coord2d(score_pos_x, controls_pos_y - 0.10), Coord2d(0.5, 0.25)))

@@ -68,6 +68,8 @@ class Song:
         self.player_track_id = player_track_id
         absolute_time = 0
         for id, track in enumerate(mid.tracks):
+            if track.name:
+                self.track_names[id] = track.name
             for msg in track:
                 if isinstance(msg, MetaMessage):
                     if msg.type == "set_tempo":

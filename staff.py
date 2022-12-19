@@ -12,8 +12,8 @@ class Staff:
         Notes by the score notes hitting the playhead.
        """
     ScoreBoxTexture = "score_zone.png"
-    OriginNote = 48 # C3
-    NumNotes = 36
+    OriginNote = 40 # Lowest note playable, E2 on Piano, E String on Guitar
+    NumNotes = 48
     BaseAlphaNote = 0.35
     BaseAlphaScore = 0.33
     NoteColours = [[31, 130, 180, 1.0],    [166, 206, 227, 1.0],    [51, 166, 44, 1.0],  [178, 223, 138, 1.0], # C, Db, D, Eb 
@@ -59,7 +59,7 @@ class Staff:
         note_black_key_start_x = -1.0 + (box_width * 0.5)
         note_start_x = -1.0 + (box_width * 1.5)
         score_start_x = -1.0 + (box_width * 2.5)
-        note_start_y = Staff.Pos[1] - Staff.NoteSpacing * (12 - 3)
+        note_start_y = Staff.Pos[1] - Staff.NoteSpacing * (12 + 2) # How many notes below E2 and OriginNote
         for i in range(Staff.NumNotes):
             note_height = Staff.NoteSpacing
             score_height = Staff.NoteSpacing
