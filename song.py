@@ -14,6 +14,8 @@ class Song:
     music alongside per-song options.
     """
     SDQNotesPerBeat = 8  # 32nd notes
+    MinNoteLength32s = 2 # 16th note
+    MinVelocity = 64 # 50% of max
 
     def __init__(self):
         self.artist = "Unknown Artist"
@@ -85,7 +87,7 @@ class Song:
                 if id == player_track_id:
                     if isinstance(msg, Message):
                         # note_on with velocity of 0 is interpreted as note_off
-                        if msg.type == "note_on" and msg.velocity > 0:
+                        if msg.type == "note_on" and msg.velocity >= Song.MinVelocity:
                             absolute_time += msg.time
                             keys[msg.note] = absolute_time
                         elif msg.type == "note_off" or msg.type == "note_on" and msg.velocity <= 0:
@@ -93,8 +95,9 @@ class Song:
                                 note_length = absolute_time + msg.time - keys[msg.note]
                                 length_in_32s = math.ceil(note_length / self.ticks_per_beat * Song.SDQNotesPerBeat)
                                 time_in_32s = math.ceil(keys[msg.note] / self.ticks_per_beat * Song.SDQNotesPerBeat)
-                                self.notes.append(Note(msg.note, time_in_32s, length_in_32s))
-                                keys.pop(msg.note)
+                                if length_in_32s >= Song.MinNoteLength32s:
+                                    self.notes.append(Note(msg.note, time_in_32s, length_in_32s))
+                                    keys.pop(msg.note)
                                 absolute_time += msg.time
                 else:
                     if not isinstance(msg, MetaMessage):
