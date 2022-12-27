@@ -1,17 +1,17 @@
-import math
 import sys
 import os
 
-from gamejam.animation import AnimType
 from gamejam.coord import Coord2d
 from gamejam.font import Font
 from gamejam.gamejam import GameJam
 from gamejam.settings import GameSettings
-from gamejam.widget import Alignment, AlignX, AlignY
 from gamejam.input import InputActionKey, InputActionModifier
 
 from key_signature import KeySignature
 from menu import Menu, Menus
+from score import (
+    score_player_note_on, score_update, score_draw, score_setup_display
+)
 from song import Song
 from song_book import SongBook
 from music import Music
@@ -22,7 +22,7 @@ from midi_devices import MidiDevices
 from menu_func import (
     KeyboardMapping, MusicMode,
     game_play, game_pause, game_stop_rewind, game_back_to_menu, game_mode_toggle,
-    game_pause_button_colour, game_play_button_colour, game_score_bg_colour
+    game_pause_button_colour, game_play_button_colour,
 )
 
 
@@ -119,13 +119,6 @@ class MidiMaster(GameJam):
         if not game_draw_active:
             return
 
-        def score_vfx(note_id = None):
-            self.score_fade = 1.0
-            self.menu.set_event("score_vfx")
-            if note_id is not None:
-                spawn_pos = [-0.71, self.staff.note_positions[note_id]]
-                self.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0], 1.0, self.trophy_positions[0].to_list())
-
         # Handle events from MIDI input, echo to output so player can hear
         for message in self.devices.get_input_messages():
             if message.type == "note_on" or message.type == "note_off":
@@ -135,14 +128,7 @@ class MidiMaster(GameJam):
         for message in self.devices.get_output_messages():
             if message.type == "note_on":
                 self.player_notes_down[message.note] = 1.0
-
-                if self.mode == MusicMode.PAUSE_AND_LEARN:
-                    if message.note in self.scored_notes:
-                        score_vfx(message.note)
-                        time_diff = self.music_time - self.scored_notes[message.note]
-                        self.score += max(10 - time_diff, 0)
-                        self.trophy1.animation.frac = self.score / 1000
-                        del self.scored_notes[message.note]
+                score_player_note_on(self, message)
 
             elif message.type == "note_off":
                 if message.note in self.player_notes_down:
@@ -205,17 +191,7 @@ class MidiMaster(GameJam):
                 self.devices.output(new_note_off)
                 self.midi_notes.pop(k)
 
-            if self.mode == MusicMode.PERFORMANCE:
-                if self.staff.is_scoring():
-                    if self.score_fade < 0.5:
-                        for note in self.scored_notes:
-                            score_vfx(note)
-                            break
-                    self.score += 10 ** self.dt
-                    self.trophy1.animation.frac = self.score / 2000
-            elif self.mode == MusicMode.PAUSE_AND_LEARN:
-                if len(self.scored_notes) > 0 and self.music_running:
-                    self.music_time -= music_time_advance
+            score_update(self, dt, music_time_advance)
 
             self.staff.draw(dt)
  
@@ -227,9 +203,7 @@ class MidiMaster(GameJam):
             if GameSettings.DEV_MODE:
                 self.font_game.draw(f"Music Time: {round(self.music_time, 2)}", 12, Coord2d(0.0, 0.8), [0.6, 0.6, 0.6, 1.0])
 
-            # Show the score on top of everything
-            self.score_fade -= dt * 0.5
-            self.font_game.draw(f"{math.floor(self.score)} XP", 22, self.bg_score.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])
+            score_draw(self, dt)
 
         # Update and flush out the buffers
         self.devices.update()
@@ -264,32 +238,7 @@ class MidiMaster(GameJam):
         btn_menu = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
         btn_menu.set_action(game_back_to_menu, {"game":self})
 
-        trophy_size = Coord2d(0.175, 0.175 * self.window_ratio)
-
-        self.trophy_positions = [
-            Coord2d(-0.15, controls_pos_y),
-            Coord2d(0.0, controls_pos_y),
-            Coord2d(0.15, controls_pos_y),
-        ]
-        self.trophy1 = gui.add_create_widget(self.textures.create_sprite_texture("trophy1.png", self.trophy_positions[0], trophy_size, wrap=False))
-        trophy1_anim = self.trophy1.animate(AnimType.FillRadial)
-        trophy1_anim.time = -1
-        trophy1_anim.frac = 0.0
-
-        self.trophy2 = gui.add_create_widget(self.textures.create_sprite_texture("trophy2.png", self.trophy_positions[1], trophy_size, wrap=False))
-        trophy2_anim = self.trophy2.animate(AnimType.FillRadial)
-        trophy2_anim.time = -1
-        trophy2_anim.frac = 0.0
-
-        self.trophy3 = gui.add_create_widget(self.textures.create_sprite_texture("trophy3.png", self.trophy_positions[2], trophy_size, wrap=False))
-        trophy3_anim = self.trophy3.animate(AnimType.FillRadial)
-        trophy3_anim.time = -1
-        trophy3_anim.frac = 0.0
-
-        score_pos_x = -0.53
-        self.bg_score = gui.add_create_widget(self.textures.create_sprite_texture("score_bg.tga", Coord2d(score_pos_x, controls_pos_y - 0.10), Coord2d(0.5, 0.25)))
-        self.bg_score.set_colour_func(game_score_bg_colour, {"game":self})
-        self.bg_score.set_align(Alignment(AlignX.Centre, AlignY.Bottom))
+        score_setup_display(self, gui, controls_pos_y)
 
         def note_width_inc():
             self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))

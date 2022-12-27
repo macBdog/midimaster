@@ -5,7 +5,7 @@ from mido import (
     Message, MetaMessage,
     tempo2bpm
 )
-
+import numpy.random as rng
 from note import Note 
 
 class Song:
@@ -15,6 +15,7 @@ class Song:
     """
     SDQNotesPerBeat = 8  # 32nd notes
     MinNoteLength32s = 2 # 16th note
+    QuantizeTime32s = 2 # Snap to each 16th note
     MinVelocity = 64 # 50% of max
 
     def __init__(self):
@@ -41,7 +42,23 @@ class Song:
     def get_max_score(self):
         return max(len(self.notes), 1)
         
-        
+    
+    def from_random(self, note_len_range: tuple, note_spacing_range: tuple, song_length_notes:int=16, allowed_notes:list=None):
+        if allowed_notes is None:
+            allowed_notes = [48 + n for n in range(32)]
+        self.artist = f"Random"
+        self.title = f"{song_length_notes} notes of {note_len_range[0]} to {max_note_len_32s} length."
+        self.path = ""
+        self.ticks_per_beat = Song.SDQNotesPerBeat
+        self.player_track_id = 0
+        time_in_32s = 0
+        for _ in range(song_length_notes):
+            length_in_32s = rng.randint(note_len_range[0], note_len_range[1])
+            note_value = rng.choice(allowed_notes)
+            self.notes.append(Note(note_value, time_in_32s, length_in_32s))
+            time_in_32s += rng.randint(note_spacing_range[0], note_spacing_range[1])
+
+
     def from_midi_file(self, filepath: str, player_track_id: int = 0):
         keys = {}
         if not os.path.exists(filepath):
