@@ -10,7 +10,7 @@ from gamejam.input import InputActionKey, InputActionModifier
 from key_signature import KeySignature
 from menu import Menu, Menus
 from score import (
-    score_player_note_on, score_update, score_draw, score_setup_display
+    score_player_note_on, score_update_draw, score_setup_display, score_playable_note_on
 )
 from song import Song
 from song_book import SongBook
@@ -174,6 +174,7 @@ class MidiMaster(GameJam):
                     new_note_on.note = k
                     new_note_on.velocity = 100
                     self.devices.output(new_note_on)
+                    score_playable_note_on(self, k)
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:
@@ -191,10 +192,12 @@ class MidiMaster(GameJam):
                 self.devices.output(new_note_off)
                 self.midi_notes.pop(k)
 
-            score_update(self, dt, music_time_advance)
+            if self.mode == MusicMode.PAUSE_AND_LEARN:
+                if len(self.scored_notes) > 0 and self.music_running:
+                    self.music_time -= music_time_advance
 
             self.staff.draw(dt)
- 
+
             # Show the play mode
             mode_string = "Performance" if self.mode == MusicMode.PERFORMANCE else "Pause & Learn"
             self.font_game.draw(f"{mode_string}", 16, Coord2d(0.5, 0.8), [0.6, 0.6, 0.6, 1.0])
@@ -203,7 +206,7 @@ class MidiMaster(GameJam):
             if GameSettings.DEV_MODE:
                 self.font_game.draw(f"Music Time: {round(self.music_time, 2)}", 12, Coord2d(0.0, 0.8), [0.6, 0.6, 0.6, 1.0])
 
-            score_draw(self, dt)
+            score_update_draw(self, dt)
 
         # Update and flush out the buffers
         self.devices.update()
@@ -223,11 +226,10 @@ class MidiMaster(GameJam):
         btn_mode.set_action(game_mode_toggle, {"game":self})
         
         playback_button_size = Coord2d(0.15, 0.125)
-        controls_pos_x = 0.775
-        controls_pos_y = -0.85
-        btn_play = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnplay.tga", Coord2d(controls_pos_x - 0.035, controls_pos_y), playback_button_size))
-        btn_pause = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnpause.tga", Coord2d(controls_pos_x - 0.205, controls_pos_y), playback_button_size))
-        btn_stop = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnstop.tga", Coord2d(controls_pos_x - 0.375, controls_pos_y), playback_button_size))
+        controls_pos = Coord2d(0.775, -0.85)
+        btn_play = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnplay.tga", controls_pos - Coord2d(0.035, 0.0), playback_button_size))
+        btn_pause = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnpause.tga", controls_pos - Coord2d(0.205, 0.0), playback_button_size))
+        btn_stop = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnstop.tga", controls_pos - Coord2d(0.375, 0.0), playback_button_size))
         
         btn_play.set_action(game_play, {"game":self})
         btn_play.set_colour_func(game_play_button_colour, {"game":self})
@@ -238,7 +240,7 @@ class MidiMaster(GameJam):
         btn_menu = gui.add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
         btn_menu.set_action(game_back_to_menu, {"game":self})
 
-        score_setup_display(self, gui, controls_pos_y)
+        score_setup_display(self, gui, controls_pos)
 
         def note_width_inc():
             self.note_width_32nd = max(0.0, self.note_width_32nd + (self.dt * 0.1))
@@ -284,11 +286,12 @@ class MidiMaster(GameJam):
             self.input.add_key_mapping(key_val, InputActionKey.ACTION_KEYUP, modifier, create_key_note_off, {"note": note_val})
 
         # Playing notes with the keyboard note names
+        starting_note = 48 #C2
         if self.keyboard_mapping == KeyboardMapping.NOTE_NAMES:
             note_keycode = 0
             keymap = [67, 68, 69, 70, 71, 65, 66]  # CDEFGAB
             for i in range(Staff.NumNotes):
-                note = Staff.OriginNote + i
+                note = starting_note + i
                 note_lookup = note % 12
                 if note_lookup in KeySignature.SharpsAndFlats:
                     add_note_key_mapping(keymap[(note_keycode - 1) % 7], note, InputActionModifier.LSHIFT)  # Shift for sharp (#)
