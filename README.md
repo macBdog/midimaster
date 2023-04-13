@@ -33,7 +33,7 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
 
 ## Task Queue:
 0. Devices menu shows incoming notes
-1. Temporal accidentals
-2. Options menu with instructions
-3. Trophy unlocks
-
+1. Album unlocks with random songs
+2. Temporal accidentals
+3. Options menu with instructions
+4. Random note songs in a particular key

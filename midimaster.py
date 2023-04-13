@@ -12,6 +12,7 @@ from menu import Menu, Menus
 from score import (
     score_player_note_on, score_update_draw, score_setup_display, score_playable_note_on
 )
+from album_defaults import setup_songbook_albums
 from song import Song
 from song_book import SongBook
 from music import Music
@@ -52,15 +53,9 @@ class MidiMaster(GameJam):
 
     def prepare(self):
         super().prepare()
-        
-        # Read the songbook and load the first song
-        self.songbook = SongBook.load()
-        if self.songbook is None:
-            self.songbook = SongBook()
-        self.songbook.validate()
-        self.songbook.sort()
 
-        # Add a new song supplied on the command line
+        # Add or update any songs supplied on the command line
+        self.songbook = setup_songbook_albums()
         song_args = {
             "--song-add": "",
             "--song-track": "1",

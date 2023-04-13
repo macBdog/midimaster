@@ -43,12 +43,12 @@ class Menu():
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", Coord2d(), Coord2d(0.25, 0.25 * self.window_ratio)))
 
         # Create sub-guis for each screen of the game, starting with active splash screen
-        self.menus[Menus.SPLASH] = Gui("splash_screen", self.graphics, gui.debug_font)
+        self.menus[Menus.SPLASH] = Gui("splash_screen", self.graphics, gui.debug_font, False)
         self.menus[Menus.SPLASH].set_active(True, True)
         self.menus[Menus.SPLASH].add_create_widget(self.textures.create_sprite_texture("splash_background.png", Coord2d(), Coord2d(2.0, 2.0)))
         gui.add_child(self.menus[Menus.SPLASH])
 
-        self.menus[Menus.SONGS] = Gui("menu_screen", self.graphics, gui.debug_font)
+        self.menus[Menus.SONGS] = Gui("menu_screen", self.graphics, gui.debug_font, False)
         self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/menu_bg.png", Coord2d(), Coord2d(2.0, 2.0)))
         gui.add_child(self.menus[Menus.SONGS])
 
@@ -60,7 +60,7 @@ class Menu():
         self._set_elem(Menus.SPLASH, "title", title)
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
-        self.menus[Menus.GAME] = Gui("game_screen", self.graphics, gui.debug_font)
+        self.menus[Menus.GAME] = Gui("game_screen", self.graphics, gui.debug_font, False)
         self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_texture("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
         self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_shape([0.5] * 4, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0)))
         gui.add_child(self.menus[Menus.GAME])
@@ -79,7 +79,7 @@ class Menu():
 
         # Create the dialogs
         dialog_size = Coord2d(0.8, 1.1)
-        self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, gui.debug_font)
+        self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, gui.debug_font, False)
         self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, Coord2d(), dialog_size))
         delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
         delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
@@ -94,16 +94,16 @@ class Menu():
         self.elements[menu][name] = widget
 
 
-    def _set_song_menu_pos(self):
-        num_songs = self.songbook.get_num_songs()
-        for i in range(num_songs):
-            song_pos = Coord2d(-0.333, (0.4 - i * SONG_SPACING) + self.song_scroll)
-            track_pos = Coord2d(song_pos.x + 0.125, song_pos.y - 0.1)
+    def _set_album_menu_pos(self):
+        num_items = self.songbook.get_num_albums()
+        for i in range(num_items):
+            item_pos = Coord2d(-0.333, (0.4 - i * SONG_SPACING) + self.song_scroll)
+            track_pos = Coord2d(item_pos.x + 0.125, item_pos.y - 0.1)
             widgets_for_song = self.song_widgets[i]
-            widgets_for_song["play"].set_offset(song_pos)
-            widgets_for_song["delete"].set_offset(Coord2d(song_pos.x-0.09, song_pos.y))
-            widgets_for_song["reload"].set_offset(Coord2d(song_pos.x-0.14, song_pos.y))
-            widgets_for_song["score"].set_offset(Coord2d(song_pos.x + 0.75, song_pos.y))
+            widgets_for_song["play"].set_offset(item_pos)
+            widgets_for_song["delete"].set_offset(Coord2d(item_pos.x-0.09, item_pos.y))
+            widgets_for_song["reload"].set_offset(Coord2d(item_pos.x-0.14, item_pos.y))
+            widgets_for_song["score"].set_offset(Coord2d(item_pos.x + 0.75, item_pos.y))
             widgets_for_song["track_display"].set_offset(Coord2d(track_pos.x, track_pos.y))
             widgets_for_song["track_down"].set_offset(Coord2d(track_pos.x - 0.02, track_pos.y + 0.02))
             widgets_for_song["track_up"].set_offset(Coord2d(track_pos.x + 0.3, track_pos.y + 0.02))
@@ -123,9 +123,9 @@ class Menu():
         scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
-        num_songs = self.songbook.get_num_songs()
-        for i in range(num_songs):
-            song = self.songbook.get_song(i)
+        num_albums = self.songbook.get_num_albums()
+        for i in range(num_albums):
+            album = self.songbook.get_album(i)
 
             play_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnplay.tga", Coord2d(), Coord2d(0.125, 0.1)), self.font)
             play_widget.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
@@ -141,6 +141,7 @@ class Menu():
             reload_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnreload.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
             reload_widget.set_action(song_reload, {"menu": self, "song_id":i})
 
+            song = album.songbook.get_song(0)
             track_display_widget = self.menus[Menus.SONGS].add_create_text_widget(self.font, get_track_display_text(song), 9)
             track_display_widget.set_text_colour([0.7] * 4)
 
@@ -236,7 +237,7 @@ class Menu():
             if abs(self.song_scroll - self.song_scroll_target) > 0.01:
                 scroll_max = len(self.song_widgets) * SONG_SPACING
                 self.scroll_widget.set_offset(Coord2d(0.9, 0.73 - (1.44 * (self.song_scroll / scroll_max))))
-                self._set_song_menu_pos()
+                self._set_album_menu_pos()
 
 
     def set_event(self, name:str):

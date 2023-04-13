@@ -41,13 +41,13 @@ class Song:
 
     def get_max_score(self):
         return max(len(self.notes), 1)
-        
-    
+
+
     def from_random(self, note_len_range: tuple, note_spacing_range: tuple, song_length_notes:int=16, allowed_notes:list=None):
         if allowed_notes is None:
             allowed_notes = [48 + n for n in range(32)]
         self.artist = f"Random"
-        self.title = f"{song_length_notes} notes of {note_len_range[0]} to {max_note_len_32s} length."
+        self.title = f"{song_length_notes} notes of {note_len_range[0]} to {note_len_range[1]} length."
         self.path = ""
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.player_track_id = 0
@@ -74,7 +74,7 @@ class Song:
         songname = filepath if last_dir_sep <= 0 else filepath[last_dir_sep + 1:]
         self.title = songname.replace('.mid', '')
         self.artist = "MidiFile"
-        
+
         for sep in ['-', ':', "_"]:
             if self.title.find(sep) >= 0:
                 song_name_elems = self.title.split(sep)
@@ -133,5 +133,3 @@ class Song:
                 for _, track in enumerate(self.backing_tracks):
                     for note in self.backing_tracks[track]:
                         note.time += lead_in_32s
-
-        

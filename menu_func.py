@@ -42,7 +42,7 @@ def song_reload(**kwargs):
     new_song = Song()
     new_song.from_midi_file(existing_song.path, existing_song.player_track_id)
     menu.songbook.add_update_song(new_song)
-    menu._set_song_menu_pos()
+    menu._set_album_menu_pos()
 
 
 def song_delete(**kwargs):
@@ -53,7 +53,7 @@ def song_delete(**kwargs):
         menu.menus[Menus.SONGS].delete_widget(widgets[elem])
     menu.song_widgets.pop(song_id)
     menu.songbook.delete_song(song_id)
-    menu._set_song_menu_pos()
+    menu._set_album_menu_pos()
 
 
 def song_track_up(**kwargs):
