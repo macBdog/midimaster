@@ -75,6 +75,9 @@ class Music:
                 self.backing_time[id] += next_event.time
                 b_time = self.backing_time[id]
 
+        if not self.song:
+            return
+
         for _, id in enumerate(self.song.backing_tracks):
             update_backing_track(id, music_time_in_ticks)
 

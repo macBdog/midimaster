@@ -88,7 +88,6 @@ def song_list_scroll(**kwargs):
         
     scroll_max = len(menu.song_widgets) * SONG_SPACING
     menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
-    menu._set_song_menu_pos()
 
 
 def get_track_display_text(song) -> str:

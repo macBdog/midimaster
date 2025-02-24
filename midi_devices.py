@@ -15,7 +15,7 @@ class MidiDevices:
         self.output_devices = mido.get_output_names()
         self.input_device_name = None
         self.output_device_name = None
-        
+
 
     def output_test(self):
         if self._io_thread is None:
@@ -29,7 +29,7 @@ class MidiDevices:
         note_on.note = 60
         note_on.velocity = 100
         self._output_messages.append(note_on)
-        
+
         time.sleep(2.0)
 
         note_off = mido.Message("note_off")
@@ -109,7 +109,7 @@ class MidiDevices:
     def input(self, message):
         self._input_messages.append(message)
 
-    
+
     def get_input_messages(self):
         return self._input_messages
 
