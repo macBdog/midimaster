@@ -11,7 +11,7 @@ class Staff:
         Notes activated by the player at any time.
         Notes by the score notes hitting the playhead.
        """
-    ScoreBoxTexture = "score_zone"
+    ScoreBoxTexture = "score_zone.png"
     OriginNote = 40 # Lowest note playable, E2 on Piano, E String on Guitar
     NumNotes = 48
     BaseAlphaNote = 0.35

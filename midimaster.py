@@ -217,14 +217,14 @@ class MidiMaster(GameJam):
 
     def setup_input(self):
         gui = self.menu.get_menu(Menus.GAME)
-        btn_mode = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel_long", Coord2d(0.655, 0.825), Coord2d(0.32, 0.15)))
+        btn_mode = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel_long.png", Coord2d(0.655, 0.825), Coord2d(0.32, 0.15)))
         btn_mode.set_action(game_mode_toggle, {"game":self})
         
         playback_button_size = Coord2d(0.15, 0.125)
         controls_pos = Coord2d(0.775, -0.85)
-        btn_play = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnplay", controls_pos - Coord2d(0.035, 0.0), playback_button_size))
-        btn_pause = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnpause", controls_pos - Coord2d(0.205, 0.0), playback_button_size))
-        btn_stop = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnstop", controls_pos - Coord2d(0.375, 0.0), playback_button_size))
+        btn_play = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnplay.tga", controls_pos - Coord2d(0.035, 0.0), playback_button_size))
+        btn_pause = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnpause.tga", controls_pos - Coord2d(0.205, 0.0), playback_button_size))
+        btn_stop = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnstop.tga", controls_pos - Coord2d(0.375, 0.0), playback_button_size))
         
         btn_play.set_action(game_play, {"game":self})
         btn_play.set_colour_func(game_play_button_colour, {"game":self})
@@ -232,7 +232,7 @@ class MidiMaster(GameJam):
         btn_pause.set_colour_func(game_pause_button_colour, {"game":self})
         btn_stop.set_action(game_stop_rewind, {"game":self})
         
-        btn_menu = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
+        btn_menu = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
         btn_menu.set_action(game_back_to_menu, {"game":self})
 
         score_setup_display(self, gui, controls_pos)

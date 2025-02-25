@@ -46,11 +46,11 @@ class Menu():
         # Create sub-guis for each screen of the game, starting with active splash screen
         self.menus[Menus.SPLASH] = Gui("splash_screen", self.graphics, gui.debug_font, False)
         self.menus[Menus.SPLASH].set_active(True, True)
-        self.menus[Menus.SPLASH].add_create_widget(self.textures.create_sprite_atlas_texture("splash_background", Coord2d(), Coord2d(2.0, 2.0)))
+        self.menus[Menus.SPLASH].add_create_widget(self.textures.create_sprite_atlas_texture("splash_background.png", Coord2d(), Coord2d(2.0, 2.0)))
         gui.add_child(self.menus[Menus.SPLASH])
 
         self.menus[Menus.SONGS] = Gui("menu_screen", self.graphics, gui.debug_font, False)
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/menu_bg", Coord2d(), Coord2d(2.0, 2.0)))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/menu_bg.png", Coord2d(), Coord2d(2.0, 2.0)))
         gui.add_child(self.menus[Menus.SONGS])
 
         splash_anim_time = 0.15 if GameSettings.DEV_MODE else 2.0
@@ -62,17 +62,17 @@ class Menu():
         
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
         self.menus[Menus.GAME] = Gui("game_screen", self.graphics, gui.debug_font, False)
-        self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_texture("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
+        self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_atlas_texture("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
         self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_shape([0.5] * 4, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0)))
         gui.add_child(self.menus[Menus.GAME])
 
         bg_size_top = 0.65
         bg_size_btm = 1.25
         note_bg_top = self.menus[Menus.GAME].add_create_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, Coord2d(game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)), Coord2d(Staff.Width, bg_size_top * -1.0))
+            self.textures.create_sprite_atlas_texture("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)), Coord2d(Staff.Width, bg_size_top * -1.0), self.note_correct_colour)
         )
         note_bg_btm = self.menus[Menus.GAME].add_create_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, Coord2d(game_bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5), Coord2d(Staff.Width, bg_size_btm))
+            self.textures.create_sprite_atlas_texture("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5), Coord2d(Staff.Width, bg_size_btm), self.note_correct_colour)
         )
         self._set_elem(Menus.GAME, "note_bg_top", note_bg_top)
         self._set_elem(Menus.GAME, "note_bg_btm", note_bg_btm)
@@ -82,10 +82,10 @@ class Menu():
         dialog_size = Coord2d(0.8, 1.1)
         self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, gui.debug_font, False)
         self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, Coord2d(), dialog_size))
-        delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_texture("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
+        delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
         delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
         gui.add_child(self.dialogs[Dialogs.DEVICES])     
-        
+
 
     def _get_elem(self, menu: Menus, name: str):
         return self.elements[menu][name]
@@ -117,10 +117,10 @@ class Menu():
 
         # Scroll indicator for song list
         self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], Coord2d(0.9, 0.0), Coord2d(0.05, 1.6)))
-        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/sliderknob", Coord2d(0.9, 0.73), Coord2d(0.035, 0.035 * self.window_ratio)))
-        scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnup", Coord2d(0.9, 0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
+        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/sliderknob.png", Coord2d(0.9, 0.73), Coord2d(0.035, 0.035 * self.window_ratio)))
+        scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnup.png", Coord2d(0.9, 0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
-        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnup", Coord2d(0.9,-0.8), Coord2d(0.05, -0.05 * self.window_ratio)))
+        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnup.png", Coord2d(0.9,-0.8), Coord2d(0.05, -0.05 * self.window_ratio)))
         scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
@@ -128,7 +128,7 @@ class Menu():
         for i in range(num_albums):
             album = self.songbook.get_album(i)
 
-            play_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnplay", Coord2d(), Coord2d(0.125, 0.1)), self.font)
+            play_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnplay.png", Coord2d(), Coord2d(0.125, 0.1)), self.font)
             play_widget.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
             play_widget.set_text_colour([0.85, 0.85, 0.85, 0.85])
             play_widget.set_action(song_play, {"menu":self, "song_id":i})
@@ -136,10 +136,10 @@ class Menu():
             performance_score = 0
             score_widget = self.menus[Menus.SONGS].add_create_text_widget(self.font, f"{round((performance_score / song.get_max_score()) * 100.0, 1)}%", 14)
 
-            delete_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btntrash.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
+            delete_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btntrash.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
             delete_widget.set_action(song_delete, {"menu":self, "song_id":i})
 
-            reload_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnreload.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
+            reload_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnreload.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
             reload_widget.set_action(song_reload, {"menu": self, "song_id":i})
 
             song = album.songbook.get_song(0)
@@ -147,10 +147,10 @@ class Menu():
             track_display_widget.set_text_colour([0.7] * 4)
 
             track_button_size = 0.035
-            track_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", Coord2d(), Coord2d(track_button_size, track_button_size * self.window_ratio)))
+            track_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(), Coord2d(track_button_size, track_button_size * self.window_ratio)))
             track_down_widget.set_action(song_track_down, {"menu": self, "song_id":i})
 
-            track_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btnback.png", Coord2d(0.0,0.0), Coord2d(-track_button_size, track_button_size * self.window_ratio)))
+            track_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(0.0,0.0), Coord2d(-track_button_size, track_button_size * self.window_ratio)))
             track_up_widget.set_action(song_track_up, {"menu": self, "song_id":i})
 
             self.song_widgets.append({
@@ -168,13 +168,13 @@ class Menu():
         menu_thirds = 2.0 / 4
         menu_item_size = Coord2d(0.31, 0.18)
         self.menus[Menus.SONGS].add_create_widget(
-            self.textures.create_sprite_texture_tinted("vgradient.png", [0.7, 0.5, 0.7, 0.6], Coord2d(0.0, menu_row), Coord2d(2.0, 0.5))
+            self.textures.create_sprite_atlas_texture("vgradient.png", Coord2d(0.0, menu_row), Coord2d(2.0, 0.5), [0.7, 0.5, 0.7, 0.6])
         )
 
-        btn_devices = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btn_devices.png", Coord2d(-1.0 + menu_thirds * 1, menu_row), menu_item_size))
+        btn_devices = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btn_devices.png", Coord2d(-1.0 + menu_thirds * 1, menu_row), menu_item_size))
         btn_devices.set_action(self.show_dialog, {"menu": self, "type": Dialogs.DEVICES})
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btn_options.png", Coord2d(-1.0 + menu_thirds * 2, menu_row), menu_item_size))
-        btn_quit = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_texture("gui/btn_quit.png", Coord2d(-1.0 + menu_thirds * 3, menu_row), menu_item_size))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btn_options.png", Coord2d(-1.0 + menu_thirds * 2, menu_row), menu_item_size))
+        btn_quit = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btn_quit.png", Coord2d(-1.0 + menu_thirds * 3, menu_row), menu_item_size))
         btn_quit.set_action(menu_quit, {"menu": self})
             
         # Add device params
@@ -185,11 +185,11 @@ class Menu():
         self.device_input_widget = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, self.devices.input_device_name, 8, Coord2d(-0.05, 0.3))
         self.device_input_widget.set_text_colour([0.9] * 4)
 
-        input_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback", Coord2d(-0.1,0.315), Coord2d(device_button_size, device_button_size * self.window_ratio)))
+        input_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(-0.1,0.315), Coord2d(device_button_size, device_button_size * self.window_ratio)))
         input_down.set_action(set_devices_input, {"menu":self, "dir":-1})
         input_down.set_colour_func(get_device_input_col, {"menu":self, "dir":-1})
 
-        input_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback", Coord2d(0.35,0.315), Coord2d(-device_button_size, device_button_size * self.window_ratio)))
+        input_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(0.35,0.315), Coord2d(-device_button_size, device_button_size * self.window_ratio)))
         input_up.set_action(set_devices_input, {"menu":self, "dir":1})
         input_up.set_colour_func(get_device_input_col, {"menu":self, "dir":1})
 
@@ -199,20 +199,20 @@ class Menu():
         self.device_output_widget = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, self.devices.output_device_name, 8, Coord2d(-0.05, 0.2))
         self.device_output_widget.set_text_colour([0.9] * 4)
 
-        output_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback", Coord2d(-0.1,0.215), Coord2d(device_button_size, device_button_size * self.window_ratio)))
+        output_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(-0.1,0.215), Coord2d(device_button_size, device_button_size * self.window_ratio)))
         output_down.set_action(set_devices_output, {"menu":self, "dir":-1})
         output_down.set_colour_func(get_device_output_col, {"menu":self, "dir":-1})
 
-        output_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback", Coord2d(0.35,0.215), Coord2d(-device_button_size, device_button_size * self.window_ratio)))
+        output_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(0.35,0.215), Coord2d(-device_button_size, device_button_size * self.window_ratio)))
         output_up.set_action(set_devices_output, {"menu":self, "dir":1})
         output_up.set_colour_func(get_device_output_col, {"menu":self, "dir":1})
 
-        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel", Coord2d(0.2,-0.2), Coord2d(0.2, 0.08 * self.window_ratio)), self.font)
+        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel.tga", Coord2d(0.2,-0.2), Coord2d(0.2, 0.08 * self.window_ratio)), self.font)
         self.devices_apply.set_text(f"Reconnect", 11, Coord2d(-0.07, -0.015))
         self.devices_apply.set_text_colour([0.9] * 4)
         self.devices_apply.set_action(devices_refresh, {"menu":self})
 
-        self.devices_test = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel", Coord2d(-0.2,-0.2), Coord2d(0.25, 0.08 * self.window_ratio)), self.font)
+        self.devices_test = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel.tga", Coord2d(-0.2,-0.2), Coord2d(0.25, 0.08 * self.window_ratio)), self.font)
         self.devices_test.set_text(f"Test Output", 11, Coord2d(-0.1, -0.015))
         self.devices_test.set_text_colour([0.9] * 4)
         self.devices_test.set_action(devices_output_test, {"menu":self})
