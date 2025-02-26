@@ -63,7 +63,7 @@ class Menu():
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
         self.menus[Menus.GAME] = Gui("game_screen", self.graphics, gui.debug_font, False)
         self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_atlas_texture("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
-        self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_shape([0.5] * 4, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0)))
+        self.menus[Menus.GAME].add_create_widget(self.textures.create_sprite_atlas_texture(None, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0), [0.5] * 4))
         gui.add_child(self.menus[Menus.GAME])
 
         bg_size_top = 0.65
@@ -81,7 +81,7 @@ class Menu():
         # Create the dialogs
         dialog_size = Coord2d(0.8, 1.1)
         self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, gui.debug_font, False)
-        self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_shape(DIALOG_COLOUR, Coord2d(), dialog_size))
+        self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture(None, Coord2d(), dialog_size, DIALOG_COLOUR))
         delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create_sprite_atlas_texture("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
         delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
         gui.add_child(self.dialogs[Dialogs.DEVICES])     
@@ -116,7 +116,7 @@ class Menu():
         self.songbook = songbook
 
         # Scroll indicator for song list
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_shape([0.1, 0.1, 0.1, 0.5], Coord2d(0.9, 0.0), Coord2d(0.05, 1.6)))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture(None, Coord2d(0.9, 0.0), Coord2d(0.05, 1.6), [0.1, 0.1, 0.1, 0.5]))
         self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/sliderknob.png", Coord2d(0.9, 0.73), Coord2d(0.035, 0.035 * self.window_ratio)))
         scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnup.png", Coord2d(0.9, 0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
