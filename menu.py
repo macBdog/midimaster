@@ -119,19 +119,19 @@ class Menu():
 
 
     def _set_album_menu_pos(self):
-        item_pos = Coord2d(-0.75, self.song_scroll-0.6)
+        item_pos = Coord2d(-0.5, self.song_scroll+0.25)
         for album_widget in self.song_albums:
-            item_pos.x = -0.75
-            album_widget.name.set_offset(item_pos)
-            item_pos.y -= SONG_SPACING * 3
-            item_pos.x = -0.333
+            item_pos.x = -0.5
+            album_widget.name.set_offset(Coord2d(item_pos.x, item_pos.y))
+            item_pos.y -= SONG_SPACING * 0.5
+            item_pos.x = -0.3
 
             for song_widget in album_widget.songs:
                 track_pos = Coord2d(item_pos.x+0.125, item_pos.y-0.1)
-                song_widget.play.set_offset(item_pos)
+                song_widget.play.set_offset(Coord2d(item_pos.x, item_pos.y))
                 song_widget.delete.set_offset(Coord2d(item_pos.x-0.09, item_pos.y))
                 song_widget.reload.set_offset(Coord2d(item_pos.x-0.14, item_pos.y))
-                song_widget.score.set_offset(Coord2d(item_pos.x+0.75, item_pos.y))
+                song_widget.score.set_offset(Coord2d(item_pos.x+0.75, item_pos.y-0.03))
                 song_widget.track_display.set_offset(Coord2d(track_pos.x, track_pos.y))
                 song_widget.track_down.set_offset(Coord2d(track_pos.x-0.02, track_pos.y + 0.02))
                 song_widget.track_up.set_offset(Coord2d(track_pos.x+0.3, track_pos.y + 0.02))
@@ -157,7 +157,7 @@ class Menu():
         self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/sliderknob.png", Coord2d(0.9, 0.73), Coord2d(0.035, 0.035 * self.window_ratio)))
         scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnup.png", Coord2d(0.9, 0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
-        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnup.png", Coord2d(0.9,-0.8), Coord2d(0.05, -0.05 * self.window_ratio)))
+        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btndown.png", Coord2d(0.9,-0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
         scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
@@ -193,7 +193,7 @@ class Menu():
                 song_widget.track_down = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnback.png", Coord2d(), Coord2d(track_button_size, track_button_size * self.window_ratio)))
                 song_widget.track_down.set_action(song_track_down, {"menu": self, "song_id":i})
 
-                song_widget.track_up = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnback.png", Coord2d(0.0,0.0), Coord2d(-track_button_size, track_button_size * self.window_ratio)))
+                song_widget.track_up = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnnext.png", Coord2d(0.0,0.0), Coord2d(track_button_size, track_button_size * self.window_ratio)))
                 song_widget.track_up.set_action(song_track_up, {"menu": self, "song_id":i})
                 album_widget.songs.append(song_widget)
         self._set_album_menu_pos()
