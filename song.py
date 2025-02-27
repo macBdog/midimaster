@@ -36,7 +36,7 @@ class Song:
 
 
     def get_name(self):
-        return f"{self.title} - {self.artist}"
+        return f"{self.artist} - {self.title}"
 
 
     def get_max_score(self):
@@ -53,10 +53,10 @@ class Song:
         self.player_track_id = 0
         time_in_32s = 0
         for _ in range(song_length_notes):
-            length_in_32s = rng.randint(note_len_range[0], note_len_range[1])
+            length_in_32s = note_len_range[0] if note_len_range[0] == note_len_range[1] else rng.randint(note_len_range[0], note_len_range[1])
             note_value = rng.choice(allowed_notes)
             self.notes.append(Note(note_value, time_in_32s, length_in_32s))
-            time_in_32s += rng.randint(note_spacing_range[0], note_spacing_range[1])
+            time_in_32s += note_spacing_range[0] if note_spacing_range[0] == note_spacing_range[1] else rng.randint(note_spacing_range[0], note_spacing_range[1])
 
 
     def from_midi_file(self, filepath: str, player_track_id: int = 0):

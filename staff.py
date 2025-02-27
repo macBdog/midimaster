@@ -93,11 +93,11 @@ class Staff:
             score_size = Coord2d(box_width, score_height)
 
             if black_key:
-                self.note_box.append(gui.add_create_widget(textures.create_sprite_atlas_texture(None, Coord2d(note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5), note_size, Staff.NoteColours[note_lookup])))
-                self.score_box.append(gui.add_create_widget(textures.create_sprite_atlas_texture(Staff.ScoreBoxTexture, Coord2d(score_start_x, score_pos - Staff.NoteSpacing * 0.5), score_size, Staff.NoteColours[note_lookup])))
+                self.note_box.append(gui.add_create_widget(textures.create(None, Coord2d(note_black_key_start_x, note_pos - Staff.NoteSpacing * 0.5), note_size, Staff.NoteColours[note_lookup])))
+                self.score_box.append(gui.add_create_widget(textures.create(Staff.ScoreBoxTexture, Coord2d(score_start_x, score_pos - Staff.NoteSpacing * 0.5), score_size, Staff.NoteColours[note_lookup])))
             else:
-                self.note_box.append(gui.add_create_widget(textures.create_sprite_atlas_texture(None, Coord2d(note_start_x, note_pos), note_size, Staff.NoteColours[note_lookup])))
-                self.score_box.append(gui.add_create_widget(textures.create_sprite_atlas_texture(Staff.ScoreBoxTexture, Coord2d(score_start_x, score_pos), score_size, Staff.NoteColours[note_lookup])))
+                self.note_box.append(gui.add_create_widget(textures.create(None, Coord2d(note_start_x, note_pos), note_size, Staff.NoteColours[note_lookup])))
+                self.score_box.append(gui.add_create_widget(textures.create(Staff.ScoreBoxTexture, Coord2d(score_start_x, score_pos), score_size, Staff.NoteColours[note_lookup])))
             
             self.note_positions[note] = note_pos
             

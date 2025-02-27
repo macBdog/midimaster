@@ -5,31 +5,44 @@ from song_book import SongBook
 def setup_songbook_albums() -> SongBook:
     # Read the songbook and load the first song
     songbook = SongBook.load()
+
     if songbook is None:
         # Level 1 starts unlocked
-        songbook.add_album("Soundcheck")
+        songbook = SongBook()
 
+        album = songbook.add_album("Soundcheck")
         rand_song_c1 = Song()
         rand_song_c1.from_random((32,32), (32,32), 16)
-        songbook.add_update_song(rand_song_c1)
+        album.add_update_song(rand_song_c1)
 
-        #songbook.add_song_to_album("CMajor")
-        #songbook.add_song_to_album("CMinor")
-        #songbook.add_song_to_album("BlueNotes") # I IV 5 prog
-        #songbook.add_song_to_album("TwoForOne") # II V I prog
-        #songbook.add_song_to_album("Wipeout")
+        #album.add_update_song("CMajor")
+        #album.add_update_song("CMinor")
+        #album.add_update_song("BlueNotes") # I IV 5 prog
+        #album.add_update_song("TwoForOne") # II V I prog
+        #album.add_update_song("Wipeout")
 
-        #songbook.add_album("You've Got Rhymthm")
-        #songbook.add_song_to_album("Arpegiate") 
-        #songbook.add_song_to_album("SpinCycle") # Cycle of 5ths
+        #album = songbook.add_album("You've Got Rhymthm")
+        #album.add_update_song("Arpegiate") 
+        #album.add_update_song("SpinCycle") # Cycle of 5ths
 
-        #songbook.add_album("Key In Ignition")
-        #songbook.add_song_to_album("Roadkill") # Bb scales and arp
-        #songbook.add_song_to_album("DeeMinor") # Dm scales and arp
+        #album = songbook.add_album("Key In Ignition")
+        #album.add_update_song("Roadkill") # Bb scales and arp
+        #album.add_update_song("DeeMinor") # Dm scales and arp
 
-        #songbook.add_album("Standard Practice")
-        #songbook.add_song_to_album("4on6") # Wes Montgomery
-        #songbook.add_song_to_album("GirlFromIpanema") # 
+        #album = songbook.add_album("Standard Practice")
+        #album.add_update_song("4on6") # Wes Montgomery
+        #album.add_update_song("GirlFromIpanema") #
+    else:
+        # Patch up older versions on songbooks without albums
+        if type(getattr(songbook, "albums")) == dict:
+            songbook.albums = []
+
+        if songbook.get_num_albums() == 0 and getattr(songbook, "songs"):
+            album = songbook.add_album(Album.DefaultName)
+            for s in songbook.songs:
+                album.add_update_song(s)
+            del songbook.songs
+
     songbook.validate()
     songbook.sort()
 

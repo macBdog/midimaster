@@ -3,14 +3,22 @@ from song import Song
 
 class Album():
     """Albums are groups of songs that can be unlocked."""
-    def __init__(self):
-        self.name = ""
+    DefaultName = "Custom"
+    def __init__(self, name = DefaultName):
+        self.name = name
         self.songs: List(Song) = []
         self.expanded = False
 
 
+    def get_max_score(self) -> int:
+        score = 0
+        for s in self.songs:
+            score += s.get_max_score()
+        return score
+
+
     def sort(self):
-        sorted(self.albums, key=lambda album: album.get_max_score())
+        sorted(self.songs, key=lambda s: s.get_max_score())
 
 
     def get_song(self, id: int) -> Song:
@@ -37,7 +45,7 @@ class Album():
         self.songs.append(song)
 
 
-    def add_update_song(self, song:Song):
+    def add_update_song(self, song:Song) -> bool:
         """Return True if a song with matching title and artist exists, saving the track ID."""
         for count, existing_song in enumerate(self.songs):
             if existing_song.artist.find(song.artist) >= 0 and existing_song.title.find(song.title) >= 0:

@@ -6,7 +6,7 @@ from typing import List
 
 
 class SongBook:
-    """A song book is a persistent, versionable collecton of albums stored along with game options.
+    """A song book is a persistent, versionable collection of albums stored along with game options.
     """
     VERSION = 1
     PATH = "ext/songs.pkl"
@@ -17,8 +17,7 @@ class SongBook:
         if os.path.exists(SongBook.PATH):
             with open(SongBook.PATH, 'rb') as data_file:
                 sb = pickle.load(data_file)
-                data_file.close()
-                return sb
+            return sb
         return None
 
 
@@ -51,7 +50,7 @@ class SongBook:
     def validate(self):
         "Set any missing data that would occur as a result of a bad load or load from an outdated file."
         self.book_version = SongBook.VERSION
-        if not hasattr(self, "albums"): self.albums:List[Album] = []
+        if not hasattr(self, "albums"): self.albums: List[Album] = []
         if not hasattr(self, "default_song_title"): self.default_song_title = ""
         if not hasattr(self, "input_device"): self.input_device = ""
         if not hasattr(self, "output_device"): self.output_device = ""
@@ -62,8 +61,11 @@ class SongBook:
         sorted(self.albums, key=lambda album: album.get_max_score())
 
 
-    def get_album(self, id: int) -> Song:
-        return self.albums[id]
+    def get_album_by_name(self, name: str) -> Album:
+        for a in self.albums:
+            if a.name == name:
+                return a
+        return None
 
 
     def get_num_albums(self):
@@ -90,26 +92,17 @@ class SongBook:
             return a.find_song(title, artist)
 
 
-    def add_update_song(self, song:Song):
-        """Return True if a song with matching title and artist exists, saving the track ID."""
-        for count, existing_song in enumerate(self.songs):
-            if existing_song.artist.find(song.artist) >= 0 and existing_song.title.find(song.title) >= 0:
-                song.player_track_id = self.songs[count].player_track_id
-                self.songs[count] = song
-                print(f"SongBook updated {song.get_name()}")
-                return True
-
-        self.songs.append(song)
-        print(f"SongBook added {song.path} to data file.")
-        return False
-
-
     def delete_album(self, album_id:int):
-        self.albums.remove(self.songs[album_id])
+        del self.albums[album_id]
 
 
-    def add_album(self, name:str):
+    def add_album(self, name:str) -> Album:
         """Albums are collections of songs that can be unlocked."""
-        self.albums[name] = Album()
+        existing = self.get_album_by_name(name)
+        if not existing:
+            a = Album(name)
+            self.albums.append(a)
+            existing = a
+        return existing
 
 

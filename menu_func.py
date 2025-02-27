@@ -4,9 +4,11 @@ from gamejam.quickmaff import clamp
 from song import Song
 
 
+ALBUM_SPACING = 0.33
 SONG_SPACING = 0.25
 DIALOG_COLOUR = [0.26, 0.15, 0.32, 1.0]
-
+ACTIVE_COLOR = [1.0] * 4
+INACTIVE_COLOR = [0.6] * 4
 
 class KeyboardMapping(Enum):
     NOTE_NAMES = (0,)
@@ -30,8 +32,8 @@ class Dialogs(Enum):
 
 def song_play(**kwargs):
     menu=kwargs["menu"]
-    song_id=kwargs["song_id"]
-    menu.music.load(menu.songbook.get_song(song_id))
+    song=kwargs["song"]
+    menu.music.load(song)
     menu.transition(Menus.SONGS, Menus.GAME)
 
 
@@ -58,8 +60,7 @@ def song_delete(**kwargs):
 
 def song_track_up(**kwargs):
     menu=kwargs["menu"]
-    song_id=kwargs["song_id"]
-    song = menu.songbook.get_song(song_id)
+    song=kwargs["song"]
     song.player_track_id += 1
     song.dirty = True
     widget = menu.song_widgets[song_id]
@@ -85,8 +86,8 @@ def song_list_scroll(**kwargs):
     dir = -0.1 * y 
     if dir in kwargs:
         dir=kwargs["dir"]
-        
-    scroll_max = len(menu.song_widgets) * SONG_SPACING
+
+    scroll_max = 20 * SONG_SPACING
     menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
 
 
@@ -119,7 +120,7 @@ def get_device_input_dir(**kwargs) -> bool:
 
 def get_device_input_col(**kwargs) -> list:
     dir=kwargs["dir"]
-    return [1.0] * 4 if get_device_input_dir({"dir":dir}) else [0.4] * 4
+    return ACTIVE_COLOR if get_device_input_dir({"dir":dir}) else INACTIVE_COLOR
 
 
 def set_devices_output(**kwargs):
@@ -143,7 +144,7 @@ def get_device_output_dir(**kwargs) -> bool:
 
 def get_device_output_col(**kwargs) -> list:
     dir=kwargs["dir"]
-    return [1.0] * 4 if get_device_output_dir(**kwargs) else [0.4] * 4
+    return ACTIVE_COLOR if get_device_output_dir(**kwargs) else INACTIVE_COLOR
 
 
 def devices_refresh(**kwargs):
@@ -163,7 +164,7 @@ def set_devices_input(**kwargs):
     cur_device_id = devices.index(menu.devices.input_device_name)
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.input_device_name = devices[cur_device_id]
-    menu.device_input_widget.set_text(menu.devices.input_device_name, 10, Coord2d(-0.05,0.3))
+    menu.device_input_widget.set_text(menu.devices.input_device_name, 10)
     menu.songbook.input_device = menu.devices.input_device_name
 
 
@@ -176,7 +177,7 @@ def get_device_input_dir(**kwargs) -> bool:
 
 
 def get_device_input_col(**kwargs) -> list:
-    return [1.0] * 4 if get_device_input_dir(**kwargs) else [0.4] * 4
+    return ACTIVE_COLOR if get_device_input_dir(**kwargs) else INACTIVE_COLOR
 
 
 def set_devices_output(**kwargs):
@@ -186,7 +187,7 @@ def set_devices_output(**kwargs):
     cur_device_id = devices.index(menu.devices.output_device_name)
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.output_device_name = devices[cur_device_id]
-    menu.device_output_widget.set_text(menu.devices.output_device_name, 10, Coord2d(-0.05, 0.2))
+    menu.device_output_widget.set_text(menu.devices.output_device_name, 10)
     menu.songbook.output_device = menu.devices.output_device_name
    
    

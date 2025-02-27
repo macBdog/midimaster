@@ -1,6 +1,7 @@
 import sys
 import os
 
+from album import Album
 from gamejam.coord import Coord2d
 from gamejam.font import Font
 from gamejam.gamejam import GameJam
@@ -59,15 +60,20 @@ class MidiMaster(GameJam):
         song_args = {
             "--song-add": "",
             "--song-track": "1",
+            "--song-album": Album.DefaultName,
         }
         if MidiMaster.get_cmd_argument(song_args):
             song_path = os.path.join(".", song_args["--song-add"])
             song_track = int(song_args["--song-track"])
+            song_album = int(song_args["--song-album"])
             
             def add_song(path:str, track=None):
                 new_song = Song()
                 new_song.from_midi_file(path, track)
-                self.songbook.add_update_song(new_song)
+                album = self.songbook.get_album(song_album)
+                if album is None:
+                    album = self.songbook.add_album(song_album)
+                album.add_update_song(new_song)
 
             if os.path.exists(song_path):
                 if os.path.isdir(song_path):
@@ -217,14 +223,14 @@ class MidiMaster(GameJam):
 
     def setup_input(self):
         gui = self.menu.get_menu(Menus.GAME)
-        btn_mode = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/panel_long.png", Coord2d(0.655, 0.825), Coord2d(0.32, 0.15)))
+        btn_mode = gui.add_create_widget(self.textures.create("gui/panel_long.png", Coord2d(0.655, 0.825), Coord2d(0.32, 0.15)))
         btn_mode.set_action(game_mode_toggle, {"game":self})
         
         playback_button_size = Coord2d(0.15, 0.125)
         controls_pos = Coord2d(0.775, -0.85)
-        btn_play = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnplay.tga", controls_pos - Coord2d(0.035, 0.0), playback_button_size))
-        btn_pause = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnpause.tga", controls_pos - Coord2d(0.205, 0.0), playback_button_size))
-        btn_stop = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnstop.tga", controls_pos - Coord2d(0.375, 0.0), playback_button_size))
+        btn_play = gui.add_create_widget(self.textures.create("gui/btnplay.tga", controls_pos - Coord2d(0.035, 0.0), playback_button_size))
+        btn_pause = gui.add_create_widget(self.textures.create("gui/btnpause.tga", controls_pos - Coord2d(0.205, 0.0), playback_button_size))
+        btn_stop = gui.add_create_widget(self.textures.create("gui/btnstop.tga", controls_pos - Coord2d(0.375, 0.0), playback_button_size))
         
         btn_play.set_action(game_play, {"game":self})
         btn_play.set_colour_func(game_play_button_colour, {"game":self})
@@ -232,7 +238,7 @@ class MidiMaster(GameJam):
         btn_pause.set_colour_func(game_pause_button_colour, {"game":self})
         btn_stop.set_action(game_stop_rewind, {"game":self})
         
-        btn_menu = gui.add_create_widget(self.textures.create_sprite_atlas_texture("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
+        btn_menu = gui.add_create_widget(self.textures.create("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
         btn_menu.set_action(game_back_to_menu, {"game":self})
 
         score_setup_display(self, gui, controls_pos)

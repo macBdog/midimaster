@@ -27,7 +27,7 @@ def score_setup_display(game, gui, controls_pos: Coord2d):
         tally_anim.frac = 0.0
         tally_anim.mag = 1.0
 
-    game.bg_score = gui.add_create_widget(game.textures.create_sprite_atlas_texture("score_bg.tga", score_pos, Coord2d(0.5, 0.25)))
+    game.bg_score = gui.add_create_widget(game.textures.create("score_bg.tga", score_pos, Coord2d(0.5, 0.25)))
     game.bg_score.set_colour_func(game_score_bg_colour, {"game":game})
     game.bg_score.set_align(Alignment(AlignX.Centre, AlignY.Bottom))
 
