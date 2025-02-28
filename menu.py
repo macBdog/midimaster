@@ -153,7 +153,7 @@ class Menu():
         )
 
         # Scroll indicator for song list
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create(None, Coord2d(0.9, 0.0), Coord2d(0.05, 1.6), [0.1, 0.1, 0.1, 0.5]))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create(None, Coord2d(0.9, 0.0), Coord2d(0.05, 1.6), [0.4, 0.4, 0.4, 0.5]))
         self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/sliderknob.png", Coord2d(0.9, 0.73), Coord2d(0.035, 0.035 * self.window_ratio)))
         scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnup.png", Coord2d(0.9, 0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
@@ -300,11 +300,15 @@ class Menu():
     def show_dialog(self, **kwargs):
         menu = kwargs["menu"]
         type = kwargs["type"]
+        if type == Dialogs.DEVICES:
+            self.menus[Menus.SONGS].set_active(True, False)
         menu.dialogs[type].set_active(True, True)
 
 
     def hide_dialog(self, **kwargs):
         menu = kwargs["menu"]
         type = kwargs["type"]
+        if type == Dialogs.DEVICES:
+            self.menus[Menus.SONGS].set_active(True, True)
         menu.dialogs[type].set_active(False, False)
 
