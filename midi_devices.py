@@ -33,10 +33,7 @@ class MidiDevices:
 
 
     def refresh_io(self):
-        if self._io_thread is None:
-            self._io_thread = Thread(target=self._reconnect)
-            self._io_thread.daemon = False
-            self._io_thread.start()
+        self._reconnect()
 
 
     def _reconnect(self):
@@ -55,8 +52,7 @@ class MidiDevices:
                     self._input_port = mido.open_input(input_name)
                     print(f"Opened MIDI input device with name {self.input_device_name}.")
                 except Exception as excpt:
-                    print(f"Could not open MIDI input port: {input_name}")
-                    print(excpt)
+                    print(f"Could not open MIDI input port: {input_name} with exception {excpt}.")
 
 
     def open_output(self, output_name:str):
@@ -123,7 +119,8 @@ class MidiDevices:
         if self._input_port is not None:
             self._input_port.close()
             if not self._input_port.closed:
-                print ("Unable to close input MIDI port {0}.".format(self.input_device_name))  
+                print ("Unable to close input MIDI port {0}.".format(self.input_device_name))
+            self._input_port = None
 
 
     def close_output(self):
@@ -131,6 +128,7 @@ class MidiDevices:
             self._output_port.close()
             if not self._output_port.closed:
                 print("Unable to close output MIDI port {0}.".format(self.output_device_name))
+            self._output_port = None
 
 
     def end(self):
