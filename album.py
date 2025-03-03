@@ -1,4 +1,3 @@
-from typing import List
 from song import Song
 
 class Album():
@@ -6,7 +5,7 @@ class Album():
     DefaultName = "Custom"
     def __init__(self, name = DefaultName):
         self.name = name
-        self.songs: List(Song) = []
+        self.songs: list[Song] = []
         self.expanded = False
 
 

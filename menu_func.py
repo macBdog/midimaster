@@ -11,12 +11,12 @@ ACTIVE_COLOR = [1.0] * 4
 INACTIVE_COLOR = [0.6] * 4
 
 class KeyboardMapping(Enum):
-    NOTE_NAMES = (0,)
+    NOTE_NAMES = auto()
     QWERTY_PIANO = auto()
 
 
 class MusicMode(Enum):
-    PAUSE_AND_LEARN = (0,)
+    PAUSE_AND_LEARN = auto()
     PERFORMANCE = auto()
 
 class Menus(Enum):
@@ -189,10 +189,11 @@ def set_devices_output(**kwargs):
     menu.devices.output_device_name = devices[cur_device_id]
     menu.device_output_widget.set_text(menu.devices.output_device_name, 10)
     menu.songbook.output_device = menu.devices.output_device_name
-   
-   
+
+
 def menu_quit(**kwargs):
     menu = kwargs["menu"]
+    menu.songbook.save(menu.songbook)
     menu.running = False
 
 

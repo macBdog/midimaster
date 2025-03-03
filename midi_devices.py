@@ -1,6 +1,7 @@
 import time
 from threading import Thread
 import mido
+import numpy.random as rng
 
 class MidiDevices:
     """ Manager for midi device names and message routing.
@@ -18,25 +19,17 @@ class MidiDevices:
 
 
     def output_test(self):
-        if self._io_thread is None:
-            self._io_thread = Thread(target=self._create_test_output)
-            self._io_thread.daemon = False
-            self._io_thread.start()
+        note_val = rng.randint(32, 64)
+        new_note_on = mido.Message("note_on")
+        new_note_on.note = note_val
+        new_note_on.velocity = 100
+        self.output(new_note_on)
 
-
-    def _create_test_output(self):
-        note_on = mido.Message("note_on")
-        note_on.note = 60
-        note_on.velocity = 100
-        self._output_messages.append(note_on)
-
-        time.sleep(2.0)
+        time.sleep(0.075)
 
         note_off = mido.Message("note_off")
-        note_off.note = 60
-        note_off.velocity = 100
-        self._output_messages.append(note_off)
-        self.io_thread = None
+        note_off.note = note_val
+        self.output(new_note_on)
 
 
     def refresh_io(self):
@@ -74,8 +67,7 @@ class MidiDevices:
                     self._output_port = mido.open_output(output_name)
                     print(f"Opened MIDI output device with name {self.output_device_name}.")
                 except Exception as excpt:
-                    print(f"Could not open MIDI ouput port: {output_name}")
-                    print(excpt)
+                    print(f"Could not open MIDI ouput port: {output_name} with exception {excpt}.")
 
 
     def open_input_default(self):
@@ -84,8 +76,7 @@ class MidiDevices:
             self.input_device_name = self._input_port.name
             print(f"Opened MIDI input device with name {self.input_device_name}.")
         except Exception as excpt:
-            print(f"Could not open default MIDI input port.")
-            print(excpt)
+            print(f"Could not open default MIDI input port with exception {excpt}.")
 
 
     def open_output_default(self):
@@ -94,8 +85,7 @@ class MidiDevices:
             self.output_device_name = self._output_port.name
             print(f"Opened MIDI output device with name {self.output_device_name}.")
         except Exception as excpt:
-            print("Could not open default MIDI output port.")
-            print(excpt)
+            print("Could not open default MIDI output port with exception {excpt}.")
 
 
     def output(self, message):
@@ -124,7 +114,7 @@ class MidiDevices:
                 self._input_messages.append(message)
 
         if self.output_device_name:
-            for message in self._output_messages:               
+            for message in self._output_messages:
                 self._output_port.send(message)
             self._output_messages = []
 

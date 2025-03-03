@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List
 
 from gamejam.animation import AnimType
 from gamejam.coord import Coord2d
@@ -41,14 +40,14 @@ class SongWidget:
 @dataclass()
 class AlbumWidget:
     name: Widget
-    songs: List[SongWidget]
+    songs: list[SongWidget]
 
 
 class Menu():
     """Utility class to separate all the gui element drawing from main game logic."""
     def __init__(self, graphics: Graphics, input: Input, gui: Gui, devices: MidiDevices, width: int, height: int, textures: TextureManager):
-        self.menus: Dict[Gui] = {}
-        self.dialogs: Dict[Gui] = {}
+        self.menus: dict[Gui] = {}
+        self.dialogs: dict[Gui] = {}
         self.elements = {m:{} for m in Menus}
         self.graphics = graphics
         self.input = input
@@ -57,7 +56,7 @@ class Menu():
         self.window_height = height
         self.window_ratio = width / height
         self.textures = textures
-        self.song_albums: List[AlbumWidget] = []
+        self.song_albums: list[AlbumWidget] = []
         self.song_scroll = 0.0
         self.song_scroll_target = 0.0
         self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
@@ -234,6 +233,12 @@ class Menu():
         output_up.set_action(set_devices_output, {"menu":self, "dir":1})
         output_up.set_colour_func(get_device_output_col, {"menu":self, "dir":1})
 
+        output_label = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, f"Note Input: ", 10, Coord2d(-0.3, 0.1))
+        output_label.set_text_colour([0.7] * 4)
+
+        self.device_note_input_widget = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, "N/A", 8, Coord2d(-0.05, 0.1))
+        self.device_note_input_widget.set_text_colour([0.9] * 4)
+
         self.devices_apply = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(0.2,-0.2), Coord2d(0.2, 0.08 * self.window_ratio)), self.font)
         self.devices_apply.set_text(f"Reconnect", 11, Coord2d(-0.07, -0.015))
         self.devices_apply.set_text_colour([0.9] * 4)
@@ -257,7 +262,7 @@ class Menu():
                             if name == "note_bg_btm": widget.sprite.set_colour(self.note_correct_colour)
                             if name == "note_bg_top": widget.sprite.set_colour(self.note_correct_colour)
                             self.note_correct_colour = [max(0.65, i - 0.5 * dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
-        
+
         input, draw = self.is_menu_active(Menus.SONGS)
         if input or draw:
             self.song_scroll = lerp(self.song_scroll, self.song_scroll_target, dt * 5.0)
@@ -266,11 +271,21 @@ class Menu():
                 self.scroll_widget.set_offset(Coord2d(0.9, 0.73 - (1.44 * (self.song_scroll / scroll_max))))
                 self._set_album_menu_pos()
 
+        devices_active = self.is_dialog_active(Dialogs.DEVICES)
+        if devices_active:
+            self.devices.update()
+            for m in self.devices.get_input_messages():
+                m_output = f"{m.type}"
+                if hasattr(m, "note"):
+                    m_output += f" Note {m.note}"
+                self.device_note_input_widget.set_text(m_output, 8)
+            self.devices.input_flush()
+
 
     def set_event(self, name:str):
         """Element specific per-event updates"""
         if name == "score_vfx":
-            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]            
+            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
 
 
     def transition(self, from_menu: Menus, to_menu: Menus):
@@ -281,20 +296,20 @@ class Menu():
     def get_menu(self, type: Menus):
         return self.menus[type]
 
-    
+
     def is_menu_active(self, type: Menus):
         menu_input, menu_draw = self.menus[type].is_active()
         if self.is_any_dialog_active():
             return False, menu_draw
         return menu_input, menu_draw
 
-    
+
     def is_any_dialog_active(self):
-        return False
+        return len({k:v for (k,v) in self.dialogs.items() if v.active_input and v.active_draw}) > 0
 
 
     def is_dialog_active(self, type: Dialogs):
-        return False
+        return self.dialogs[type].active_input and self.dialogs[type].active_draw
 
 
     def show_dialog(self, **kwargs):

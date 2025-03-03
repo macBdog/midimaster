@@ -1,8 +1,9 @@
 import os
 import pickle
+from pathlib import Path
+
 from song import Song
 from album import Album
-from typing import List
 
 
 class SongBook:
@@ -50,7 +51,7 @@ class SongBook:
     def validate(self):
         "Set any missing data that would occur as a result of a bad load or load from an outdated file."
         self.book_version = SongBook.VERSION
-        if not hasattr(self, "albums"): self.albums: List[Album] = []
+        if not hasattr(self, "albums"): self.albums: list[Album] = []
         if not hasattr(self, "default_song_title"): self.default_song_title = ""
         if not hasattr(self, "input_device"): self.input_device = ""
         if not hasattr(self, "output_device"): self.output_device = ""
@@ -106,3 +107,12 @@ class SongBook:
         return existing
 
 
+    def add_update_from_midi(self, midi_path: Path, track_id: int, album_name:str):
+        album = self.get_album_by_name(album_name)
+        if album is None:
+            album = self.add_album(album_name)
+
+        if midi_path.exists():
+            new_song = Song()
+            new_song.from_midi_file(midi_path, track_id)
+            album.add_update_song(new_song)

@@ -26,7 +26,7 @@ class Notes:
         self.note_positions = note_positions
         self.staff = staff
         self.ref_c4_pos = [Staff.Pos[0], note_positions[60]]
-        
+
         # Create the barlines with 0 being the immovable 0 bar
         staff_width = Staff.StaffSpacing * 4.0
         for i in range(self.num_barlines):
@@ -164,7 +164,7 @@ class Notes:
                         else:
                             y_diff = note_positions[hat_note.note_drawn] - note_positions[hat_tallest_note]
                         hat_note.extra = [0.0, y_diff]
-                      
+
                 # Remove the tail from the last note in the chain
                 hats[num_hats - 1].hat = [0.0, -1.0]
 

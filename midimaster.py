@@ -66,31 +66,30 @@ class MidiMaster(GameJam):
             song_path = os.path.join(".", song_args["--song-add"])
             song_track = int(song_args["--song-track"])
             song_album = int(song_args["--song-album"])
-            
-            def add_song(path:str, track=None):
-                new_song = Song()
-                new_song.from_midi_file(path, track)
-                album = self.songbook.get_album(song_album)
-                if album is None:
-                    album = self.songbook.add_album(song_album)
-                album.add_update_song(new_song)
 
             if os.path.exists(song_path):
                 if os.path.isdir(song_path):
                     for file in os.listdir(song_path):
                         full_path = os.path.join(song_path, file)
                         if os.path.isfile(full_path) and file.find("mid") >= 0:
-                            add_song(full_path, song_track)
+                            self.songbook.add_update_from_midi(full_path, song_track, song_album)
                 elif os.path.isfile(song_path):
-                    add_song(song_path, song_track)
+                    self.songbook.add_update_from_midi(song_path, song_album)
             else:
                 print(f"Cannot find specificed midi file or folder {song_path}! Exiting.")
                 exit()
 
         # Connect midi inputs and outputs
         self.devices = MidiDevices()
-        self.devices.open_input_default()
-        self.devices.open_output_default()
+        if self.songbook.input_device:
+            self.devices.open_input(self.songbook.input_device)
+        else:
+            self.devices.open_input_default()
+
+        if self.songbook.output_device:
+            self.devices.open_output(self.songbook.output_device)
+        else:
+            self.devices.open_output_default()
 
         # Setup all the game systems
         self.staff = Staff()

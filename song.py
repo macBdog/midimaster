@@ -67,11 +67,12 @@ class Song:
         self.path = filepath
 
         # Derive track name from filename
-        last_dir_sep = filepath.rfind(os.sep)
-        lsep = filepath.rfind('/')
-        wsep = filepath.rfind('\\')
+        filestr = str(filepath)
+        last_dir_sep = filestr.rfind(os.sep)
+        lsep = filestr.rfind('/')
+        wsep = filestr.rfind('\\')
         last_dir_sep = max(last_dir_sep, lsep, wsep)
-        songname = filepath if last_dir_sep <= 0 else filepath[last_dir_sep + 1:]
+        songname = filestr if last_dir_sep <= 0 else filestr[last_dir_sep + 1:]
         self.title = songname.replace('.mid', '')
         self.artist = "MidiFile"
 
