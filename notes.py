@@ -159,9 +159,10 @@ class Notes:
                     for count in range(num_hats):
                         hat_note = hats[count]
                         hat_note.hat = [hat_note.length, 0.0]
+                        y_diff = 0
                         if hat_dir and hat_tallest_note in note_positions:
                             y_diff = note_positions[hat_tallest_note] - note_positions[hat_note.note_drawn]
-                        else:
+                        elif hat_tallest_note in note_positions:
                             y_diff = note_positions[hat_note.note_drawn] - note_positions[hat_tallest_note]
                         hat_note.extra = [0.0, y_diff]
 

@@ -86,4 +86,4 @@ def score_update_draw(game, dt):
             game.tally[i].animation.frac = max(game.tally[i].animation.frac - (dt * idx * 0.5), 0.0)
 
     game.score_fade -= dt * 0.5
-    #game.font_game.draw(f"{math.floor(game.score)} XP", 22, game.bg_score.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])
+    game.font_game.draw(f"{math.floor(game.score)} XP", 22, game.bg_score.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])

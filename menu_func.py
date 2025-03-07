@@ -39,42 +39,44 @@ def song_play(**kwargs):
 
 def song_reload(**kwargs):
     menu=kwargs["menu"]
-    song_id=kwargs["song_id"]
-    existing_song = menu.songbook.get_song(song_id)
+    album=kwargs["album"]
+    song=kwargs["song"]
     new_song = Song()
-    new_song.from_midi_file(existing_song.path, existing_song.player_track_id)
-    menu.songbook.add_update_song(new_song)
+    new_song.from_midi_file(song.path, song.player_track_id)
+    album.add_update_song(new_song)
     menu._set_album_menu_pos()
 
 
 def song_delete(**kwargs):
     menu=kwargs["menu"]
-    song_id=kwargs["song_id"]
-    widgets = menu.song_widgets[song_id]
-    for elem in widgets:
-        menu.menus[Menus.SONGS].delete_widget(widgets[elem])
-    menu.song_widgets.pop(song_id)
-    menu.songbook.delete_song(song_id)
+    album=kwargs["album"]
+    song=kwargs["song"]
+    widget=kwargs["widget"]
+    menu.menus[Menus.SONGS].delete_widget(widget.play)
+    menu.menus[Menus.SONGS].delete_widget(widget.score)
+    menu.menus[Menus.SONGS].delete_widget(widget.delete)
+    menu.menus[Menus.SONGS].delete_widget(widget.reload)
+    menu.menus[Menus.SONGS].delete_widget(widget.track_display)
+    menu.menus[Menus.SONGS].delete_widget(widget.track_down)
+    menu.menus[Menus.SONGS].delete_widget(widget.track_up)
+    album.delete_song(song)
     menu._set_album_menu_pos()
 
 
 def song_track_up(**kwargs):
-    menu=kwargs["menu"]
+    widget=kwargs["widget"]
     song=kwargs["song"]
     song.player_track_id += 1
     song.dirty = True
-    widget = menu.song_widgets[song_id]
-    widget["track_display"].set_text(get_track_display_text(song), 9)
+    widget.set_text(get_track_display_text(song), 9)
 
 
 def song_track_down(**kwargs):
-    menu=kwargs["menu"]
-    song_id=kwargs["song_id"]
-    song = menu.songbook.get_song(song_id)
+    widget=kwargs["widget"]
+    song=kwargs["song"]
     song.player_track_id = max(song.player_track_id-1, 0)
     song.dirty = True
-    widget = menu.song_widgets[song_id]
-    widget["track_display"].set_text(get_track_display_text(song), 9)
+    widget.set_text(get_track_display_text(song), 9)
 
 
 def song_list_scroll(**kwargs):
@@ -91,7 +93,7 @@ def song_list_scroll(**kwargs):
     menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
 
 
-def get_track_display_text(song) -> str:
+def get_track_display_text(song: Song) -> str:
     track = song.player_track_id
     if track in song.track_names:
         return f"{song.player_track_id}: ({song.track_names[song.player_track_id]})"

@@ -43,6 +43,14 @@ class AlbumWidget:
     songs: list[SongWidget]
 
 
+# Pos and size of song selection scroll bar
+SONG_SCRL_PX = 0.9
+SONG_SCRL_PY = -0.2
+SONG_SCRL_SX = 0.05
+SONG_SCRL_SY = 1.4
+SONG_SCRL_H = SONG_SCRL_SY - SONG_SCRL_SX * 3
+
+
 class Menu():
     """Utility class to separate all the gui element drawing from main game logic."""
     def __init__(self, graphics: Graphics, input: Input, gui: Gui, devices: MidiDevices, width: int, height: int, textures: TextureManager):
@@ -118,10 +126,12 @@ class Menu():
 
 
     def _set_album_menu_pos(self):
+        cutoff = 0.55
         item_pos = Coord2d(-0.5, self.song_scroll+0.25)
         for album_widget in self.song_albums:
             item_pos.x = -0.5
             album_widget.name.set_offset(Coord2d(item_pos.x, item_pos.y))
+            album_widget.name.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
             item_pos.y -= SONG_SPACING * 0.5
             item_pos.x = -0.3
 
@@ -134,8 +144,15 @@ class Menu():
                 song_widget.track_display.set_offset(Coord2d(track_pos.x, track_pos.y))
                 song_widget.track_down.set_offset(Coord2d(track_pos.x-0.02, track_pos.y + 0.02))
                 song_widget.track_up.set_offset(Coord2d(track_pos.x+0.3, track_pos.y + 0.02))
-                item_pos.y -= SONG_SPACING
 
+                song_widget.play.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                song_widget.delete.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                song_widget.reload.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                song_widget.score.set_disabled(item_pos.y < -1.0 or item_pos.y-0.03 > cutoff)
+                song_widget.track_display.set_disabled(item_pos.y < -1.0 or track_pos.y > cutoff)
+                song_widget.track_down.set_disabled(item_pos.y < -1.0 or track_pos.y + 0.02 > cutoff)
+                song_widget.track_up.set_disabled(item_pos.y < -1.0 or track_pos.y + 0.02 > cutoff)
+                item_pos.y -= SONG_SPACING
             item_pos.y -= ALBUM_SPACING
 
 
@@ -147,16 +164,16 @@ class Menu():
         menu_row = 0.8
         menu_thirds = 2.0 / 4
         menu_item_size = Coord2d(0.31, 0.18)
-        self.menus[Menus.SONGS].add_create_widget(
-            self.textures.create("vgradient.png", Coord2d(0.0, menu_row), Coord2d(2.0, 0.5), [0.7, 0.5, 0.7, 0.6])
-        )
+
+        # Bar to highlight the menu options at top of screen (alpha not working great)
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create("vgradient.png", Coord2d(0.0, menu_row), Coord2d(2.0, 0.5), [0.7, 0.5, 0.7, 0.56]))
 
         # Scroll indicator for song list
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create(None, Coord2d(0.9, 0.0), Coord2d(0.05, 1.6), [0.4, 0.4, 0.4, 0.5]))
-        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/sliderknob.png", Coord2d(0.9, 0.73), Coord2d(0.035, 0.035 * self.window_ratio)))
-        scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnup.png", Coord2d(0.9, 0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create(None, Coord2d(SONG_SCRL_PX, SONG_SCRL_PY),  Coord2d(SONG_SCRL_SX, SONG_SCRL_SY), [0.4, 0.4, 0.4, 0.5]))
+        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/sliderknob.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_H * 0.5), Coord2d(0.035, 0.035 * self.window_ratio)))
+        scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnup.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_SY * 0.5), Coord2d(SONG_SCRL_SX, SONG_SCRL_SX * self.window_ratio)))
         scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
-        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btndown.png", Coord2d(0.9,-0.8), Coord2d(0.05, 0.05 * self.window_ratio)))
+        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btndown.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_SY * -0.5), Coord2d(SONG_SCRL_SX, SONG_SCRL_SX * self.window_ratio)))
         scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
@@ -177,23 +194,23 @@ class Menu():
                 song_widget.play.set_text_colour([0.85, 0.85, 0.85, 0.85])
                 song_widget.play.set_action(song_play, {"menu":self, "song":song})
 
-                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, f"{round((0 / song.get_max_score()) * 100.0, 1)}%", 14)
+                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, f"0/{song.get_max_score()} XP", 14)
 
                 song_widget.delete = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btntrash.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
-                song_widget.delete.set_action(song_delete, {"menu":self, "song_id":i})
+                song_widget.delete.set_action(song_delete, {"menu":self, "album": album, "song":song, "widget": song_widget})
 
                 song_widget.reload = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnreload.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
-                song_widget.reload.set_action(song_reload, {"menu": self, "song_id":i})
+                song_widget.reload.set_action(song_reload, {"menu": self, "album": album, "song": song})
 
                 song_widget.track_display = self.menus[Menus.SONGS].add_create_text_widget(self.font, get_track_display_text(song), 9)
                 song_widget.track_display.set_text_colour([0.7] * 4)
 
                 track_button_size = 0.035
                 song_widget.track_down = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnback.png", Coord2d(), Coord2d(track_button_size, track_button_size * self.window_ratio)))
-                song_widget.track_down.set_action(song_track_down, {"menu": self, "song_id":i})
+                song_widget.track_down.set_action(song_track_down, {"widget": song_widget.track_display, "song": song})
 
                 song_widget.track_up = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnnext.png", Coord2d(0.0,0.0), Coord2d(track_button_size, track_button_size * self.window_ratio)))
-                song_widget.track_up.set_action(song_track_up, {"menu": self, "song_id":i})
+                song_widget.track_up.set_action(song_track_up, {"widget": song_widget.track_display, "song": song})
                 album_widget.songs.append(song_widget)
         self._set_album_menu_pos()
 
@@ -268,7 +285,9 @@ class Menu():
             self.song_scroll = lerp(self.song_scroll, self.song_scroll_target, dt * 5.0)
             if abs(self.song_scroll - self.song_scroll_target) > 0.01:
                 scroll_max = 20 * SONG_SPACING
-                self.scroll_widget.set_offset(Coord2d(0.9, 0.73 - (1.44 * (self.song_scroll / scroll_max))))
+                scrl_frac = self.song_scroll / scroll_max
+                scrl_start = SONG_SCRL_PY + (SONG_SCRL_H * 0.5)
+                self.scroll_widget.set_offset(Coord2d(SONG_SCRL_PX, scrl_start - (scrl_frac * SONG_SCRL_H)))
                 self._set_album_menu_pos()
 
         devices_active = self.is_dialog_active(Dialogs.DEVICES)
