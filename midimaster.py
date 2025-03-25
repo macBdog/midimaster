@@ -22,9 +22,10 @@ from note_render import NoteRender
 from mido import Message
 from midi_devices import MidiDevices
 from menu_func import (
-    KeyboardMapping, MusicMode,
+    Dialogs, KeyboardMapping, MusicMode,
     game_play, game_pause, game_stop_rewind, game_back_to_menu, game_mode_toggle,
     game_pause_button_colour, game_play_button_colour,
+    song_over,
 )
 
 
@@ -39,17 +40,28 @@ class MidiMaster(GameJam):
         self.note_width_32nd = Staff.NoteWidth32nd       
         self.mode = MusicMode.PERFORMANCE
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
+
+        self.staff: Staff = None
+        self.menu: Menu = None
+        self.font_game: Font = None
+        self.note_render: NoteRender = None
+        self.music: Music = None
+
         self.reset()
 
 
     def reset(self):
         self.score = 0
+        self.score_max = 0
         self.score_fade = 0.0
         self.music_time = 0.0  # The number of elapsed 32nd notes as a factor of absolute time
         self.player_notes_down = {}
         self.midi_notes = {}
         self.scored_notes = {}
         self.music_running = False
+
+        if self.music:
+            self.score_max = self.music.song.get_max_score()
 
 
     def prepare(self):
@@ -99,7 +111,7 @@ class MidiMaster(GameJam):
         self.note_render = NoteRender(self.graphics, self.staff)
         self.music = Music(self.graphics, self.note_render, self.staff)
         self.menu.prepare(self.font_game, self.music, self.songbook)
-        
+
         if GameSettings.DEV_MODE:
             default_song = self.songbook.get_default_song()
             if default_song is None:
@@ -109,8 +121,9 @@ class MidiMaster(GameJam):
 
         self.setup_input()
 
-    def update(self, dt):
+        #self.score_max = self.music.song.get_max_score()
 
+    def update(self, dt):
         self.menu.update(dt, self.music_running)
         if self.menu.running == False:
             self.quit()
@@ -118,6 +131,9 @@ class MidiMaster(GameJam):
         _, game_draw_active = self.menu.is_menu_active(Menus.GAME)
         if not game_draw_active:
             return
+
+        if self.score_max == 0 and self.music.song is not None:
+            self.score_max = self.music.song.get_max_score()
 
         # Handle events from MIDI input, echo to output so player can hear
         for message in self.devices.get_input_messages():
@@ -149,6 +165,11 @@ class MidiMaster(GameJam):
             music_time_advance = dt * Song.SDQNotesPerBeat * (tempo_recip_60 * self.music.tempo_bpm)
             if self.music_running:
                 self.music_time += music_time_advance
+
+            # End playback at the end of the song
+            if self.music_time >= self.music.song.notes[-1].time + 16:
+                self.music_running = False
+                self.menu.show_dialog(menu=self.menu, type=Dialogs.GAME_OVER)
 
             # Play the backing track in sync with the player
             self.music.update(self.dt, self.music_time, self.devices)
@@ -239,6 +260,12 @@ class MidiMaster(GameJam):
         
         btn_menu = gui.add_create_widget(self.textures.create("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
         btn_menu.set_action(game_back_to_menu, {"game":self})
+
+        game_over = self.menu.get_dialog(Dialogs.GAME_OVER)
+        retry_widget = game_over.get_widget("retry")
+        retry_widget.set_action(song_over, {"menu": self.menu, "game": self})
+        back_widget = game_over.get_widget("back")
+        back_widget.set_action(song_over, {"menu": self.menu, "game": self})
 
         score_setup_display(self, gui, controls_pos)
 

@@ -31,7 +31,7 @@ class Song:
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.track_names = {}
         self.backing_tracks = {}
-        self.notes = []
+        self.notes = list[Note]
         self.dirty = False
 
 
@@ -40,7 +40,7 @@ class Song:
 
 
     def get_max_score(self):
-        return max(len(self.notes), 1)
+        return max(len(self.notes), 1) * 10
 
 
     def from_random(self, note_len_range: tuple, note_spacing_range: tuple, song_length_notes:int=16, allowed_notes:list=None):

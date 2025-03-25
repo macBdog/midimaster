@@ -12,6 +12,7 @@ class Staff:
         Notes by the score notes hitting the playhead.
        """
     ScoreBoxTexture = "score_zone.png"
+    ScoreFadeThreshold = 0.95
     OriginNote = 40 # Lowest note playable, E2 on Piano, E String on Guitar
     NumNotes = 48
     BaseAlphaNote = 0.35
@@ -120,7 +121,7 @@ class Staff:
         self.playing_notes[note] = True
         highlight_id = note - Staff.OriginNote
         self.note_highlight[highlight_id] = 1.0
-    
+
 
     def note_off(self, note: int):
         if note in self.playing_notes:
@@ -131,20 +132,18 @@ class Staff:
         return self.playing_notes
 
 
-    def is_scoring(self):
+    def is_scoring(self) -> bool:
         """Are there notes playing in the music and the input at the same time.
         :return: bool True if matching staff and scoreboard id of simultaneously held notes."""
-
-        for _, (n, s) in enumerate(zip(self.note_highlight, self.score_highlight)):
-            if n >= 1.0 and s >= 1.0:
+        for note, (n, s) in enumerate(zip(self.note_highlight, self.score_highlight)):
+            if n >= Staff.ScoreFadeThreshold and s >= Staff.ScoreFadeThreshold:
                 return True
 
         return False
-    
-    
+
+
     def draw(self, dt: float):
         """Pull the playing note and scoring box alpha down to 0"""
-
         for i in range(Staff.NumNotes):
             self.note_box[i].sprite.set_alpha(self.note_highlight[i])
             self.score_box[i].sprite.set_alpha(self.score_highlight[i])

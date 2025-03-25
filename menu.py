@@ -89,7 +89,7 @@ class Menu():
         title.animate(AnimType.FadeInOutSmooth, splash_anim_time)
         title.animation.set_action(splash_anim_time, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": splash_destination})
         self._set_elem(Menus.SPLASH, "title", title)
-        
+
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
         self.menus[Menus.GAME] = Gui("game_screen", self.graphics, gui.debug_font, False)
         self.menus[Menus.GAME].add_create_widget(self.textures.create("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
@@ -112,9 +112,14 @@ class Menu():
         dialog_size = Coord2d(0.8, 1.1)
         self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, gui.debug_font, False)
         self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create(None, Coord2d(), dialog_size, DIALOG_COLOUR))
-        delete_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
-        delete_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
+        close_devices_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
+        close_devices_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
         gui.add_child(self.dialogs[Dialogs.DEVICES])
+
+        dialog_size = Coord2d(0.7, 0.7)
+        self.dialogs[Dialogs.GAME_OVER] = Gui("game_over", self.graphics, gui.debug_font, False)
+        self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create(None, Coord2d(), dialog_size, DIALOG_COLOUR))
+        gui.add_child(self.dialogs[Dialogs.GAME_OVER])
 
 
     def _get_elem(self, menu: Menus, name: str):
@@ -266,6 +271,20 @@ class Menu():
         self.devices_test.set_text_colour([0.9] * 4)
         self.devices_test.set_action(devices_output_test, {"menu":self})
 
+        # Game over screen
+        title_widget = self.dialogs[Dialogs.GAME_OVER].add_create_text_widget(self.font, "Song Over!", 24, Coord2d(-0.1, 0.1))
+        title_widget.set_text_colour([0.7] * 4)
+
+        retry_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(0.2, -0.2), Coord2d(0.2, 0.09 * self.window_ratio)), self.font)
+        retry_widget.name = "retry"
+        retry_widget.set_text(f"Retry", 11, Coord2d(-0.1, -0.015))
+        retry_widget.set_text_colour([0.9] * 4)
+
+        back_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(-0.2, -0.2), Coord2d(0.35, 0.09 * self.window_ratio)), self.font)
+        back_widget.name = "back"
+        back_widget.set_text(f"Play Another", 11, Coord2d(-0.15, -0.015))
+        back_widget.set_text_colour([0.9] * 4)
+
 
     def update(self, dt: float, music_running: bool):
         """Element specific per-frame updates"""
@@ -312,8 +331,12 @@ class Menu():
         self.menus[to_menu].set_active(True, True)
 
 
-    def get_menu(self, type: Menus):
+    def get_menu(self, type: Menus) -> Gui:
         return self.menus[type]
+
+
+    def get_dialog(self, type: Dialogs) -> Gui:
+        return self.dialogs[type]
 
 
     def is_menu_active(self, type: Menus):
@@ -345,4 +368,5 @@ class Menu():
         if type == Dialogs.DEVICES:
             self.menus[Menus.SONGS].set_active(True, True)
         menu.dialogs[type].set_active(False, False)
+
 
