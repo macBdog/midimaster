@@ -105,7 +105,10 @@ def set_devices_input(**kwargs):
     menu=kwargs["menu"]
     dir=kwargs["dir"]
     devices = menu.devices.input_devices
-    cur_device_id = devices.index(menu.devices.input_device_name)
+    if menu.devices.input_device_name in devices:
+        cur_device_id = devices.index(menu.devices.input_device_name)
+    else:
+        cur_device_id = 0
     cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
     menu.devices.input_device_name = devices[cur_device_id]
     menu.device_input_widget.set_text(menu.devices.input_device_name, 10, Coord2d(-0.05, 0.3))
@@ -116,7 +119,10 @@ def get_device_input_dir(**kwargs) -> bool:
     menu=kwargs["menu"]
     dir=kwargs["dir"]
     devices = menu.devices.input_devices
-    cur_device_id = devices.index(menu.devices.input_device_name)
+    if menu.devices.input_device_name in devices:
+        cur_device_id = devices.index(menu.devices.input_device_name)
+    else:
+        cur_device_id = 0
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
 
@@ -140,7 +146,10 @@ def get_device_output_dir(**kwargs) -> bool:
     menu=kwargs["menu"]
     dir=kwargs["dir"]
     devices = menu.devices.output_devices
-    cur_device_id = devices.index(menu.devices.output_device_name)
+    if menu.devices.output_device_name in devices:
+        cur_device_id = devices.index(menu.devices.output_device_name)
+    else:
+        cur_device_id = 0
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
 
@@ -163,8 +172,11 @@ def set_devices_input(**kwargs):
     menu=kwargs["menu"]
     dir=kwargs["dir"]
     devices = menu.devices.input_devices
-    cur_device_id = devices.index(menu.devices.input_device_name)
-    cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
+    if menu.devices.input_device_name in devices:
+        cur_device_id = devices.index(menu.devices.input_device_name)
+        cur_device_id = clamp(cur_device_id + dir, 0, len(devices) - 1)
+    else:
+        cur_device_id = 0
     menu.devices.input_device_name = devices[cur_device_id]
     menu.device_input_widget.set_text(menu.devices.input_device_name, 10)
     menu.songbook.input_device = menu.devices.input_device_name
@@ -174,7 +186,9 @@ def get_device_input_dir(**kwargs) -> bool:
     menu=kwargs["menu"]
     dir=kwargs["dir"]
     devices = menu.devices.input_devices
-    cur_device_id = devices.index(menu.devices.input_device_name)
+    cur_device_id = 0 
+    if menu.devices.input_device_name in devices:
+        cur_device_id = devices.index(menu.devices.input_device_name)
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
 
@@ -229,6 +243,10 @@ def game_mode_toggle(**kwargs):
 
 def game_back_to_menu(**kwargs):
     game = kwargs["game"]
+    menu = kwargs["menu"]
+    if menu.dialogs[Dialogs.GAME_OVER].active_input and menu.dialogs[Dialogs.GAME_OVER].active_draw:
+        return
+
     game_pause(**kwargs)
     existing_score = game.music.song.score[game.mode] if game.mode in game.music.song.score else 0
     game.music.song.score[game.mode] = max(game.score, existing_score)
@@ -256,5 +274,8 @@ def song_over(**kwargs):
     menu = kwargs["menu"]
     game = kwargs["game"]
     menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
+
+    score_widget = menu.dialogs[Dialogs.GAME_OVER].get_widget("score")
+    score_widget.set_text(f"Score: {game.music.song.score}", 18, Coord2d())
     game.reset()
     game.music.rewind()

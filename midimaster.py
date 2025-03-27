@@ -259,7 +259,7 @@ class MidiMaster(GameJam):
         btn_stop.set_action(game_stop_rewind, {"game":self})
         
         btn_menu = gui.add_create_widget(self.textures.create("gui/btnback.png", Coord2d(-0.85, 0.85), Coord2d(0.075, 0.075 * self.window_ratio)))
-        btn_menu.set_action(game_back_to_menu, {"game":self})
+        btn_menu.set_action(game_back_to_menu, {"menu": self.menu, "game":self})
 
         game_over = self.menu.get_dialog(Dialogs.GAME_OVER)
         retry_widget = game_over.get_widget("retry")

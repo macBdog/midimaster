@@ -47,23 +47,27 @@ class MidiDevices:
     def open_input(self, input_name:str):
         if self._input_port is None:
             self.input_device_name = input_name
-            if input_name in self.input_devices:
-                try:
-                    self._input_port = mido.open_input(input_name)
-                    print(f"Opened MIDI input device with name {self.input_device_name}.")
-                except Exception as excpt:
-                    print(f"Could not open MIDI input port: {input_name} with exception {excpt}.")
+            if input_name not in self.input_devices:
+                input_name = self.input_devices[0]
+
+            try:
+                self._input_port = mido.open_input(input_name)
+                print(f"Opened MIDI input device with name {self.input_device_name}.")
+            except Exception as excpt:
+                print(f"Could not open MIDI input port: {input_name} with exception {excpt}.")
 
 
     def open_output(self, output_name:str):
         if self._output_port is None:
             self.output_device_name = output_name
-            if output_name in self.output_devices:
-                try:
-                    self._output_port = mido.open_output(output_name)
-                    print(f"Opened MIDI output device with name {self.output_device_name}.")
-                except Exception as excpt:
-                    print(f"Could not open MIDI ouput port: {output_name} with exception {excpt}.")
+            if output_name not in self.output_devices:
+                output_name = self.output_devices[0]
+
+            try:
+                self._output_port = mido.open_output(output_name)
+                print(f"Opened MIDI output device with name {self.output_device_name}.")
+            except Exception as excpt:
+                print(f"Could not open MIDI ouput port: {output_name} with exception {excpt}.")
 
 
     def open_input_default(self):

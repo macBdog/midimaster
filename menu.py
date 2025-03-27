@@ -116,7 +116,7 @@ class Menu():
         close_devices_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
         gui.add_child(self.dialogs[Dialogs.DEVICES])
 
-        dialog_size = Coord2d(0.7, 0.7)
+        dialog_size = Coord2d(0.7, 0.9)
         self.dialogs[Dialogs.GAME_OVER] = Gui("game_over", self.graphics, gui.debug_font, False)
         self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create(None, Coord2d(), dialog_size, DIALOG_COLOUR))
         gui.add_child(self.dialogs[Dialogs.GAME_OVER])
@@ -272,18 +272,22 @@ class Menu():
         self.devices_test.set_action(devices_output_test, {"menu":self})
 
         # Game over screen
-        title_widget = self.dialogs[Dialogs.GAME_OVER].add_create_text_widget(self.font, "Song Over!", 24, Coord2d(-0.1, 0.1))
-        title_widget.set_text_colour([0.7] * 4)
+        title_widget = self.dialogs[Dialogs.GAME_OVER].add_create_text_widget(self.font, "Song Over !", 24, Coord2d(-0.2, 0.2))
+        title_widget.set_text_colour([0.9] * 4)
 
-        retry_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(0.2, -0.2), Coord2d(0.2, 0.09 * self.window_ratio)), self.font)
+        score_widget = self.dialogs[Dialogs.GAME_OVER].add_create_text_widget(self.font, f"Score: 0", 18, Coord2d(-0.1, 0.0))
+        score_widget.name = "score"
+        score_widget.set_text_colour([0.9] * 4)
+
+        retry_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(0.2, -0.25), Coord2d(0.2, 0.09 * self.window_ratio)), self.font)
         retry_widget.name = "retry"
-        retry_widget.set_text(f"Retry", 11, Coord2d(-0.1, -0.015))
-        retry_widget.set_text_colour([0.9] * 4)
+        retry_widget.set_text(f"Retry", 11, Coord2d(-0.05, -0.015))
+        retry_widget.set_text_colour([0.7] * 4)
 
-        back_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(-0.2, -0.2), Coord2d(0.35, 0.09 * self.window_ratio)), self.font)
+        back_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(-0.15, -0.25), Coord2d(0.27, 0.09 * self.window_ratio)), self.font)
         back_widget.name = "back"
-        back_widget.set_text(f"Play Another", 11, Coord2d(-0.15, -0.015))
-        back_widget.set_text_colour([0.9] * 4)
+        back_widget.set_text(f"Play Another", 11, Coord2d(-0.1, -0.015))
+        back_widget.set_text_colour([0.7] * 4)
 
 
     def update(self, dt: float, music_running: bool):
