@@ -1,5 +1,4 @@
 import time
-from threading import Thread
 import mido
 import numpy.random as rng
 
@@ -7,8 +6,8 @@ class MidiDevices:
     """ Manager for midi device names and message routing.
     """
     def __init__(self):
-        self._input_messages = []
-        self._output_messages = []
+        self._input_messages: list[mido.Message] = []
+        self._output_messages: list[mido.Message] = []
         self._input_port = None
         self._output_port = None
         self._io_thread = None
@@ -91,7 +90,7 @@ class MidiDevices:
     def output(self, message):
         self._output_messages.append(message)
 
-    
+
     def get_output_messages(self):
         return self._output_messages
 

@@ -28,7 +28,7 @@ class Album():
         return len(self.songs)
 
 
-    def find_song(self, title:str, artist:str) -> Song:
+    def find_song(self, title:str, artist:str = "") -> Song:
         """Return a song where the title and artist matches."""
         for song in self.songs:
             if song.artist.find(artist) >= 0 or song.title.find(title) >= 0:

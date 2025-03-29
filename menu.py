@@ -15,7 +15,7 @@ from midi_devices import MidiDevices
 from scrolling_background import ScrollingBackground
 from menu_func import (
     ALBUM_SPACING, SONG_SPACING, DIALOG_COLOUR,
-    Menus, Dialogs,
+    MusicMode, Menus, Dialogs,
     song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
     get_track_display_text,
     set_devices_input, get_device_input_col, 
@@ -199,7 +199,8 @@ class Menu():
                 song_widget.play.set_text_colour([0.85, 0.85, 0.85, 0.85])
                 song_widget.play.set_action(song_play, {"menu":self, "song":song})
 
-                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, f"0/{song.get_max_score()} XP", 14)
+                cur_score = 0 if MusicMode.PERFORMANCE not in song.score else song.score[MusicMode.PERFORMANCE]
+                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, f"{round(cur_score)}/{round(song.get_max_score())} XP", 14)
 
                 song_widget.delete = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btntrash.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
                 song_widget.delete.set_action(song_delete, {"menu":self, "album": album, "song":song, "widget": song_widget})

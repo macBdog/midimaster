@@ -25,7 +25,7 @@ from menu_func import (
     Dialogs, KeyboardMapping, MusicMode,
     game_play, game_pause, game_stop_rewind, game_back_to_menu, game_mode_toggle,
     game_pause_button_colour, game_play_button_colour,
-    song_over,
+    song_over_back,
 )
 
 
@@ -169,6 +169,12 @@ class MidiMaster(GameJam):
             # End playback at the end of the song
             if self.music_time >= self.music.song.notes[-1].time + 16:
                 self.music_running = False
+
+                if self.score > self.music.song.score[self.mode]:
+                    self.music.song.score[self.mode] = round(self.score)
+
+                score_widget = self.menu.dialogs[Dialogs.GAME_OVER].get_widget("score")
+                score_widget.set_text(f"Score: {round(self.score)} / {self.score_max}", 18, Coord2d())
                 self.menu.show_dialog(menu=self.menu, type=Dialogs.GAME_OVER)
 
             # Play the backing track in sync with the player
@@ -263,9 +269,9 @@ class MidiMaster(GameJam):
 
         game_over = self.menu.get_dialog(Dialogs.GAME_OVER)
         retry_widget = game_over.get_widget("retry")
-        retry_widget.set_action(song_over, {"menu": self.menu, "game": self})
+        retry_widget.set_action(song_over_back, {"menu": self.menu, "game": self})
         back_widget = game_over.get_widget("back")
-        back_widget.set_action(song_over, {"menu": self.menu, "game": self})
+        back_widget.set_action(song_over_back, {"menu": self.menu, "game": self})
 
         score_setup_display(self, gui, controls_pos)
 

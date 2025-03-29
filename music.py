@@ -1,4 +1,6 @@
 
+import mido
+
 from gamejam.graphics import Graphics
 
 from midi_devices import MidiDevices
@@ -12,6 +14,10 @@ class Music:
     """A music class is a notes object populated from an on disk midi file.
     self.notes is a list of all the notes in the file for rendering and scoring
     self.keys is a dictionary keyed by note number to keep track on note on and note off events."""
+    ClickFreq = Song.SDQNotesPerBeat
+    ClickNote = 42 # Closed hi-hat, 39 = Hand clap, 56 = Cowbell
+    ClickProgram = 113
+    ClickChannel = 9
 
     def __init__(self, graphics: Graphics, note_render: NoteRender, staff: Staff):
         self.graphics = graphics
@@ -23,6 +29,10 @@ class Music:
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.backing_index = {}
         self.backing_time = {}
+        self.click = True
+        self.click_init = False
+        self.last_click = -Music.ClickFreq + 0.01
+        self.last_click_off = False
 
 
     def load(self, song:Song):
@@ -45,17 +55,42 @@ class Music:
         self.notes.rewind()
         self.backing_index = {track: 0 for track in self.backing_index}
         self.backing_time = {track: 0.0 for track in self.backing_time}
+        self.last_click = -Music.ClickFreq + 0.01
+        self.last_click_off = False
 
 
     def reset(self):
         self.notes.reset()
         self.backing_index = {}
         self.backing_time = {}
-        
-    
+        self.last_click = -Music.ClickFreq + 0.01
+        self.last_click_off = False
+        self.click_init = False
+
+
     def update(self, dt: float, music_time: float, devices: MidiDevices):
         """Play MIDI messages that are not for interactive scoring by the player."""
         music_time_in_ticks = (music_time / Song.SDQNotesPerBeat) * self.ticks_per_beat
+
+        if self.click:
+            if not self.click_init:
+                click_control = mido.Message("control_change", channel=Music.ClickChannel, control=1, value=Music.ClickProgram, time=0)
+                devices.output(click_control)
+            
+            if self.last_click_off:
+                self.last_click_off = False
+                click_on = mido.Message("note_off", channel=Music.ClickChannel)
+                click_on.note = Music.ClickNote
+                devices.output(click_on)
+
+            if music_time - self.last_click >= Music.ClickFreq:
+                self.last_click_off = True
+                click_on = mido.Message("note_on", channel=Music.ClickChannel)
+                click_on.note = Music.ClickNote
+                click_on.velocity = 100
+                devices.output(click_on)
+                tick_recip = music_time - self.last_click - Music.ClickFreq
+                self.last_click = music_time - tick_recip
 
         def update_backing_track(id: int, ticks_time: float):
             b_len = len(self.song.backing_tracks[id])

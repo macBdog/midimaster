@@ -79,7 +79,7 @@ class SongBook:
 
     def get_default_song(self) -> Song:
         for album in self.albums:
-            song = album.find_song(self.default_song_title)
+            song = album.find_song(title=self.default_song_title)
             if song is not None:
                 return song
         if len(self.albums) > 0:

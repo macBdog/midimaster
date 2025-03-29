@@ -270,12 +270,11 @@ def game_score_bg_colour(**kwargs):
     return [1.0, 1.0, 1.0, max(game.score_fade, 0.75)]
 
 
-def song_over(**kwargs):
+def song_over_back(**kwargs):
     menu = kwargs["menu"]
     game = kwargs["game"]
     menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
-
-    score_widget = menu.dialogs[Dialogs.GAME_OVER].get_widget("score")
-    score_widget.set_text(f"Score: {game.music.song.score}", 18, Coord2d())
+    
+    # TODO: Either go back or rewind
     game.reset()
     game.music.rewind()

@@ -31,7 +31,7 @@ class Song:
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.track_names = {}
         self.backing_tracks = {}
-        self.notes = list[Note]
+        self.notes: list[Note] = []
         self.dirty = False
 
 
