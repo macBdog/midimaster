@@ -161,6 +161,26 @@ class Menu():
             item_pos.y -= ALBUM_SPACING
 
 
+    def get_song_score_text(self, song, mode: MusicMode = MusicMode.PERFORMANCE):
+        cur_score = 0 if mode not in song.score else song.score[mode]
+        return f"{round(cur_score)}/{round(song.get_max_score())} XP"
+
+
+    def refresh_song_display(self):
+        num_albums = self.songbook.get_num_albums()
+        for i in range(num_albums):
+            album = self.songbook.albums[i]
+            album_widget = self.song_albums[i]
+
+            for count, song in enumerate(album.songs):
+                song_widget = album_widget.songs[count]
+                song_widget.play.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
+
+                song_widget.score.set_text(self.get_song_score_text(song), 14)
+                song_widget.track_display.set_text(get_track_display_text(song), 9)
+        self._set_album_menu_pos()
+
+
     def prepare(self, font, music, songbook):
         self.font = font
         self.music = music
@@ -195,12 +215,10 @@ class Menu():
                 song_widget = SongWidget()
 
                 song_widget.play = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnplay.tga", Coord2d(), Coord2d(0.125, 0.1)), self.font)
-                song_widget.play.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
                 song_widget.play.set_text_colour([0.85, 0.85, 0.85, 0.85])
                 song_widget.play.set_action(song_play, {"menu":self, "song":song})
 
-                cur_score = 0 if MusicMode.PERFORMANCE not in song.score else song.score[MusicMode.PERFORMANCE]
-                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, f"{round(cur_score)}/{round(song.get_max_score())} XP", 14)
+                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, self.get_song_score_text(song), 14)
 
                 song_widget.delete = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btntrash.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
                 song_widget.delete.set_action(song_delete, {"menu":self, "album": album, "song":song, "widget": song_widget})
@@ -218,7 +236,7 @@ class Menu():
                 song_widget.track_up = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnnext.png", Coord2d(0.0,0.0), Coord2d(track_button_size, track_button_size * self.window_ratio)))
                 song_widget.track_up.set_action(song_track_up, {"widget": song_widget.track_display, "song": song})
                 album_widget.songs.append(song_widget)
-        self._set_album_menu_pos()
+        self.refresh_song_display()
 
         btn_devices = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btn_devices.png", Coord2d(-1.0 + menu_thirds * 1, menu_row), menu_item_size))
         btn_devices.set_action(self.show_dialog, {"menu": self, "type": Dialogs.DEVICES})

@@ -25,7 +25,7 @@ from menu_func import (
     Dialogs, KeyboardMapping, MusicMode,
     game_play, game_pause, game_stop_rewind, game_back_to_menu, game_mode_toggle,
     game_pause_button_colour, game_play_button_colour,
-    song_over_back,
+    song_over_back, song_over_retry,
 )
 
 
@@ -170,7 +170,7 @@ class MidiMaster(GameJam):
             if self.music_time >= self.music.song.notes[-1].time + 16:
                 self.music_running = False
 
-                if self.score > self.music.song.score[self.mode]:
+                if self.mode not in self.music.song.score or self.score > self.music.song.score[self.mode]:
                     self.music.song.score[self.mode] = round(self.score)
 
                 score_widget = self.menu.dialogs[Dialogs.GAME_OVER].get_widget("score")
@@ -269,7 +269,7 @@ class MidiMaster(GameJam):
 
         game_over = self.menu.get_dialog(Dialogs.GAME_OVER)
         retry_widget = game_over.get_widget("retry")
-        retry_widget.set_action(song_over_back, {"menu": self.menu, "game": self})
+        retry_widget.set_action(song_over_retry, {"menu": self.menu, "game": self})
         back_widget = game_over.get_widget("back")
         back_widget.set_action(song_over_back, {"menu": self.menu, "game": self})
 

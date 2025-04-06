@@ -3,7 +3,7 @@ from gamejam.animation import AnimType
 from gamejam.coord import Coord2d
 from gamejam.widget import Alignment, AlignX, AlignY
 
-from menu_func import game_score_bg_colour
+from menu_func import game_score_bg_colour, TROPHY_SCORE
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -54,12 +54,14 @@ def score_vfx(game: 'MidiMaster', note_id: int = None):
 
 
 def score_playable_note_on(game: 'MidiMaster', note):
-    trophies = [game.score_max * 0.5, game.score_max * 0.75, game.score_max]
+    trophies = [r * game.score_max for r in TROPHY_SCORE]
     for i in range(3):
-        game.tally[i].animation.frac = game.score / max(trophies[i], 1.0)
+        frac = game.score / max(trophies[i], 1.0)
+        anim_type = AnimType.Throb if frac >= 1.0 else AnimType.FillRadial
+        game.tally[i].animation.frac = frac
         game.tally[i].animation.mag = 1.0
         game.tally[i].animation.time = -1
-        game.tally[i].animation.set_animation(AnimType.FillRadial, True)
+        game.tally[i].animation.set_animation(anim_type, True)
 
 
 def score_player_note_on(game: 'MidiMaster', message):

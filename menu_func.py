@@ -16,8 +16,22 @@ class KeyboardMapping(Enum):
 
 
 class MusicMode(Enum):
-    PAUSE_AND_LEARN = auto()
-    PERFORMANCE = auto()
+    PAUSE_AND_LEARN = auto() # Music pauses at each note and counts down from max to min score
+    PERFORMANCE = auto() # Each note's score is determined time to note start
+
+
+class Tropy(Enum):
+    VINYL = 0,
+    TAPE = 1,
+    LASER = 2,
+
+
+TROPHY_SCORE = [
+    0.55,
+    0.7,
+    0.9,
+]
+
 
 class Menus(Enum):
     SPLASH = auto()
@@ -44,6 +58,7 @@ def song_reload(**kwargs):
     new_song = Song()
     new_song.from_midi_file(song.path, song.player_track_id)
     album.add_update_song(new_song)
+    menu.music.load(new_song)
     menu._set_album_menu_pos()
 
 
@@ -253,6 +268,7 @@ def game_back_to_menu(**kwargs):
     game.reset()
     game.music.reset()
     game.menu.transition(Menus.GAME, Menus.SONGS)
+    game.menu.refresh_song_display()
 
 
 def game_play_button_colour(**kwargs):
@@ -274,7 +290,16 @@ def song_over_back(**kwargs):
     menu = kwargs["menu"]
     game = kwargs["game"]
     menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
-    
-    # TODO: Either go back or rewind
+
+    game.reset()
+    game.music.rewind()
+    game_back_to_menu(**{"menu": menu, "game":game})
+
+
+def song_over_retry(**kwargs):
+    menu = kwargs["menu"]
+    game = kwargs["game"]
+    menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
+
     game.reset()
     game.music.rewind()
