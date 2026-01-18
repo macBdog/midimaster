@@ -8,10 +8,11 @@ from gamejam.graphics import Graphics
 from gamejam.input import Input
 from gamejam.settings import GameSettings
 from gamejam.quickmaff import lerp
-from gamejam.texture import TextureManager, SpriteTexture
+from gamejam.texture import TextureManager
 from gamejam.widget import Widget
 from gamejam.font import Font
 
+from notes import Notes
 from staff import Staff
 from midi_devices import MidiDevices
 from scrolling_background import ScrollingBackground
@@ -563,7 +564,7 @@ class Menu():
             for m in self.devices.get_input_messages():
                 m_output = f"{m.type}"
                 if hasattr(m, "note"):
-                    m_output += f" Note {m.note}"
+                    m_output += f" Note {m.note} - {Notes.note_number_to_name(m.note)}"
                     self.device_note_input_widget.set_text(m_output, 8)
             self.devices.input_flush()
 

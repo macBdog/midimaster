@@ -15,6 +15,15 @@ class Notes:
     for each piece of music, then notes manages when they should be on-screen.
     """
     BarlineWidth = 0.005
+
+    @staticmethod
+    def note_number_to_name(note_num: int) -> str:
+        """Convert from midi note numbers to human readable name"""
+        note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        octave = (note_num // 12) - 1
+        note_name = note_names[note_num % 12]
+        return f"{note_name}{octave}"
+
     def __init__(self, graphics:Graphics, note_render: NoteRender, staff: Staff, note_positions: list):
         self.graphics = graphics
         self.note_render = note_render
