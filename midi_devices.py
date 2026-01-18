@@ -23,12 +23,14 @@ class MidiDevices:
         new_note_on.note = note_val
         new_note_on.velocity = 100
         self.output(new_note_on)
+        self.update()
 
         time.sleep(0.075)
 
         note_off = mido.Message("note_off")
         note_off.note = note_val
-        self.output(new_note_on)
+        self.output(note_off)
+        self.update()
 
 
     def refresh_io(self):
