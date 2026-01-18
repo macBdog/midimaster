@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List, Tuple
 
 from gamejam.animation import AnimType
 from gamejam.coord import Coord2d
@@ -7,8 +8,9 @@ from gamejam.graphics import Graphics
 from gamejam.input import Input
 from gamejam.settings import GameSettings
 from gamejam.quickmaff import lerp
-from gamejam.texture import TextureManager
+from gamejam.texture import TextureManager, SpriteTexture
 from gamejam.widget import Widget
+from gamejam.font import Font
 
 from staff import Staff
 from midi_devices import MidiDevices
@@ -26,6 +28,112 @@ from menu_func import (
 )
 
 
+# Configuration Constants
+class MenuConfig:
+    """Centralized configuration for menu layout and styling"""
+    # Button sizes
+    SMALL_BUTTON_SIZE = 0.035
+    MEDIUM_BUTTON_SIZE = 0.05
+    TRACK_BUTTON_SIZE = 0.035
+    
+    # Menu positioning
+    MENU_ROW_Y = 0.8
+    MENU_ITEM_SIZE = Coord2d(0.31, 0.18)
+    
+    # Colors
+    TEXT_COLOR_BRIGHT = [0.9] * 4
+    TEXT_COLOR_NORMAL = [0.85] * 4
+    TEXT_COLOR_DIM = [0.7] * 4
+    
+    # Splash screen
+    SPLASH_ANIM_TIME_DEV = 0.15
+    SPLASH_ANIM_TIME_NORMAL = 2.0
+    
+    # Game background
+    GAME_BG_COLOR = [0.5] * 4
+    NOTE_BG_SIZE_TOP = 0.65
+    NOTE_BG_SIZE_BTM = 1.25
+    
+    # Device dialog
+    DEVICE_DIALOG_SIZE = Coord2d(0.8, 1.1)
+    DEVICE_INPUT_Y = 0.3
+    DEVICE_OUTPUT_Y = 0.2
+    DEVICE_NOTE_INPUT_Y = 0.1
+    DEVICE_BUTTON_SPACING = 0.4  # Horizontal spacing between left and right buttons
+    
+    # Game over dialog
+    GAME_OVER_DIALOG_SIZE = Coord2d(0.7, 0.9)
+
+
+class WidgetFactory:
+    """Helper class for creating GUI widgets with less boilerplate"""
+    
+    @staticmethod
+    def create_button(gui: Gui, textures: TextureManager, texture_path: str, 
+                      pos: Coord2d, size: Coord2d, action=None, action_args=None,
+                      font: Font = None, text: str = None, text_size: int = 11,
+                      text_offset: Coord2d = None, color_func=None, color_func_args=None) -> Widget:
+        """Create a button widget with texture, action, and optional text"""
+        widget = gui.add_create_widget(textures.create(texture_path, pos, size), font)
+        
+        if action:
+            widget.set_action(action, action_args or {})
+        
+        if color_func:
+            widget.set_colour_func(color_func, color_func_args or {})
+        
+        if text:
+            offset = text_offset or Coord2d()
+            widget.set_text(text, text_size, offset)
+        
+        return widget
+    
+    @staticmethod
+    def create_text(gui: Gui, font: Font, text: str, size: int, 
+                    pos: Coord2d = None, color: list = None) -> Widget:
+        """Create a text widget with font, text, and color"""
+        widget = gui.add_create_text_widget(font, text, size, pos)
+        
+        if color:
+            widget.set_text_colour(color)
+        
+        return widget
+    
+    @staticmethod
+    def create_button_pair(gui: Gui, textures: TextureManager, window_ratio: float,
+                          texture_prev: str, texture_next: str,
+                          base_pos: Coord2d, size: float,
+                          action_prev, action_args_prev: dict,
+                          action_next, action_args_next: dict,
+                          offset_x: float = 0.1, offset_y: float = 0.0,
+                          color_func_prev=None, color_func_next=None) -> Tuple[Widget, Widget]:
+        """Create a pair of navigation buttons (prev/next, up/down, etc.)"""
+        button_size = Coord2d(size, size * window_ratio)
+        
+        pos_prev = Coord2d(base_pos.x - offset_x, base_pos.y + offset_y)
+        widget_prev = WidgetFactory.create_button(
+            gui, textures, texture_prev, pos_prev, button_size,
+            action_prev, action_args_prev,
+            color_func=color_func_prev, color_func_args=action_args_prev
+        )
+        
+        pos_next = Coord2d(base_pos.x + offset_x, base_pos.y + offset_y)
+        widget_next = WidgetFactory.create_button(
+            gui, textures, texture_next, pos_next, button_size,
+            action_next, action_args_next,
+            color_func=color_func_next, color_func_args=action_args_next
+        )
+        
+        return widget_prev, widget_next
+    
+    @staticmethod
+    def create_dialog_background(gui: Gui, textures: TextureManager, 
+                                 size: Coord2d, color: list = None) -> Widget:
+        """Create a dialog background widget"""
+        bg_color = color or DIALOG_COLOUR
+        return gui.add_create_widget(textures.create(None, Coord2d(), size, bg_color))
+
+
 @dataclass(init=False)
 class SongWidget:
     play: Widget
@@ -40,7 +148,7 @@ class SongWidget:
 @dataclass()
 class AlbumWidget:
     name: Widget
-    songs: list[SongWidget]
+    songs: List[SongWidget]
 
 
 # Pos and size of song selection scroll bar
@@ -72,55 +180,71 @@ class Menu():
 
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", Coord2d(), Coord2d(0.25, 0.25 * self.window_ratio)))
 
-        # Create sub-guis for each screen of the game, starting with active splash screen
-        self.menus[Menus.SPLASH] = Gui("splash_screen", self.graphics, gui.debug_font, False)
-        gui.add_child(self.menus[Menus.SPLASH])
+        # Create sub-guis for each screen
+        self._create_splash_menu(gui)
+        self._create_songs_menu(gui)
+        self._create_game_menu(gui)
+        self._create_dialogs(gui)
 
+
+    def _create_splash_menu(self, parent_gui: Gui):
+        """Create and configure the splash screen menu"""
+        self.menus[Menus.SPLASH] = Gui("splash_screen", self.graphics, parent_gui.debug_font, False)
+        parent_gui.add_child(self.menus[Menus.SPLASH])
+        
         self.menus[Menus.SPLASH].set_active(True, True)
         self.menus[Menus.SPLASH].add_create_widget(self.textures.create("splash_background.png", Coord2d(), Coord2d(2.0, 2.0)))
-
-        self.menus[Menus.SONGS] = Gui("menu_screen", self.graphics, gui.debug_font, False)
-        gui.add_child(self.menus[Menus.SONGS])
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/menu_bg.png", Coord2d(), Coord2d(2.0, 2.0)))
-
-        splash_anim_time = 0.15 if GameSettings.DEV_MODE else 2.0
+        
+        splash_anim_time = MenuConfig.SPLASH_ANIM_TIME_DEV if GameSettings.DEV_MODE else MenuConfig.SPLASH_ANIM_TIME_NORMAL
         splash_destination = Menus.GAME if GameSettings.DEV_MODE else Menus.SONGS
         title = self.menus[Menus.SPLASH].add_create_widget(name="splash_title", sprite=self.textures.create_sprite_texture("gui/imgtitle.tga", Coord2d(), Coord2d(0.6, 0.6)))
         title.animate(AnimType.FadeInOutSmooth, splash_anim_time)
         title.animation.set_action(splash_anim_time, menu_transition, {"menu": self, "from": Menus.SPLASH, "to": splash_destination})
         self._set_elem(Menus.SPLASH, "title", title)
-
+    
+    def _create_songs_menu(self, parent_gui: Gui):
+        """Create and configure the songs menu"""
+        self.menus[Menus.SONGS] = Gui("menu_screen", self.graphics, parent_gui.debug_font, False)
+        parent_gui.add_child(self.menus[Menus.SONGS])
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/menu_bg.png", Coord2d(), Coord2d(2.0, 2.0)))
+    
+    def _create_game_menu(self, parent_gui: Gui):
+        """Create and configure the game screen menu"""
         game_bg_pos_x = Staff.Pos[0] + Staff.Width * 0.5
-        self.menus[Menus.GAME] = Gui("game_screen", self.graphics, gui.debug_font, False)
+        self.menus[Menus.GAME] = Gui("game_screen", self.graphics, parent_gui.debug_font, False)
         self.menus[Menus.GAME].add_create_widget(self.textures.create("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
-        self.menus[Menus.GAME].add_create_widget(self.textures.create(None, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0), [0.5] * 4))
-        gui.add_child(self.menus[Menus.GAME])
-
-        bg_size_top = 0.65
-        bg_size_btm = 1.25
+        self.menus[Menus.GAME].add_create_widget(self.textures.create(None, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0), MenuConfig.GAME_BG_COLOR))
+        parent_gui.add_child(self.menus[Menus.GAME])
+        
+        # Add note background gradients
         note_bg_top = self.menus[Menus.GAME].add_create_widget(
-            self.textures.create("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (bg_size_top * 0.5)), Coord2d(Staff.Width, bg_size_top * -1.0), self.note_correct_colour)
+            self.textures.create("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (MenuConfig.NOTE_BG_SIZE_TOP * 0.5)), Coord2d(Staff.Width, MenuConfig.NOTE_BG_SIZE_TOP * -1.0), self.note_correct_colour)
         )
         note_bg_btm = self.menus[Menus.GAME].add_create_widget(
-            self.textures.create("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] - bg_size_btm * 0.5), Coord2d(Staff.Width, bg_size_btm), self.note_correct_colour)
+            self.textures.create("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] - MenuConfig.NOTE_BG_SIZE_BTM * 0.5), Coord2d(Staff.Width, MenuConfig.NOTE_BG_SIZE_BTM), self.note_correct_colour)
         )
         self._set_elem(Menus.GAME, "note_bg_top", note_bg_top)
         self._set_elem(Menus.GAME, "note_bg_btm", note_bg_btm)
         self._set_elem(Menus.GAME, "bg", ScrollingBackground(self.graphics, self.textures, "menu_glyphs.tga"))
-
-        # Create the dialogs
-        dialog_size = Coord2d(0.8, 1.1)
-        self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, gui.debug_font, False)
-        self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create(None, Coord2d(), dialog_size, DIALOG_COLOUR))
-        close_devices_widget = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/checkboxon.tga", Coord2d(dialog_size.x * 0.5, dialog_size.y * 0.5), Coord2d(0.05, 0.05 * self.window_ratio)))
-        close_devices_widget.set_action(self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES})
-        gui.add_child(self.dialogs[Dialogs.DEVICES])
-
-        dialog_size = Coord2d(0.7, 0.9)
-        self.dialogs[Dialogs.GAME_OVER] = Gui("game_over", self.graphics, gui.debug_font, False)
-        self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create(None, Coord2d(), dialog_size, DIALOG_COLOUR))
-        gui.add_child(self.dialogs[Dialogs.GAME_OVER])
-
+    
+    def _create_dialogs(self, parent_gui: Gui):
+        """Create and configure all dialog windows"""
+        # Devices dialog
+        self.dialogs[Dialogs.DEVICES] = Gui("devices", self.graphics, parent_gui.debug_font, False)
+        WidgetFactory.create_dialog_background(self.dialogs[Dialogs.DEVICES], self.textures, MenuConfig.DEVICE_DIALOG_SIZE)
+        close_button_size = Coord2d(MenuConfig.MEDIUM_BUTTON_SIZE, MenuConfig.MEDIUM_BUTTON_SIZE * self.window_ratio)
+        close_button_pos = Coord2d(MenuConfig.DEVICE_DIALOG_SIZE.x * 0.5, MenuConfig.DEVICE_DIALOG_SIZE.y * 0.5)
+        close_devices_widget = WidgetFactory.create_button(
+            self.dialogs[Dialogs.DEVICES], self.textures, "gui/checkboxon.tga",
+            close_button_pos, close_button_size,
+            self.hide_dialog, {"menu": self, "type": Dialogs.DEVICES}
+        )
+        parent_gui.add_child(self.dialogs[Dialogs.DEVICES])
+        
+        # Game over dialog
+        self.dialogs[Dialogs.GAME_OVER] = Gui("game_over", self.graphics, parent_gui.debug_font, False)
+        WidgetFactory.create_dialog_background(self.dialogs[Dialogs.GAME_OVER], self.textures, MenuConfig.GAME_OVER_DIALOG_SIZE)
+        parent_gui.add_child(self.dialogs[Dialogs.GAME_OVER])
 
     def _get_elem(self, menu: Menus, name: str):
         return self.elements[menu][name]
@@ -128,6 +252,139 @@ class Menu():
 
     def _set_elem(self, menu: Menus, name: str, widget):
         self.elements[menu][name] = widget
+    
+    def _create_song_widget(self, album, song) -> SongWidget:
+        """Create all widgets for a single song entry"""
+        song_widget = SongWidget()
+        button_size = Coord2d(MenuConfig.MEDIUM_BUTTON_SIZE, MenuConfig.MEDIUM_BUTTON_SIZE * self.window_ratio)
+        
+        # Play button with text
+        song_widget.play = WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/btnplay.tga",
+            Coord2d(), Coord2d(0.125, 0.1),
+            song_play, {"menu": self, "song": song},
+            font=self.font
+        )
+        song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
+        
+        # Score display
+        song_widget.score = WidgetFactory.create_text(
+            self.menus[Menus.SONGS], self.font,
+            self.get_song_score_text(song), 14
+        )
+        
+        # Delete and reload buttons
+        song_widget.delete = WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/btntrash.png",
+            Coord2d(), button_size,
+            song_delete, {"menu": self, "album": album, "song": song, "widget": song_widget}
+        )
+        
+        song_widget.reload = WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/btnreload.png",
+            Coord2d(), button_size,
+            song_reload, {"menu": self, "album": album, "song": song}
+        )
+        
+        # Track display and navigation buttons
+        song_widget.track_display = WidgetFactory.create_text(
+            self.menus[Menus.SONGS], self.font,
+            get_track_display_text(song), 9,
+            color=MenuConfig.TEXT_COLOR_DIM
+        )
+        
+        song_widget.track_down, song_widget.track_up = WidgetFactory.create_button_pair(
+            self.menus[Menus.SONGS], self.textures, self.window_ratio,
+            "gui/btnback.png", "gui/btnnext.png",
+            Coord2d(), MenuConfig.TRACK_BUTTON_SIZE,
+            song_track_down, {"widget": song_widget.track_display, "song": song},
+            song_track_up, {"widget": song_widget.track_display, "song": song},
+            offset_x=0.16, offset_y=0.0
+        )
+        
+        return song_widget
+    
+    def _setup_device_dialog(self):
+        """Setup all widgets for the device configuration dialog"""
+        # Input device section
+        WidgetFactory.create_text(
+            self.dialogs[Dialogs.DEVICES], self.font,
+            "Input ", 10, Coord2d(-0.3, MenuConfig.DEVICE_INPUT_Y),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
+        
+        self.device_input_widget = WidgetFactory.create_text(
+            self.dialogs[Dialogs.DEVICES], self.font,
+            self.devices.input_device_name, 8, Coord2d(-0.05, MenuConfig.DEVICE_INPUT_Y),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
+        
+        WidgetFactory.create_button_pair(
+            self.dialogs[Dialogs.DEVICES], self.textures, self.window_ratio,
+            "gui/btnback.png", "gui/btnnext.png",
+            Coord2d(0.125, MenuConfig.DEVICE_INPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
+            set_devices_input, {"menu": self, "dir": -1},
+            set_devices_input, {"menu": self, "dir": 1},
+            offset_x=0.225, offset_y=0.0,
+            color_func_prev=get_device_input_col,
+            color_func_next=get_device_input_col
+        )
+        
+        # Output device section
+        WidgetFactory.create_text(
+            self.dialogs[Dialogs.DEVICES], self.font,
+            "Output: ", 10, Coord2d(-0.3, MenuConfig.DEVICE_OUTPUT_Y),
+            color=MenuConfig.TEXT_COLOR_DIM
+        )
+        
+        self.device_output_widget = WidgetFactory.create_text(
+            self.dialogs[Dialogs.DEVICES], self.font,
+            self.devices.output_device_name, 8, Coord2d(-0.05, MenuConfig.DEVICE_OUTPUT_Y),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
+        
+        WidgetFactory.create_button_pair(
+            self.dialogs[Dialogs.DEVICES], self.textures, self.window_ratio,
+            "gui/btnback.png", "gui/btnnext.png",
+            Coord2d(0.125, MenuConfig.DEVICE_OUTPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
+            set_devices_output, {"menu": self, "dir": -1},
+            set_devices_output, {"menu": self, "dir": 1},
+            offset_x=0.225, offset_y=0.0,
+            color_func_prev=get_device_output_col,
+            color_func_next=get_device_output_col
+        )
+        
+        # Note input display
+        WidgetFactory.create_text(
+            self.dialogs[Dialogs.DEVICES], self.font,
+            "Note Input: ", 10, Coord2d(-0.3, MenuConfig.DEVICE_NOTE_INPUT_Y),
+            color=MenuConfig.TEXT_COLOR_DIM
+        )
+        
+        self.device_note_input_widget = WidgetFactory.create_text(
+            self.dialogs[Dialogs.DEVICES], self.font,
+            "N/A", 8, Coord2d(-0.05, MenuConfig.DEVICE_NOTE_INPUT_Y),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
+        
+        # Action buttons
+        self.devices_apply = WidgetFactory.create_button(
+            self.dialogs[Dialogs.DEVICES], self.textures, "gui/panel.tga",
+            Coord2d(0.2, -0.2), Coord2d(0.2, 0.08 * self.window_ratio),
+            devices_refresh, {"menu": self},
+            font=self.font, text="Reconnect", text_size=11,
+            text_offset=Coord2d(-0.07, -0.015)
+        )
+        self.devices_apply.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
+        
+        self.devices_test = WidgetFactory.create_button(
+            self.dialogs[Dialogs.DEVICES], self.textures, "gui/panel.tga",
+            Coord2d(-0.2, -0.2), Coord2d(0.25, 0.08 * self.window_ratio),
+            devices_output_test, {"menu": self},
+            font=self.font, text="Test Output", text_size=11,
+            text_offset=Coord2d(-0.1, -0.015)
+        )
+        self.devices_test.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
 
 
     def _set_album_menu_pos(self):
@@ -186,127 +443,95 @@ class Menu():
         self.music = music
         self.songbook = songbook
 
-        menu_row = 0.8
         menu_thirds = 2.0 / 4
-        menu_item_size = Coord2d(0.31, 0.18)
 
-        # Bar to highlight the menu options at top of screen (alpha not working great)
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create("vgradient.png", Coord2d(0.0, menu_row), Coord2d(2.0, 0.5), [0.7, 0.5, 0.7, 0.56]))
+        # Bar to highlight the menu options at top of screen
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create("vgradient.png", Coord2d(0.0, MenuConfig.MENU_ROW_Y), Coord2d(2.0, 0.5), [0.7, 0.5, 0.7, 0.56]))
 
         # Scroll indicator for song list
         self.menus[Menus.SONGS].add_create_widget(self.textures.create(None, Coord2d(SONG_SCRL_PX, SONG_SCRL_PY),  Coord2d(SONG_SCRL_SX, SONG_SCRL_SY), [0.4, 0.4, 0.4, 0.5]))
         self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/sliderknob.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_H * 0.5), Coord2d(0.035, 0.035 * self.window_ratio)))
-        scroll_up_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnup.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_SY * 0.5), Coord2d(SONG_SCRL_SX, SONG_SCRL_SX * self.window_ratio)))
-        scroll_up_widget.set_action(song_list_scroll, {"menu":self, "dir":-0.333})
-        scroll_down_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btndown.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_SY * -0.5), Coord2d(SONG_SCRL_SX, SONG_SCRL_SX * self.window_ratio)))
-        scroll_down_widget.set_action(song_list_scroll, {"menu":self, "dir":0.333})
+        
+        # Scroll buttons
+        WidgetFactory.create_button_pair(
+            self.menus[Menus.SONGS], self.textures, self.window_ratio,
+            "gui/btnup.png", "gui/btndown.png",
+            Coord2d(SONG_SCRL_PX, SONG_SCRL_PY), SONG_SCRL_SX,
+            song_list_scroll, {"menu": self, "dir": -0.333},
+            song_list_scroll, {"menu": self, "dir": 0.333},
+            offset_x=0.0, offset_y=SONG_SCRL_SY * 0.5
+        )
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
+        # Create album and song widgets
         num_albums = self.songbook.get_num_albums()
         for i in range(num_albums):
             album = self.songbook.albums[i]
 
-            album_name = self.menus[Menus.SONGS].add_create_text_widget(self.font, album.name, 16)
-            album_name.set_text_colour([0.85] * 4)
+            album_name = WidgetFactory.create_text(
+                self.menus[Menus.SONGS], self.font,
+                album.name, 16, color=MenuConfig.TEXT_COLOR_NORMAL
+            )
             album_widget = AlbumWidget(album_name, [])
             self.song_albums.append(album_widget)
 
             for song in album.songs:
-                song_widget = SongWidget()
-
-                song_widget.play = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnplay.tga", Coord2d(), Coord2d(0.125, 0.1)), self.font)
-                song_widget.play.set_text_colour([0.85, 0.85, 0.85, 0.85])
-                song_widget.play.set_action(song_play, {"menu":self, "song":song})
-
-                song_widget.score = self.menus[Menus.SONGS].add_create_text_widget(self.font, self.get_song_score_text(song), 14)
-
-                song_widget.delete = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btntrash.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
-                song_widget.delete.set_action(song_delete, {"menu":self, "album": album, "song":song, "widget": song_widget})
-
-                song_widget.reload = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnreload.png", Coord2d(), Coord2d(0.05, 0.05 * self.window_ratio)))
-                song_widget.reload.set_action(song_reload, {"menu": self, "album": album, "song": song})
-
-                song_widget.track_display = self.menus[Menus.SONGS].add_create_text_widget(self.font, get_track_display_text(song), 9)
-                song_widget.track_display.set_text_colour([0.7] * 4)
-
-                track_button_size = 0.035
-                song_widget.track_down = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnback.png", Coord2d(), Coord2d(track_button_size, track_button_size * self.window_ratio)))
-                song_widget.track_down.set_action(song_track_down, {"widget": song_widget.track_display, "song": song})
-
-                song_widget.track_up = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btnnext.png", Coord2d(0.0,0.0), Coord2d(track_button_size, track_button_size * self.window_ratio)))
-                song_widget.track_up.set_action(song_track_up, {"widget": song_widget.track_display, "song": song})
+                song_widget = self._create_song_widget(album, song)
                 album_widget.songs.append(song_widget)
+        
         self.refresh_song_display()
 
-        btn_devices = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btn_devices.png", Coord2d(-1.0 + menu_thirds * 1, menu_row), menu_item_size))
-        btn_devices.set_action(self.show_dialog, {"menu": self, "type": Dialogs.DEVICES})
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btn_options.png", Coord2d(-1.0 + menu_thirds * 2, menu_row), menu_item_size))
-        btn_quit = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/btn_quit.png", Coord2d(-1.0 + menu_thirds * 3, menu_row), menu_item_size))
-        btn_quit.set_action(menu_quit, {"menu": self})
+        # Top menu buttons
+        WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/btn_devices.png",
+            Coord2d(-1.0 + menu_thirds * 1, MenuConfig.MENU_ROW_Y), MenuConfig.MENU_ITEM_SIZE,
+            self.show_dialog, {"menu": self, "type": Dialogs.DEVICES}
+        )
+        
+        self.menus[Menus.SONGS].add_create_widget(
+            self.textures.create("gui/btn_options.png", Coord2d(-1.0 + menu_thirds * 2, MenuConfig.MENU_ROW_Y), MenuConfig.MENU_ITEM_SIZE)
+        )
+        
+        WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/btn_quit.png",
+            Coord2d(-1.0 + menu_thirds * 3, MenuConfig.MENU_ROW_Y), MenuConfig.MENU_ITEM_SIZE,
+            menu_quit, {"menu": self}
+        )
 
-        # Add device params
-        device_button_size = 0.035
-        input_label = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, f"Input ", 10, Coord2d(-0.3, 0.3))
-        input_label.set_text_colour([0.9] * 4)
+        # Setup device dialog
+        self._setup_device_dialog()
 
-        self.device_input_widget = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, self.devices.input_device_name, 8, Coord2d(-0.05, 0.3))
-        self.device_input_widget.set_text_colour([0.9] * 4)
+        # Setup game over dialog
+        title_widget = WidgetFactory.create_text(
+            self.dialogs[Dialogs.GAME_OVER], self.font,
+            "Song Over !", 24, Coord2d(-0.2, 0.2),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
 
-        input_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/btnback.png", Coord2d(-0.1,0.315), Coord2d(device_button_size, device_button_size * self.window_ratio)))
-        input_down.set_action(set_devices_input, {"menu":self, "dir":-1})
-        input_down.set_colour_func(get_device_input_col, {"menu":self, "dir":-1})
-
-        input_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/btnnext.png", Coord2d(0.35,0.315), Coord2d(device_button_size, device_button_size * self.window_ratio)))
-        input_up.set_action(set_devices_input, {"menu":self, "dir":1})
-        input_up.set_colour_func(get_device_input_col, {"menu":self, "dir":1})
-
-        output_label = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, f"Output: ", 10, Coord2d(-0.3, 0.2))
-        output_label.set_text_colour([0.7] * 4)
-
-        self.device_output_widget = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, self.devices.output_device_name, 8, Coord2d(-0.05, 0.2))
-        self.device_output_widget.set_text_colour([0.9] * 4)
-
-        output_down = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/btnback.png", Coord2d(-0.1,0.215), Coord2d(device_button_size, device_button_size * self.window_ratio)))
-        output_down.set_action(set_devices_output, {"menu":self, "dir":-1})
-        output_down.set_colour_func(get_device_output_col, {"menu":self, "dir":-1})
-
-        output_up = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/btnnext.png", Coord2d(0.35,0.215), Coord2d(device_button_size, device_button_size * self.window_ratio)))
-        output_up.set_action(set_devices_output, {"menu":self, "dir":1})
-        output_up.set_colour_func(get_device_output_col, {"menu":self, "dir":1})
-
-        output_label = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, f"Note Input: ", 10, Coord2d(-0.3, 0.1))
-        output_label.set_text_colour([0.7] * 4)
-
-        self.device_note_input_widget = self.dialogs[Dialogs.DEVICES].add_create_text_widget(self.font, "N/A", 8, Coord2d(-0.05, 0.1))
-        self.device_note_input_widget.set_text_colour([0.9] * 4)
-
-        self.devices_apply = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(0.2,-0.2), Coord2d(0.2, 0.08 * self.window_ratio)), self.font)
-        self.devices_apply.set_text(f"Reconnect", 11, Coord2d(-0.07, -0.015))
-        self.devices_apply.set_text_colour([0.9] * 4)
-        self.devices_apply.set_action(devices_refresh, {"menu":self})
-
-        self.devices_test = self.dialogs[Dialogs.DEVICES].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(-0.2,-0.2), Coord2d(0.25, 0.08 * self.window_ratio)), self.font)
-        self.devices_test.set_text(f"Test Output", 11, Coord2d(-0.1, -0.015))
-        self.devices_test.set_text_colour([0.9] * 4)
-        self.devices_test.set_action(devices_output_test, {"menu":self})
-
-        # Game over screen
-        title_widget = self.dialogs[Dialogs.GAME_OVER].add_create_text_widget(self.font, "Song Over !", 24, Coord2d(-0.2, 0.2))
-        title_widget.set_text_colour([0.9] * 4)
-
-        score_widget = self.dialogs[Dialogs.GAME_OVER].add_create_text_widget(self.font, f"Score: 0", 18, Coord2d(-0.1, 0.0))
+        score_widget = WidgetFactory.create_text(
+            self.dialogs[Dialogs.GAME_OVER], self.font,
+            "Score: 0", 18, Coord2d(-0.1, 0.0),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
         score_widget.name = "score"
-        score_widget.set_text_colour([0.9] * 4)
 
-        retry_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(0.2, -0.25), Coord2d(0.2, 0.09 * self.window_ratio)), self.font)
+        retry_widget = WidgetFactory.create_button(
+            self.dialogs[Dialogs.GAME_OVER], self.textures, "gui/panel.tga",
+            Coord2d(0.2, -0.25), Coord2d(0.2, 0.09 * self.window_ratio),
+            font=self.font, text="Retry", text_size=11,
+            text_offset=Coord2d(-0.05, -0.015)
+        )
         retry_widget.name = "retry"
-        retry_widget.set_text(f"Retry", 11, Coord2d(-0.05, -0.015))
-        retry_widget.set_text_colour([0.7] * 4)
+        retry_widget.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
 
-        back_widget = self.dialogs[Dialogs.GAME_OVER].add_create_widget(self.textures.create("gui/panel.tga", Coord2d(-0.15, -0.25), Coord2d(0.27, 0.09 * self.window_ratio)), self.font)
+        back_widget = WidgetFactory.create_button(
+            self.dialogs[Dialogs.GAME_OVER], self.textures, "gui/panel.tga",
+            Coord2d(-0.15, -0.25), Coord2d(0.27, 0.09 * self.window_ratio),
+            font=self.font, text="Play Another", text_size=11,
+            text_offset=Coord2d(-0.1, -0.015)
+        )
         back_widget.name = "back"
-        back_widget.set_text(f"Play Another", 11, Coord2d(-0.1, -0.015))
-        back_widget.set_text_colour([0.7] * 4)
+        back_widget.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
 
 
     def update(self, dt: float, music_running: bool):
@@ -339,7 +564,6 @@ class Menu():
                 m_output = f"{m.type}"
                 if hasattr(m, "note"):
                     m_output += f" Note {m.note}"
-                if "note" in m_output.lower():
                     self.device_note_input_widget.set_text(m_output, 8)
             self.devices.input_flush()
 
