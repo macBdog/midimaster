@@ -339,7 +339,8 @@ class Menu():
                 m_output = f"{m.type}"
                 if hasattr(m, "note"):
                     m_output += f" Note {m.note}"
-                self.device_note_input_widget.set_text(m_output, 8)
+                if "note" in m_output.lower():
+                    self.device_note_input_widget.set_text(m_output, 8)
             self.devices.input_flush()
 
 
