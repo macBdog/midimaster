@@ -6,7 +6,8 @@ from mido import (
     tempo2bpm
 )
 import numpy.random as rng
-from note import Note 
+from note import Note
+from key_signature import KeySignature
 
 class Song:
     """A song is a combination of music notes and metadata that the game uses to 
@@ -42,12 +43,84 @@ class Song:
     def get_max_score(self):
         return max(len(self.notes), 1) * 10
 
+    @staticmethod
+    def _get_notes_in_key(key: str, note_range: tuple = (48, 80)):
+        """Get all MIDI note numbers within a key across the specified range.
+        
+        Args:
+            key: Musical key (e.g., 'C', 'Gm' for G minor)
+            note_range: Tuple of (min_note, max_note) MIDI note numbers
+        
+        Returns:
+            List of MIDI note numbers that belong to the key
+        """
+        # Determine if major or minor
+        is_major = key.find('m') < 0
+        tonic = key.replace('m', '')
+        
+        # Get the sharps/flats for this key
+        if is_major:
+            accidentals = KeySignature.LookupTableMajor.get(tonic, [])
+        else:
+            accidentals = KeySignature.LookupTableMinor.get(tonic, [])
 
-    def from_random(self, note_len_range: tuple, note_spacing_range: tuple, song_length_notes:int=16, allowed_notes:list=None):
+        # Build the scale using semitone pattern
+        # Major: W-W-H-W-W-W-H (2-2-1-2-2-2-1)
+        # Minor: W-H-W-W-H-W-W (2-1-2-2-1-2-2)
+        semitone_pattern = [2, 2, 1, 2, 2, 2, 1] if is_major else [2, 1, 2, 2, 1, 2, 2]
+
+        # Find the root note (C=0, C#=1, D=2, etc.)
+        note_to_midi = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
+        root = note_to_midi.get(tonic[0], 0)
+
+        # Adjust for sharps/flats in the tonic
+        if len(tonic) > 1:
+            if tonic[1] == '#':
+                root = (root + 1) % 12
+            elif tonic[1] == 'b':
+                root = (root - 1) % 12
+
+        # Build scale degrees in one octave
+        scale_degrees = [root]
+        current = root
+        for interval in semitone_pattern[:-1]:  # Last interval wraps to octave
+            current = (current + interval) % 12
+            scale_degrees.append(current)
+
+        # Generate all notes in the key within the range
+        notes_in_key = []
+        for midi_note in range(note_range[0], note_range[1]):
+            if midi_note % 12 in scale_degrees:
+                notes_in_key.append(midi_note)
+        
+        return notes_in_key
+
+    def from_random(self, note_len_range: tuple, note_spacing_range: tuple, song_length_notes:int=16, allowed_notes:list=None, key:str="C"):
+        """Generate a random song in a key.
+        Args:
+            note_len_range: Tuple of (min, max) note lengths in 32nd notes
+            note_spacing_range: Tuple of (min, max) spacing between notes in 32nd notes
+            song_length_notes: Number of notes to generate
+            allowed_notes: List of allowed MIDI note numbers, or None for default range
+            key: Musical key (e.g., 'C', 'Gm'). If provided, only notes from this key will be used
+        """
         if allowed_notes is None:
             allowed_notes = [48 + n for n in range(32)]
+        
+        # If a key is specified, filter allowed_notes to only include notes in that key
+        if key is not None:
+            min_note = min(allowed_notes)
+            max_note = max(allowed_notes) + 1
+            notes_in_key = self._get_notes_in_key(key, (min_note, max_note))
+            # Filter to only notes that are both in the key and in allowed_notes
+            allowed_notes = [n for n in allowed_notes if n in notes_in_key]
+            if not allowed_notes:
+                raise ValueError(f"No notes in key '{key}' within the allowed note range")
+            self.key_signature = key
+
         self.artist = f"Random"
-        self.title = f"{song_length_notes} notes of {note_len_range[0]} to {note_len_range[1]} length."
+        title_suffix = f" in {key}" if key else ""
+        self.title = f"{song_length_notes} notes of {note_len_range[0]} to {note_len_range[1]} length{title_suffix}."
         self.path = ""
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.player_track_id = 0

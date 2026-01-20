@@ -41,7 +41,11 @@ def setup_songbook_albums() -> SongBook:
 
         album = songbook.add_album("How Random!")
         rand_song_c1 = Song()
-        rand_song_c1.from_random((32,32), (32,32), 16)
+        rand_song_c1.from_random((32,32), (32,32), 8, "C")
+        album.add_update_song(rand_song_c1)
+
+        rand_song_c1 = Song()
+        rand_song_c1.from_random((32,32), (32,32), 8, "Cm")
         album.add_update_song(rand_song_c1)
     else:
         # Patch up older versions on songbooks without albums

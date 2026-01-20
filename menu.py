@@ -106,18 +106,18 @@ class WidgetFactory:
                           base_pos: Coord2d, size: float,
                           action_prev, action_args_prev: dict,
                           action_next, action_args_next: dict,
-                          offset_x: float = 0.1, offset_y: float = 0.0,
+                          width: float = 0.1, height: float = 0.0,
                           color_func_prev=None, color_func_next=None) -> Tuple[Widget, Widget]:
         """Create a pair of navigation buttons (prev/next, up/down, etc.)"""
         button_size = Coord2d(size, size * window_ratio)
-        pos_prev = Coord2d(base_pos.x - offset_x, base_pos.y + offset_y)
+        pos_prev = Coord2d(base_pos.x - width, base_pos.y + height)
         widget_prev = WidgetFactory.create_button(
             gui, textures, texture_prev, pos_prev, button_size,
             action_prev, action_args_prev,
             color_func=color_func_prev, color_func_args=action_args_prev
         )
 
-        pos_next = Coord2d(base_pos.x + offset_x, base_pos.y + offset_y)
+        pos_next = Coord2d(base_pos.x + width, base_pos.y - height)
         widget_next = WidgetFactory.create_button(
             gui, textures, texture_next, pos_next, button_size,
             action_next, action_args_next,
@@ -306,7 +306,7 @@ class Menu():
             Coord2d(), MenuConfig.TRACK_BUTTON_SIZE,
             song_track_down, {"widget": song_widget.track_display, "song": song},
             song_track_up, {"widget": song_widget.track_display, "song": song},
-            offset_x=0.16, offset_y=0.0
+            width=0.16, height=0.0
         )
         
         return song_widget
@@ -328,10 +328,10 @@ class Menu():
         WidgetFactory.create_button_pair(
             self.dialogs[Dialogs.DEVICES], self.textures, self.window_ratio,
             "gui/btnback.png", "gui/btnnext.png",
-            Coord2d(0.0, MenuConfig.DEVICE_INPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
+            Coord2d(0.12, MenuConfig.DEVICE_INPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
             set_devices_input, {"menu": self, "dir": -1},
             set_devices_input, {"menu": self, "dir": 1},
-            offset_x=0.2, offset_y=0.0,
+            width=0.2, height=0.0,
             color_func_prev=get_device_input_col,
             color_func_next=get_device_input_col
         )
@@ -352,10 +352,10 @@ class Menu():
         WidgetFactory.create_button_pair(
             self.dialogs[Dialogs.DEVICES], self.textures, self.window_ratio,
             "gui/btnback.png", "gui/btnnext.png",
-            Coord2d(0.0, MenuConfig.DEVICE_OUTPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
+            Coord2d(0.12, MenuConfig.DEVICE_OUTPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
             set_devices_output, {"menu": self, "dir": -1},
             set_devices_output, {"menu": self, "dir": 1},
-            offset_x=0.25, offset_y=0.0,
+            width=0.2, height=0.0,
             color_func_prev=get_device_output_col,
             color_func_next=get_device_output_col
         )
@@ -465,7 +465,7 @@ class Menu():
             Coord2d(SONG_SCRL_PX, SONG_SCRL_PY), SONG_SCRL_SX,
             song_list_scroll, {"menu": self, "dir": -0.333},
             song_list_scroll, {"menu": self, "dir": 0.333},
-            offset_x=0.0, offset_y=SONG_SCRL_SY * 0.5
+            width=0.0, height=SONG_SCRL_SY * 0.5
         )
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
