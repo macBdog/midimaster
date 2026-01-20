@@ -32,8 +32,7 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
 ![MidiMaster game screenshot](https://github.com/macBdog/midimaster/blob/main/screenshot_game.png?raw=true)
 
 ## Task Queue:
--1. Random note songs in a particular key and note range
-0. Overlay not hiding when game over dialog closed
+0. disabled_func for buttons instead of set_colour_func
 1. Album unlocks with random songs
 2. Temporal accidentals
 3. Options menu with instructions and latency config

@@ -50,7 +50,6 @@ def song_play(**kwargs):
     menu.music.load(song)
     menu.transition(Menus.SONGS, Menus.GAME)
 
-
 def song_reload(**kwargs):
     menu=kwargs["menu"]
     album=kwargs["album"]
@@ -60,7 +59,6 @@ def song_reload(**kwargs):
     album.add_update_song(new_song)
     menu.music.load(new_song)
     menu._set_album_menu_pos()
-
 
 def song_delete(**kwargs):
     menu=kwargs["menu"]
@@ -77,7 +75,6 @@ def song_delete(**kwargs):
     album.delete_song(song)
     menu._set_album_menu_pos()
 
-
 def song_track_up(**kwargs):
     widget=kwargs["widget"]
     song=kwargs["song"]
@@ -85,14 +82,12 @@ def song_track_up(**kwargs):
     song.dirty = True
     widget.set_text(get_track_display_text(song), 9)
 
-
 def song_track_down(**kwargs):
     widget=kwargs["widget"]
     song=kwargs["song"]
     song.player_track_id = max(song.player_track_id-1, 0)
     song.dirty = True
     widget.set_text(get_track_display_text(song), 9)
-
 
 def song_list_scroll(**kwargs):
     menu=kwargs["menu"]
@@ -106,14 +101,12 @@ def song_list_scroll(**kwargs):
     scroll_max = 20 * SONG_SPACING
     menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
 
-
 def get_track_display_text(song: Song) -> str:
     track = song.player_track_id
     if track in song.track_names:
         return f"{song.player_track_id}: ({song.track_names[song.player_track_id]})"
     else:
         return f"Track {song.player_track_id} (Unknown)"
-
 
 def set_devices_input(**kwargs):
     menu=kwargs["menu"]
@@ -128,7 +121,6 @@ def set_devices_input(**kwargs):
     menu.device_input_widget.set_text(menu.devices.input_device_name, 10, Coord2d(-0.05, 0.3))
     menu.songbook.input_device = menu.devices.input_device_name
 
-
 def get_device_input_dir(**kwargs) -> bool:
     menu=kwargs["menu"]
     dir=kwargs["dir"]
@@ -139,11 +131,9 @@ def get_device_input_dir(**kwargs) -> bool:
         cur_device_id = 0
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
-
 def get_device_input_col(**kwargs) -> list:
     dir=kwargs["dir"]
     return ACTIVE_COLOR if get_device_input_dir({"dir":dir}) else INACTIVE_COLOR
-
 
 def set_devices_output(**kwargs):
     menu=kwargs["menu"]
@@ -155,7 +145,6 @@ def set_devices_output(**kwargs):
     menu.device_output_widget.set_text(menu.devices.output_device_name, 10, Coord2d(-0.05, 0.2))
     menu.songbook.output_device = menu.devices.output_device_name
 
-
 def get_device_output_dir(**kwargs) -> bool:
     menu=kwargs["menu"]
     dir=kwargs["dir"]
@@ -166,21 +155,17 @@ def get_device_output_dir(**kwargs) -> bool:
         cur_device_id = 0
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
-
 def get_device_output_col(**kwargs) -> list:
     dir=kwargs["dir"]
     return ACTIVE_COLOR if get_device_output_dir(**kwargs) else INACTIVE_COLOR
-
 
 def devices_refresh(**kwargs):
     menu=kwargs["menu"]
     menu.devices.refresh_io()
 
-
 def devices_output_test(**kwargs):
     menu=kwargs["menu"]
     menu.devices.output_test()
-
 
 def set_devices_input(**kwargs):
     menu=kwargs["menu"]
@@ -195,7 +180,6 @@ def set_devices_input(**kwargs):
     menu.device_input_widget.set_text(menu.devices.input_device_name, 10)
     menu.songbook.input_device = menu.devices.input_device_name
 
-
 def get_device_input_dir(**kwargs) -> bool:
     menu=kwargs["menu"]
     dir=kwargs["dir"]
@@ -205,10 +189,8 @@ def get_device_input_dir(**kwargs) -> bool:
         cur_device_id = devices.index(menu.devices.input_device_name)
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
-
 def get_device_input_col(**kwargs) -> list:
     return ACTIVE_COLOR if get_device_input_dir(**kwargs) else INACTIVE_COLOR
-
 
 def set_devices_output(**kwargs):
     menu=kwargs["menu"]
@@ -220,12 +202,10 @@ def set_devices_output(**kwargs):
     menu.device_output_widget.set_text(menu.devices.output_device_name, 10)
     menu.songbook.output_device = menu.devices.output_device_name
 
-
 def menu_quit(**kwargs):
     menu = kwargs["menu"]
     menu.songbook.save(menu.songbook)
     menu.running = False
-
 
 def menu_transition(**kwargs):
     menu = kwargs["menu"]
@@ -233,27 +213,22 @@ def menu_transition(**kwargs):
     t_to = kwargs["to"]
     menu.transition(t_from, t_to)
 
-
 def game_play(**kwargs):
     game = kwargs["game"]
     game.music_running = True
 
-
 def game_pause(**kwargs):
     game = kwargs["game"]
     game.music_running = False
-
 
 def game_stop_rewind(**kwargs):
     game = kwargs["game"]
     game.reset()
     game.music.rewind()
 
-
 def game_mode_toggle(**kwargs):
     game = kwargs["game"]
     game.mode = MusicMode.PAUSE_AND_LEARN if game.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
-
 
 def game_back_to_menu(**kwargs):
     game = kwargs["game"]
@@ -267,25 +242,22 @@ def game_back_to_menu(**kwargs):
     game.reset()
     game.music.reset()
 
-    game.menu.hide_dialog({"menu": game.menu, "type": Dialogs.GAME_OVER})
+    kwargs.update({"type": Dialogs.GAME_OVER})
+    game.menu.hide_dialog(**kwargs)
     game.menu.transition(Menus.GAME, Menus.SONGS)
     game.menu.refresh_song_display()
-
 
 def game_play_button_colour(**kwargs):
     game = kwargs["game"]
     return [0.1, 0.87, 0.11, 1.0] if game.music_running else [0.8, 0.8, 0.8, 1.0]
 
-
 def game_pause_button_colour(**kwargs):
     game = kwargs["game"]
     return [0.3, 0.27, 0.81, 1.0] if not game.music_running else [0.8, 0.8, 0.8, 1.0]
 
-
 def game_score_bg_colour(**kwargs):
     game = kwargs["game"]
     return [1.0, 1.0, 1.0, max(game.score_fade, 0.75)]
-
 
 def song_over_back(**kwargs):
     menu = kwargs["menu"]
@@ -296,11 +268,10 @@ def song_over_back(**kwargs):
     game.music.rewind()
     game_back_to_menu(**{"menu": menu, "game":game})
 
-
 def song_over_retry(**kwargs):
-    menu = kwargs["menu"]
     game = kwargs["game"]
-    menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
 
+    kwargs.update({"type": Dialogs.GAME_OVER})
+    game.menu.hide_dialog(**kwargs)
     game.reset()
     game.music.rewind()
