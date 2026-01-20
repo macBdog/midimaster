@@ -267,6 +267,8 @@ def game_back_to_menu(**kwargs):
     game.music.song.score[game.mode] = max(game.score, existing_score)
     game.reset()
     game.music.reset()
+
+    game.menu.hide_dialog({"menu": game.menu, "type": Dialogs.GAME_OVER})
     game.menu.transition(Menus.GAME, Menus.SONGS)
     game.menu.refresh_song_display()
 

@@ -76,13 +76,13 @@ class WidgetFactory:
                       text_offset: Coord2d = None, color_func=None, color_func_args=None) -> Widget:
         """Create a button widget with texture, action, and optional text"""
         widget = gui.add_create_widget(textures.create(texture_path, pos, size), font)
-        
+
         if action:
             widget.set_action(action, action_args or {})
-        
+
         if color_func:
             widget.set_colour_func(color_func, color_func_args or {})
-        
+
         if text:
             offset = text_offset or Coord2d()
             widget.set_text(text, text_size, offset)
@@ -110,7 +110,6 @@ class WidgetFactory:
                           color_func_prev=None, color_func_next=None) -> Tuple[Widget, Widget]:
         """Create a pair of navigation buttons (prev/next, up/down, etc.)"""
         button_size = Coord2d(size, size * window_ratio)
-
         pos_prev = Coord2d(base_pos.x - offset_x, base_pos.y + offset_y)
         widget_prev = WidgetFactory.create_button(
             gui, textures, texture_prev, pos_prev, button_size,
@@ -124,11 +123,10 @@ class WidgetFactory:
             action_next, action_args_next,
             color_func=color_func_next, color_func_args=action_args_next
         )
-        
         return widget_prev, widget_next
 
     @staticmethod
-    def create_dialog_background(gui: Gui, textures: TextureManager, 
+    def create_dialog_background(gui: Gui, textures: TextureManager,
                                  size: Coord2d, color: list = None) -> Widget:
         """Create a dialog background widget"""
         bg_color = color or DIALOG_COLOUR
@@ -250,16 +248,11 @@ class Menu():
         parent_gui.add_child(self.dialogs[Dialogs.GAME_OVER])
     
     def _create_dialog_overlay(self, parent_gui: Gui):
-        """Create a semi-transparent overlay that darkens the screen when dialogs are active"""
-        overlay_gui = Gui("dialog_overlay", self.graphics, parent_gui.debug_font, False)
-
-        # Create a full-screen black transparent overlay
-        self.dialog_overlay = overlay_gui.add_create_widget(
+        """Create a semi-transparent full-screen overlay that darkens the screen when dialogs are active"""
+        self.dialog_overlay = parent_gui.add_create_widget(
             self.textures.create_sprite_shape([0.0, 0.0, 0.0, 0.4], Coord2d(0.0, 0.0), Coord2d(2.0, 2.0))
         )
-        overlay_gui.set_active(False, False)
-        parent_gui.add_child(overlay_gui)
-        self.overlay_gui = overlay_gui
+        self.dialog_overlay.set_disabled(True)
 
     def _get_elem(self, menu: Menus, name: str):
         return self.elements[menu][name]
@@ -317,7 +310,7 @@ class Menu():
         )
         
         return song_widget
-    
+
     def _setup_device_dialog(self):
         """Setup all widgets for the device configuration dialog"""
         WidgetFactory.create_text(
@@ -338,24 +331,24 @@ class Menu():
             Coord2d(0.0, MenuConfig.DEVICE_INPUT_Y + 0.015), MenuConfig.SMALL_BUTTON_SIZE,
             set_devices_input, {"menu": self, "dir": -1},
             set_devices_input, {"menu": self, "dir": 1},
-            offset_x=0.25, offset_y=0.0,
+            offset_x=0.2, offset_y=0.0,
             color_func_prev=get_device_input_col,
             color_func_next=get_device_input_col
         )
-        
+
         # Output device section
         WidgetFactory.create_text(
             self.dialogs[Dialogs.DEVICES], self.font,
             "Output: ", 10, Coord2d(-0.3, MenuConfig.DEVICE_OUTPUT_Y),
             color=MenuConfig.TEXT_COLOR_DIM
         )
-        
+
         self.device_output_widget = WidgetFactory.create_text(
             self.dialogs[Dialogs.DEVICES], self.font,
             self.devices.output_device_name, 8, Coord2d(-0.05, MenuConfig.DEVICE_OUTPUT_Y),
             color=MenuConfig.TEXT_COLOR_BRIGHT
         )
-        
+
         WidgetFactory.create_button_pair(
             self.dialogs[Dialogs.DEVICES], self.textures, self.window_ratio,
             "gui/btnback.png", "gui/btnnext.png",
@@ -373,13 +366,13 @@ class Menu():
             "Note Input: ", 10, Coord2d(-0.3, MenuConfig.DEVICE_NOTE_INPUT_Y),
             color=MenuConfig.TEXT_COLOR_DIM
         )
-        
+
         self.device_note_input_widget = WidgetFactory.create_text(
             self.dialogs[Dialogs.DEVICES], self.font,
             "N/A", 8, Coord2d(-0.05, MenuConfig.DEVICE_NOTE_INPUT_Y),
             color=MenuConfig.TEXT_COLOR_BRIGHT
         )
-        
+
         # Action buttons
         self.devices_apply = WidgetFactory.create_button(
             self.dialogs[Dialogs.DEVICES], self.textures, "gui/panel.tga",
@@ -621,7 +614,7 @@ class Menu():
         if type == Dialogs.DEVICES:
             self.menus[Menus.SONGS].set_active(True, False)
         menu.dialogs[type].set_active(True, True)
-        menu.overlay_gui.set_active(True, False)
+        menu.dialog_overlay.set_disabled(False)
 
 
     def hide_dialog(self, **kwargs):
@@ -632,6 +625,6 @@ class Menu():
         menu.dialogs[type].set_active(False, False)
         # Hide the overlay if no dialogs are active
         if not menu.is_any_dialog_active():
-            menu.overlay_gui.set_active(False, False)
+            menu.dialog_overlay.set_disabled(True)
 
 
