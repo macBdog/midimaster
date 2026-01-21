@@ -155,9 +155,8 @@ def get_device_output_dir(**kwargs) -> bool:
         cur_device_id = 0
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
-def get_device_output_col(**kwargs) -> list:
-    dir=kwargs["dir"]
-    return ACTIVE_COLOR if get_device_output_dir(**kwargs) else INACTIVE_COLOR
+def get_device_output_disabled(**kwargs) -> bool:
+    return not get_device_output_dir(**kwargs)
 
 def devices_refresh(**kwargs):
     menu=kwargs["menu"]
@@ -189,8 +188,8 @@ def get_device_input_dir(**kwargs) -> bool:
         cur_device_id = devices.index(menu.devices.input_device_name)
     return cur_device_id + dir >= 0 and cur_device_id + dir < len(devices)
 
-def get_device_input_col(**kwargs) -> list:
-    return ACTIVE_COLOR if get_device_input_dir(**kwargs) else INACTIVE_COLOR
+def get_device_input_disabled(**kwargs) -> bool:
+    return not get_device_input_dir(**kwargs)
 
 def set_devices_output(**kwargs):
     menu=kwargs["menu"]

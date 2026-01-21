@@ -21,10 +21,10 @@ from menu_func import (
     MusicMode, Menus, Dialogs,
     song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
     get_track_display_text,
-    set_devices_input, get_device_input_col, 
-    set_devices_output, get_device_output_col,
+    set_devices_input, get_device_input_disabled,
+    set_devices_output, get_device_output_disabled,
     devices_refresh, devices_output_test, set_devices_output,
-    get_device_output_col, devices_refresh, devices_output_test,
+    devices_refresh, devices_output_test,
     menu_quit, menu_transition,
 )
 
@@ -56,10 +56,10 @@ class MenuConfig:
     NOTE_BG_SIZE_BTM = 1.25
     
     # Device dialog
-    DEVICE_DIALOG_SIZE = Coord2d(0.8, 1.1)
-    DEVICE_INPUT_Y = 0.3
-    DEVICE_OUTPUT_Y = 0.2
-    DEVICE_NOTE_INPUT_Y = 0.1
+    DEVICE_DIALOG_SIZE = Coord2d(0.8, 1.0)
+    DEVICE_INPUT_Y = 0.25
+    DEVICE_OUTPUT_Y = 0.15
+    DEVICE_NOTE_INPUT_Y = 0.05
     DEVICE_BUTTON_SPACING = 0.4  # Horizontal spacing between left and right buttons
     
     # Game over dialog
@@ -70,12 +70,16 @@ class WidgetFactory:
     """Helper class for creating GUI widgets with less boilerplate"""
     
     @staticmethod
-    def create_button(gui: Gui, textures: TextureManager, texture_path: str, 
+    def create_button(gui: Gui, textures: TextureManager, texture_path: str,
                       pos: Coord2d, size: Coord2d, action=None, action_args=None,
                       font: Font = None, text: str = None, text_size: int = 11,
-                      text_offset: Coord2d = None, color_func=None, color_func_args=None) -> Widget:
+                      text_offset: Coord2d = None, color_func=None, color_func_args=None,
+                      disabled_func=None, disabled_func_args=None) -> Widget:
         """Create a button widget with texture, action, and optional text"""
         widget = gui.add_create_widget(textures.create(texture_path, pos, size), font)
+
+        if disabled_func:
+            widget.set_disabled_func(disabled_func, disabled_func_args)
 
         if action:
             widget.set_action(action, action_args or {})
@@ -86,9 +90,9 @@ class WidgetFactory:
         if text:
             offset = text_offset or Coord2d()
             widget.set_text(text, text_size, offset)
-        
+
         return widget
-    
+
     @staticmethod
     def create_text(gui: Gui, font: Font, text: str, size: int, 
                     pos: Coord2d = None, color: list = None) -> Widget:
@@ -99,7 +103,7 @@ class WidgetFactory:
             widget.set_text_colour(color)
         
         return widget
-    
+
     @staticmethod
     def create_button_pair(gui: Gui, textures: TextureManager, window_ratio: float,
                           texture_prev: str, texture_next: str,
@@ -107,21 +111,21 @@ class WidgetFactory:
                           action_prev, action_args_prev: dict,
                           action_next, action_args_next: dict,
                           width: float = 0.1, height: float = 0.0,
-                          color_func_prev=None, color_func_next=None) -> Tuple[Widget, Widget]:
+                          disabled_func_prev=None, disabled_func_next=None) -> Tuple[Widget, Widget]:
         """Create a pair of navigation buttons (prev/next, up/down, etc.)"""
         button_size = Coord2d(size, size * window_ratio)
         pos_prev = Coord2d(base_pos.x - width, base_pos.y + height)
         widget_prev = WidgetFactory.create_button(
             gui, textures, texture_prev, pos_prev, button_size,
             action_prev, action_args_prev,
-            color_func=color_func_prev, color_func_args=action_args_prev
+            disabled_func=disabled_func_prev, disabled_func_args=action_args_prev
         )
 
         pos_next = Coord2d(base_pos.x + width, base_pos.y - height)
         widget_next = WidgetFactory.create_button(
             gui, textures, texture_next, pos_next, button_size,
             action_next, action_args_next,
-            color_func=color_func_next, color_func_args=action_args_next
+            disabled_func=disabled_func_next, disabled_func_args=action_args_next
         )
         return widget_prev, widget_next
 
@@ -315,7 +319,7 @@ class Menu():
         """Setup all widgets for the device configuration dialog"""
         WidgetFactory.create_text(
             self.dialogs[Dialogs.DEVICES], self.font,
-            "Input ", 10, Coord2d(-0.3, MenuConfig.DEVICE_INPUT_Y),
+            "Input ", 8, Coord2d(-0.3, MenuConfig.DEVICE_INPUT_Y),
             color=MenuConfig.TEXT_COLOR_BRIGHT
         )
 
@@ -332,14 +336,14 @@ class Menu():
             set_devices_input, {"menu": self, "dir": -1},
             set_devices_input, {"menu": self, "dir": 1},
             width=0.2, height=0.0,
-            color_func_prev=get_device_input_col,
-            color_func_next=get_device_input_col
+            disabled_func_prev=get_device_input_disabled,
+            disabled_func_next=get_device_input_disabled
         )
 
         # Output device section
         WidgetFactory.create_text(
             self.dialogs[Dialogs.DEVICES], self.font,
-            "Output: ", 10, Coord2d(-0.3, MenuConfig.DEVICE_OUTPUT_Y),
+            "Output: ", 8, Coord2d(-0.3, MenuConfig.DEVICE_OUTPUT_Y),
             color=MenuConfig.TEXT_COLOR_DIM
         )
 
@@ -356,8 +360,8 @@ class Menu():
             set_devices_output, {"menu": self, "dir": -1},
             set_devices_output, {"menu": self, "dir": 1},
             width=0.2, height=0.0,
-            color_func_prev=get_device_output_col,
-            color_func_next=get_device_output_col
+            disabled_func_prev=get_device_output_disabled,
+            disabled_func_next=get_device_output_disabled
         )
 
         # Note input display
