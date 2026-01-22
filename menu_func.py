@@ -272,5 +272,6 @@ def song_over_retry(**kwargs):
 
     kwargs.update({"type": Dialogs.GAME_OVER})
     game.menu.hide_dialog(**kwargs)
+    game.menu.refresh_song_display()
     game.reset()
     game.music.rewind()

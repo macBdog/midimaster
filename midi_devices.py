@@ -15,6 +15,9 @@ class MidiDevices:
         self.output_devices = mido.get_output_names()
         self.input_device_name = None
         self.output_device_name = None
+        print(f"MidiDevices supports mido backends: {mido.backend.module.get_api_names()}")
+        mido.set_backend('mido.backends.rtmidi')
+        mido.backend
 
     def output_test(self):
         note_val = rng.randint(32, 64)
@@ -35,7 +38,7 @@ class MidiDevices:
     def _reconnect(self):
         self.close_input()
         self.close_output()
-        time.sleep(1.0)
+        time.sleep(0.5)
         self.open_input(self.input_device_name)
         self.open_output(self.output_device_name)
 

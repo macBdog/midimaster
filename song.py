@@ -95,28 +95,34 @@ class Song:
         
         return notes_in_key
 
-    def from_random(self, note_len_range: tuple, note_spacing_range: tuple, song_length_notes:int=16, allowed_notes:list=None, key:str="C"):
+    def from_random(self,
+                    key:str="C",
+                    tonic:int=60,
+                    note_range:int=4,
+                    note_len_range:tuple=(32, 32),
+                    note_spacing_range:tuple=(32,32),
+                    song_length_notes:int=16):
         """Generate a random song in a key.
         Args:
+            key: Musical key (e.g., 'C', 'Gm'). If provided, only notes from this key will be used
+            tonic: Center note to start generating from
+            note_range: Number of notes above and below the tonic to generate from
             note_len_range: Tuple of (min, max) note lengths in 32nd notes
             note_spacing_range: Tuple of (min, max) spacing between notes in 32nd notes
             song_length_notes: Number of notes to generate
-            allowed_notes: List of allowed MIDI note numbers, or None for default range
-            key: Musical key (e.g., 'C', 'Gm'). If provided, only notes from this key will be used
+            note_range: List of allowed MIDI note numbers, or None for default range
+            
         """
-        if allowed_notes is None:
-            allowed_notes = [48 + n for n in range(32)]
-        
-        # If a key is specified, filter allowed_notes to only include notes in that key
-        if key is not None:
-            min_note = min(allowed_notes)
-            max_note = max(allowed_notes) + 1
-            notes_in_key = self._get_notes_in_key(key, (min_note, max_note))
-            # Filter to only notes that are both in the key and in allowed_notes
-            allowed_notes = [n for n in allowed_notes if n in notes_in_key]
-            if not allowed_notes:
-                raise ValueError(f"No notes in key '{key}' within the allowed note range")
-            self.key_signature = key
+        allowed_notes = [tonic - note_range + n for n in range(note_range*2)]
+
+        # Filter to only notes that are both in the key and in allowed_notes
+        min_note = min(allowed_notes)
+        max_note = max(allowed_notes) + 1
+        notes_in_key = self._get_notes_in_key(key, (min_note, max_note))
+        allowed_notes = [n for n in allowed_notes if n in notes_in_key]
+        if not allowed_notes:
+            raise ValueError(f"No notes in key '{key}' within the allowed note range")
+        self.key_signature = key
 
         self.artist = f"Random"
         title_suffix = f" in {key}" if key else ""

@@ -630,5 +630,6 @@ class Menu():
         # Hide the overlay if no dialogs are active
         if not menu.is_any_dialog_active():
             menu.dialog_overlay.set_disabled(True)
+        menu.refresh_song_display()
 
 

@@ -4,49 +4,43 @@ from song_book import SongBook
 from pathlib import Path
 
 
-
-
-
 def setup_songbook_albums() -> SongBook:
     # Read the songbook and load the first song
     songbook = SongBook.load()
 
     if songbook is None:
-        # Level 1 starts unlocked
         songbook = SongBook()
 
-        album_name = "Soundcheck"
+        album_name = "The Basics"
         songbook.add_update_from_midi(Path("music/CMajor.mid"), 1, album_name)
         songbook.add_update_from_midi(Path("music/CMinor.mid"), 1, album_name)
         songbook.add_update_from_midi(Path("music/Nursery Rhyme - MaryHadALittleLamb.mid"), 1, album_name)
 
-        album_name = "You've Got Rhymthm"
+        def add_random_song_to_album(album: Album, **kwargs):
+            s = Song()
+            s.from_random(**kwargs)
+            album.add_update_song(s)
+
+        album = songbook.add_album("Whole Note Majors/Minors 1-4-5")
+        add_random_song_to_album(album, key="C")
+        add_random_song_to_album(album, key="F")
+        add_random_song_to_album(album, key="G")
+        add_random_song_to_album(album, key="Em")
+        add_random_song_to_album(album, key="Am")
+        add_random_song_to_album(album, key="Bm")
+
+        album = songbook.add_album("Half Note Majors/Minors 2-5-1")
+        add_random_song_to_album(album, key="D", note_len_range=(16,16), note_spacing_range=(16,16))
+        add_random_song_to_album(album, key="G", note_len_range=(16,16), note_spacing_range=(16,16))
+        add_random_song_to_album(album, key="C", note_len_range=(16,16), note_spacing_range=(16,16))
+        add_random_song_to_album(album, key="Fm", note_len_range=(16,16), note_spacing_range=(16,16))
+        add_random_song_to_album(album, key="Bm", note_len_range=(16,16), note_spacing_range=(16,16))
+        add_random_song_to_album(album, key="Em", note_len_range=(16,16), note_spacing_range=(16,16))
+
+        album_name = "Real and Custom Songs"
         songbook.add_update_from_midi(Path("music/Duke Ellington - Take the A Train.mid"), 1, album_name)
         songbook.add_update_from_midi(Path("music/Eden Ahbez - Nature Boy.mid"), 1, album_name)
-        #album.add_update_song("BlueNotes") # I IV 5 prog
-        #album.add_update_song("TwoForOne") # II V I prog
-        #album.add_update_song("Wipeout")
 
-        
-        #album.add_update_song("Arpegiate") 
-        #album.add_update_song("SpinCycle") # Cycle of 5ths
-
-        #album = songbook.add_album("Key In Ignition")
-        #album.add_update_song("Roadkill") # Bb scales and arp
-        #album.add_update_song("DeeMinor") # Dm scales and arp
-
-        #album = songbook.add_album("Standard Practice")
-        #album.add_update_song("4on6") # Wes Montgomery
-        #album.add_update_song("GirlFromIpanema") #
-
-        album = songbook.add_album("How Random!")
-        rand_song_c1 = Song()
-        rand_song_c1.from_random((32,32), (32,32), 8, "C")
-        album.add_update_song(rand_song_c1)
-
-        rand_song_c1 = Song()
-        rand_song_c1.from_random((32,32), (32,32), 8, "Cm")
-        album.add_update_song(rand_song_c1)
     else:
         # Patch up older versions on songbooks without albums
         if type(getattr(songbook, "albums")) == dict:
