@@ -84,16 +84,16 @@ class MidiDevices:
         if self.output_device_name:
             self._output_port.send(message)
 
-    def get_output_messages(self):
+    def get_output_messages(self) -> list[mido.Message]:
         return self._output_messages
 
     def input(self, message):
         self._input_messages.append(message)
 
-    def get_input_messages(self):
+    def get_input_messages(self) -> list[mido.Message]:
         return self._input_messages
 
-    def input_flush(self):
+    def input_flush(self) -> bool:
         self._input_messages = []
 
     def update(self):

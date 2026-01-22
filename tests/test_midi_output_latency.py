@@ -49,7 +49,7 @@ def main():
             timestamp = time.time()
             timestamp_ms = int((timestamp % 1) * 1000)
             time_str = time.strftime("%H:%M:%S", time.localtime(timestamp))
-            
+
             # Create and send note_on message
             note_on = mido.Message("note_on", note=note_num, velocity=velocity)
             midi.output(note_on)
