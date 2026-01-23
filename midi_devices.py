@@ -1,7 +1,6 @@
 import time
 import mido
 import numpy.random as rng
-
 class MidiDevices:
     """ Manager for midi device names and message routing.
     """

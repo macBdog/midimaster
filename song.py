@@ -95,6 +95,44 @@ class Song:
         
         return notes_in_key
 
+    def add_random_notes(self,
+                         num_notes:int,
+                         key:str="C",
+                         tonic:int=60,
+                         note_range:int=4,
+                         note_length:int=32,
+                         note_spacing:int=32):
+        """Add a sequence of random notes to the song.
+        Args:
+            num_notes: Number of notes to add
+            key: Musical key (e.g., 'C', 'Gm'). If provided, only notes from this key will be used
+            tonic: Center note to start generating from
+            note_range: Number of notes above and below the tonic to generate from
+            note_length: Length of each note in 32nd notes
+            note_spacing: Spacing between notes in 32nd notes
+            
+        """
+        allowed_notes = [tonic - note_range + n for n in range(note_range*2)]
+
+        # Filter to only notes that are both in the key and in allowed_notes
+        min_note = min(allowed_notes)
+        max_note = max(allowed_notes) + 1
+        notes_in_key = self._get_notes_in_key(key, (min_note, max_note))
+        allowed_notes = [n for n in allowed_notes if n in notes_in_key]
+        if not allowed_notes:
+            raise ValueError(f"No notes in key '{key}' within the allowed note range")
+
+        # Calculate starting time based on existing notes
+        time_in_32s = 0
+        if self.notes:
+            last_note = self.notes[-1]
+            time_in_32s = last_note.time + last_note.length
+
+        for _ in range(num_notes):
+            note_value = rng.choice(allowed_notes)
+            self.notes.append(Note(note_value, time_in_32s, note_length))
+            time_in_32s += note_spacing
+
     def from_random(self,
                     key:str="C",
                     tonic:int=60,
@@ -110,32 +148,20 @@ class Song:
             note_len_range: Tuple of (min, max) note lengths in 32nd notes
             note_spacing_range: Tuple of (min, max) spacing between notes in 32nd notes
             song_length_notes: Number of notes to generate
-            note_range: List of allowed MIDI note numbers, or None for default range
             
         """
-        allowed_notes = [tonic - note_range + n for n in range(note_range*2)]
-
-        # Filter to only notes that are both in the key and in allowed_notes
-        min_note = min(allowed_notes)
-        max_note = max(allowed_notes) + 1
-        notes_in_key = self._get_notes_in_key(key, (min_note, max_note))
-        allowed_notes = [n for n in allowed_notes if n in notes_in_key]
-        if not allowed_notes:
-            raise ValueError(f"No notes in key '{key}' within the allowed note range")
         self.key_signature = key
-
         self.artist = f"Random"
         title_suffix = f" in {key}" if key else ""
         self.title = f"{song_length_notes} notes of {note_len_range[0]} to {note_len_range[1]} length{title_suffix}."
         self.path = ""
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.player_track_id = 0
-        time_in_32s = 0
-        for _ in range(song_length_notes):
-            length_in_32s = note_len_range[0] if note_len_range[0] == note_len_range[1] else rng.randint(note_len_range[0], note_len_range[1])
-            note_value = rng.choice(allowed_notes)
-            self.notes.append(Note(note_value, time_in_32s, length_in_32s))
-            time_in_32s += note_spacing_range[0] if note_spacing_range[0] == note_spacing_range[1] else rng.randint(note_spacing_range[0], note_spacing_range[1])
+        
+        # Use add_random_notes for the core logic
+        note_length = note_len_range[0] if note_len_range[0] == note_len_range[1] else rng.randint(note_len_range[0], note_len_range[1])
+        spacing = note_spacing_range[0] if note_spacing_range[0] == note_spacing_range[1] else rng.randint(note_spacing_range[0], note_spacing_range[1])
+        self.add_random_notes(song_length_notes, key, tonic, note_range, note_length, spacing)
 
 
     def from_midi_file(self, filepath: str, player_track_id: int = 0):

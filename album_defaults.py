@@ -16,26 +16,20 @@ def setup_songbook_albums() -> SongBook:
         songbook.add_update_from_midi(Path("music/CMinor.mid"), 1, album_name)
         songbook.add_update_from_midi(Path("music/Nursery Rhyme - MaryHadALittleLamb.mid"), 1, album_name)
 
-        def add_random_song_to_album(album: Album, **kwargs):
+        def get_random_song(title:str, key: str) -> Song:
             s = Song()
-            s.from_random(**kwargs)
-            album.add_update_song(s)
+            s.key_signature = key
+            s.artist = f"Random"
+            s.title = title
+            s.path = ""
+            s.ticks_per_beat = Song.SDQNotesPerBeat
+            s.player_track_id = 0
+            return s
 
-        album = songbook.add_album("Whole Note Majors/Minors 1-4-5")
-        add_random_song_to_album(album, key="C")
-        add_random_song_to_album(album, key="F")
-        add_random_song_to_album(album, key="G")
-        add_random_song_to_album(album, key="Em")
-        add_random_song_to_album(album, key="Am")
-        add_random_song_to_album(album, key="Bm")
-
-        album = songbook.add_album("Half Note Majors/Minors 2-5-1")
-        add_random_song_to_album(album, key="D", note_len_range=(16,16), note_spacing_range=(16,16))
-        add_random_song_to_album(album, key="G", note_len_range=(16,16), note_spacing_range=(16,16))
-        add_random_song_to_album(album, key="C", note_len_range=(16,16), note_spacing_range=(16,16))
-        add_random_song_to_album(album, key="Fm", note_len_range=(16,16), note_spacing_range=(16,16))
-        add_random_song_to_album(album, key="Bm", note_len_range=(16,16), note_spacing_range=(16,16))
-        add_random_song_to_album(album, key="Em", note_len_range=(16,16), note_spacing_range=(16,16))
+        album = songbook.add_album("Play the Majors")
+        s = get_random_song(title="C Workout", key="C")
+        s.add_random_notes(num_notes=16, key=s.key)
+        album.add_update_song(s)
 
         album_name = "Real and Custom Songs"
         songbook.add_update_from_midi(Path("music/Duke Ellington - Take the A Train.mid"), 1, album_name)
