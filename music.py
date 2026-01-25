@@ -9,7 +9,6 @@ from note_render import NoteRender
 from staff import Staff
 from song import Song
 
-
 class Music:
     """A music class is a notes object populated from an on disk midi file.
     self.notes is a list of all the notes in the file for rendering and scoring
@@ -34,7 +33,6 @@ class Music:
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
 
-
     def load(self, song:Song):
         """ Post-process the raw note data of the music, adding rests and decoration"""
         self.reset()
@@ -49,7 +47,6 @@ class Music:
         self.staff.key_signature.set(song.key_signature, self.note_positions)
         self.notes.assign_notes(song.notes)
 
-
     def rewind(self):
         """Restore all the notes and backing in the music to the state just after loading."""
         self.notes.rewind()
@@ -58,7 +55,6 @@ class Music:
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
 
-
     def reset(self):
         self.notes.reset()
         self.backing_index = {}
@@ -66,7 +62,6 @@ class Music:
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
         self.click_init = False
-
 
     def update(self, dt: float, music_time: float, devices: MidiDevices):
         """Play MIDI messages that are not for interactive scoring by the player."""
@@ -115,7 +110,6 @@ class Music:
 
         for _, id in enumerate(self.song.backing_tracks):
             update_backing_track(id, music_time_in_ticks)
-
 
     def draw(self, dt: float, music_time: float, note_width: float) -> dict:
         """Draw any parts of the scene that involve musical notation."""

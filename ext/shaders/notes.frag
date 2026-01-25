@@ -22,6 +22,10 @@ uniform vec2 NoteExtra[NUM_NOTES];
 #define note_slant_alt vec2(0.73, 0.73)
 #define note_spacing_32nd 0.015
 
+#define note_names 1
+#define note_name_y 0.95
+#define note_name_size 0.035
+
 #define note_type_whole 1
 #define note_type_half 2
 #define note_type_quarter 3
@@ -171,6 +175,103 @@ float drawKeySignature(in vec2 uv)
     return key;
 }
 
+float drawLetter(in vec2 uv, in vec2 p, int l)
+{
+    float l_width = note_name_size * 0.1;
+    vec2 sts[6];
+    vec2 eds[6];
+    sts[0] = vec2(p.x, note_name_y); // First stroke of each letter
+    int num_strokes = 0;
+    float strokes = 0.0;
+    float stroke_h_ratio = 0.4;
+    switch (l) {
+        case 0: { // A
+            sts[0] += vec2(note_name_size*stroke_h_ratio, 0.0);
+            eds[0] = sts[0] + vec2(note_name_size*stroke_h_ratio*0.75, -note_name_size);
+            sts[1] = sts[0];
+            eds[1] = sts[1] + vec2(-note_name_size*stroke_h_ratio*0.75, -note_name_size);
+            sts[2] = sts[0] + vec2(-note_name_size*stroke_h_ratio*0.35, note_name_size * -0.5);
+            eds[2] = sts[0] + vec2(note_name_size*stroke_h_ratio*0.35, note_name_size * -0.5);
+            num_strokes = 3;
+            break;
+        }
+        case 1: { // B
+            vec2 cs = vec2(note_name_size * 2.5, note_name_size * 3.0);
+            float es = sts[0].y-note_name_size*0.25;
+            strokes += drawEllipse(uv, vec2(sts[0].x+0.005, es), cs);
+            strokes -= drawEllipse(uv, vec2(sts[0].x+0.005 - note_name_size*stroke_h_ratio*0.35, es), cs - vec2(0.0, 0.011));
+            strokes = clamp(strokes, 0.0, 1.0);
+            es = sts[0].y-note_name_size*0.75;
+            strokes += drawEllipse(uv, vec2(sts[0].x+0.005, es), cs*1.05);
+            strokes -= drawEllipse(uv, vec2(sts[0].x+0.005 - note_name_size*stroke_h_ratio*0.35, es), cs*1.05 - vec2(0.0, 0.011));
+            strokes = clamp(strokes, 0.0, 1.0);
+            
+            eds[0] = sts[0] + vec2(0.0, -note_name_size);
+            sts[1] = sts[0]; 
+            eds[1] = sts[0] + vec2(note_name_size*stroke_h_ratio*0.5, 0.0);
+            sts[2] = sts[0] + vec2(0.0, -note_name_size * 0.5);
+            eds[2] = sts[2] + vec2(note_name_size*stroke_h_ratio*0.5, 0.0);
+            sts[3] = sts[0] + vec2(0.0, -note_name_size);
+            eds[3] = sts[3] + vec2(note_name_size*stroke_h_ratio*0.5, 0.0);
+            num_strokes = 4;
+            
+            strokes += drawEllipse(uv, sts[0], vec2(note_name_size));
+            break;
+        }
+        case 2: { // C
+            vec2 cs = vec2(note_name_size * 3.0, note_name_size * 4.0);
+            strokes += drawEllipse(uv, vec2(sts[0].x, sts[0].y -note_name_size * 0.5), cs);
+            strokes -= drawEllipse(uv, vec2(sts[0].x + note_name_size*stroke_h_ratio*0.35, sts[0].y -note_name_size * 0.5), cs - vec2(0.0, 0.011));
+            break;
+        }
+        case 3: { // D
+            vec2 cs = vec2(note_name_size * 3.0, note_name_size * 4.0);
+            strokes += drawEllipse(uv, vec2(sts[0].x+0.003, sts[0].y -note_name_size * 0.5), cs);
+            strokes -= drawEllipse(uv, vec2(sts[0].x+0.003 - note_name_size*stroke_h_ratio*0.35, sts[0].y -note_name_size * 0.5), cs - vec2(0.0, 0.011));
+            strokes = clamp(strokes, 0.0, 1.0);
+            eds[0] = sts[0] - vec2(0.0, note_name_size);
+            num_strokes = 1;
+            break;
+        }
+        case 4: { // E
+            eds[0] = sts[0] + vec2(0.0, -note_name_size);
+            sts[1] = sts[0]; 
+            eds[1] = sts[0] + vec2(note_name_size*stroke_h_ratio, 0.0);
+            sts[2] = sts[0] + vec2(0.0, -note_name_size * 0.5);
+            eds[2] = sts[2] + vec2(note_name_size*stroke_h_ratio, 0.0);
+            sts[3] = sts[0] + vec2(0.0, -note_name_size);
+            eds[3] = sts[3] + vec2(note_name_size*stroke_h_ratio, 0.0);
+            num_strokes = 4;
+            break;
+        }
+        case 5: { // F
+            eds[0] = sts[0] + vec2(0.0, -note_name_size);
+            sts[1] = sts[0]; 
+            eds[1] = sts[0] + vec2(note_name_size*stroke_h_ratio, 0.0);
+            sts[2] = sts[0] + vec2(0.0, -note_name_size * 0.5);
+            eds[2] = sts[2] + vec2(note_name_size*stroke_h_ratio, 0.0);
+            num_strokes = 3;
+            break;
+        }
+        case 6: { // G
+            vec2 cs = vec2(note_name_size * 3.0, note_name_size * 4.0);
+            strokes += drawEllipse(uv, vec2(sts[0].x, sts[0].y -note_name_size * 0.5), cs);
+            strokes -= drawEllipse(uv, vec2(sts[0].x + note_name_size*stroke_h_ratio*0.35, sts[0].y -note_name_size * 0.5), cs - vec2(0.0, 0.011));
+            strokes = clamp(strokes, 0.0, 1.0);
+            sts[0] += vec2(note_name_size*0.130, -note_name_size*0.5);
+            eds[0] = sts[0] - vec2(note_name_size*0.25, 0.0);
+            sts[1] = sts[0];
+            eds[1] = sts[1] - vec2(0.0, note_name_size * 0.5);
+            num_strokes = 2;
+            break;
+        }
+    }
+    for (int i = 0; i < num_strokes; ++i) {
+        strokes += drawLineRounded(uv, sts[i], eds[i], l_width);
+    }
+    return strokes;
+}
+
 float drawTie(in vec2 uv, in vec2 start, in vec2 end, bool above)
 {
     float col = 0.0;
@@ -197,13 +298,21 @@ float drawTie(in vec2 uv, in vec2 start, in vec2 end, bool above)
 // extra_geo.y is added onto the default stalk lenghth
 float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_size, in float tie_32s, in vec2 extra_geo) 
 {
+    float letters = 0.0;
+    if (note_names > 0 && note_type < note_type_rest_whole)
+    {
+        float letf = 1.0 - ((p.y - staff_pos_y) / staff_note_spacing * 1.0);
+        int leti = abs(int(letf)-5) % 7;
+        letters = drawLetter(uv, p, leti);
+    }
+
     if (note_type == note_type_rest_whole)
     {
-        return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 5.6), vec2(0.04, 0.03));
+        return letters + drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 5.6), vec2(0.04, 0.03));
     }
     else if (note_type == note_type_rest_half)
     {
-        return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 4.4), vec2(0.04, 0.03));
+        return letters + drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 4.4), vec2(0.04, 0.03));
     }
     else if (note_type == note_type_rest_quarter)
     {
@@ -212,14 +321,14 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_
         col += drawLineRounded(uv, vec2(p.x - 0.025, staff_pos_y + 0.12), vec2(p.x - 0.011, staff_pos_y + 0.072), 0.0025);
         col += drawEllipse(uv, vec2(p.x - 0.022, staff_pos_y + 0.07), vec2(0.11, 0.14));
         col -= drawEllipse(uv, vec2(p.x - 0.019, staff_pos_y + 0.062), vec2(0.1, 0.13));
-        return clamp(col, 0.0, 1.0);
+        return clamp(letters + col, 0.0, 1.0);
     }
     else if (note_type >= note_type_rest_eighth)
     {
         float col = drawLineRounded(uv, vec2(p.x - 0.001, staff_pos_y + 0.173), vec2(p.x - 0.02, staff_pos_y + 0.06), 0.0025);
         col += drawEllipse(uv, vec2(p.x - 0.024, staff_pos_y + 0.15), vec2(0.105, 0.135));
         col += drawLineRounded(uv, vec2(p.x - 0.016, staff_pos_y + 0.14), vec2(p.x - 0.003, staff_pos_y + 0.167), 0.003);
-        return clamp(col, 0.0, 1.0);
+        return clamp(letters + col, 0.0, 1.0);
     }
 
     vec2 stalk_size = vec2(0.0025, 0.2 + extra_geo.y);
@@ -290,7 +399,7 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_
     
     if (note_type == note_type_whole)
     {
-        return clamp(blob + lines + tie + decoration, 0.0, 1.0);
+        return clamp(letters + blob + lines + tie + decoration, 0.0, 1.0);
     }
 
     float stalk_width = note_size * 0.2;
@@ -332,12 +441,12 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_
         {
         
         }
-        return clamp(blob + lines + tie + stalk + decoration + tail, 0.0, 1.0);
+        return clamp(letters + blob + lines + tie + stalk + decoration + tail, 0.0, 1.0);
     }
     
     if (note_type <= note_type_quarter)
     {
-        return clamp(blob + lines + tie + stalk + decoration, 0.0, 1.0);
+        return clamp(letters + blob + lines + tie + stalk + decoration, 0.0, 1.0);
     }
     
     // Lines joining quavers and semi quavers
@@ -351,7 +460,7 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec, in vec2 hat_
         hat = drawLineSquare(uv, hat_start, hat_end, hat_width, false);
     }
     
-    return clamp(blob + lines + tie + stalk + hat + decoration, 0.0, 1.0);   
+    return clamp(letters + blob + lines + tie + stalk + hat + decoration, 0.0, 1.0);
 }
 
 float drawStaff(in vec2 uv, in vec2 p)

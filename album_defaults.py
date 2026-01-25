@@ -28,7 +28,7 @@ def setup_songbook_albums() -> SongBook:
 
         album = songbook.add_album("Play the Majors")
         s = get_random_song(title="C Workout", key="C")
-        s.add_random_notes(num_notes=16, key=s.key)
+        s.add_random_notes(num_notes=16, key=s.key_signature)
         album.add_update_song(s)
 
         album_name = "Real and Custom Songs"

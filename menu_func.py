@@ -42,6 +42,7 @@ class Menus(Enum):
 class Dialogs(Enum):
     DEVICES = auto()
     GAME_OVER = auto()
+    OPTIONS = auto()
 
 
 def song_play(**kwargs):
@@ -275,3 +276,32 @@ def song_over_retry(**kwargs):
     game.menu.refresh_song_display()
     game.reset()
     game.music.rewind()
+
+def toggle_show_note_names(**kwargs):
+    menu = kwargs["menu"]
+    menu.songbook.show_note_names = not menu.songbook.show_note_names
+    widget_on = kwargs["widget_on"]
+    widget_off = kwargs["widget_off"]
+    widget_on.set_disabled(not menu.songbook.show_note_names)
+    widget_off.set_disabled(menu.songbook.show_note_names)
+
+def adjust_output_latency(**kwargs):
+    menu = kwargs["menu"]
+    direction = kwargs["dir"]
+    menu.songbook.output_latency_ms += direction * 10
+    widget = kwargs["widget"]
+    widget.set_text(f"{menu.songbook.output_latency_ms}ms", 11)
+
+def options_latency_test_start(**kwargs):
+    menu = kwargs["menu"]
+    menu.options_latency_test_running = True
+    menu.options_latency_test_time = 0.0
+
+def options_latency_test_stop(**kwargs):
+    menu = kwargs["menu"]
+    menu.options_latency_test_running = False
+
+def options_latency_test_action(**kwargs):
+    menu = kwargs["menu"]
+    menu.devices.output_test()
+    menu.options_latency_anim.actioned = False
