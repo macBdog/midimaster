@@ -285,6 +285,14 @@ def toggle_show_note_names(**kwargs):
     widget_on.set_disabled(not menu.songbook.show_note_names)
     widget_off.set_disabled(menu.songbook.show_note_names)
 
+def toggle_click(**kwargs):
+    menu = kwargs["menu"]
+    menu.music.click = not  menu.music.click
+    widget_on = kwargs["widget_on"]
+    widget_off = kwargs["widget_off"]
+    widget_on.set_disabled(not menu.music.click)
+    widget_off.set_disabled(menu.music.click)
+
 def adjust_output_latency(**kwargs):
     menu = kwargs["menu"]
     direction = kwargs["dir"]

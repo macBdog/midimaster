@@ -30,15 +30,14 @@ class Song:
         self.key_signature = "C"
         self.clocks_per_tick = 24
         self.ticks_per_beat = Song.SDQNotesPerBeat
-        self.track_names = {}
-        self.backing_tracks = {}
+        self.track_names: dict[str] = {}
+        self.backing_tracks: dict[list[Message]] = {}
         self.notes: list[Note] = []
+        self.saved = False
         self.dirty = False
-
 
     def get_name(self):
         return f"{self.artist} - {self.title}"
-
 
     def get_max_score(self):
         return max(len(self.notes), 1) * 10
@@ -46,11 +45,9 @@ class Song:
     @staticmethod
     def _get_notes_in_key(key: str, note_range: tuple = (48, 80)):
         """Get all MIDI note numbers within a key across the specified range.
-        
         Args:
             key: Musical key (e.g., 'C', 'Gm' for G minor)
             note_range: Tuple of (min_note, max_note) MIDI note numbers
-        
         Returns:
             List of MIDI note numbers that belong to the key
         """
@@ -92,8 +89,25 @@ class Song:
         for midi_note in range(note_range[0], note_range[1]):
             if midi_note % 12 in scale_degrees:
                 notes_in_key.append(midi_note)
-        
+
         return notes_in_key
+
+    def add_count_in(self, num_notes:int=4, note_length: int=32, note_spacing: int=32, note:int=80):
+        time_in_32s = 0
+        self.backing_tracks[0] = []
+        for i in range(num_notes):
+            click_on = Message("note_on")
+            click_on.note = note
+            click_on.velocity = 100
+            click_on.time = i * note_spacing
+
+            click_off = Message("note_on")
+            click_off.note = note
+            click_off.velocity = 100
+            click_off.time = (i * note_spacing) + note_length
+            self.backing_tracks[0].append(click_on)
+            self.backing_tracks[0].append(click_off)
+            time_in_32s += note_spacing
 
     def add_random_notes(self,
                          num_notes:int,
@@ -101,7 +115,8 @@ class Song:
                          tonic:int=60,
                          note_range:int=4,
                          note_length:int=32,
-                         note_spacing:int=32):
+                         note_spacing:int=32,
+                         time: int=0):
         """Add a sequence of random notes to the song.
         Args:
             num_notes: Number of notes to add
@@ -127,6 +142,7 @@ class Song:
         if self.notes:
             last_note = self.notes[-1]
             time_in_32s = last_note.time + last_note.length
+        time_in_32s + time
 
         for _ in range(num_notes):
             note_value = rng.choice(allowed_notes)
@@ -157,12 +173,12 @@ class Song:
         self.path = ""
         self.ticks_per_beat = Song.SDQNotesPerBeat
         self.player_track_id = 0
-        
+        self.saved = False
+
         # Use add_random_notes for the core logic
         note_length = note_len_range[0] if note_len_range[0] == note_len_range[1] else rng.randint(note_len_range[0], note_len_range[1])
         spacing = note_spacing_range[0] if note_spacing_range[0] == note_spacing_range[1] else rng.randint(note_spacing_range[0], note_spacing_range[1])
         self.add_random_notes(song_length_notes, key, tonic, note_range, note_length, spacing)
-
 
     def from_midi_file(self, filepath: str, player_track_id: int = 0):
         keys = {}
@@ -170,6 +186,7 @@ class Song:
             return
 
         self.path = filepath
+        self.saved = True
 
         # Derive track name from filename
         filestr = str(filepath)

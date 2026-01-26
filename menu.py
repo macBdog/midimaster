@@ -30,7 +30,8 @@ from menu_func import (
     devices_refresh, devices_output_test, set_devices_output,
     devices_refresh, devices_output_test,
     menu_quit, menu_transition,
-    toggle_show_note_names, adjust_output_latency, options_latency_test_start, options_latency_test_stop,
+    toggle_click, toggle_show_note_names, 
+    adjust_output_latency, options_latency_test_start, options_latency_test_stop,
 )
 
 
@@ -439,59 +440,71 @@ class Menu():
 
     def _setup_options_dialog(self):
         """Setup all widgets for the options dialog"""
+        options_y = 0.3
 
-        # Show note names checkbox
         WidgetFactory.create_text(
             self.dialogs[Dialogs.OPTIONS], self.font,
-            "Show note names", 10, Coord2d(-0.3, 0.3),
+            "Show note names", 10, Coord2d(-0.3, options_y),
             color=MenuConfig.TEXT_COLOR_BRIGHT
         )
         self.options_checkbox_on, self.options_checkbox_off = WidgetFactory.create_checkbox_pair(
             self.dialogs[Dialogs.OPTIONS], self.textures, self.window_ratio, "gui/checkboxon.tga", "gui/checkbox.tga",
-            Coord2d(0.165, 0.3), MenuConfig.SMALL_BUTTON_SIZE,
+            Coord2d(0.165, options_y), MenuConfig.SMALL_BUTTON_SIZE,
             toggle_show_note_names, {"menu": self, "widget": None},
             state=self.songbook.show_note_names,
         )
+        options_y -= 0.1
 
-        # Output latency section
         WidgetFactory.create_text(
             self.dialogs[Dialogs.OPTIONS], self.font,
-            "Output latency", 10, Coord2d(-0.3, 0.15),
+            "Click track", 10, Coord2d(-0.3, options_y),
             color=MenuConfig.TEXT_COLOR_BRIGHT
         )
+        self.options_checkbox_on, self.options_checkbox_off = WidgetFactory.create_checkbox_pair(
+            self.dialogs[Dialogs.OPTIONS], self.textures, self.window_ratio, "gui/checkboxon.tga", "gui/checkbox.tga",
+            Coord2d(0.165, options_y), MenuConfig.SMALL_BUTTON_SIZE,
+            toggle_click, {"menu": self, "widget": None},
+            state=self.music.click,
+        )
+        options_y -= 0.1
 
+        WidgetFactory.create_text(
+            self.dialogs[Dialogs.OPTIONS], self.font,
+            "Output latency", 10, Coord2d(-0.3, options_y),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
         self.options_latency_widget = WidgetFactory.create_text(
             self.dialogs[Dialogs.OPTIONS], self.font,
-            f"{self.songbook.output_latency_ms}ms", 11, Coord2d(0.0, 0.15),
+            f"{self.songbook.output_latency_ms}ms", 11, Coord2d(0.0, options_y),
             color=MenuConfig.TEXT_COLOR_BRIGHT
         )
+        options_y += 0.015
 
         WidgetFactory.create_button_pair(
             self.dialogs[Dialogs.OPTIONS], self.textures, self.window_ratio,
             "gui/btnback.png", "gui/btnnext.png",
-            Coord2d(0.2, 0.165), MenuConfig.SMALL_BUTTON_SIZE,
+            Coord2d(0.2, options_y), MenuConfig.SMALL_BUTTON_SIZE,
             adjust_output_latency, {"menu": self, "dir": -1, "widget": self.options_latency_widget},
             adjust_output_latency, {"menu": self, "dir": 1, "widget": self.options_latency_widget},
             width=0.06, height=0.0
         )
+        options_y = -0.1
 
         # Output latency test section
-        output_latency_y = -0.1
         trophy_size = 0.1
         self.options_latency_tester = self.dialogs[Dialogs.OPTIONS].add_create_widget(
-            self.textures.create_sprite_texture("trophy2.png", Coord2d(0.0, output_latency_y), Coord2d(trophy_size, trophy_size * self.window_ratio), wrap=False)
+            self.textures.create_sprite_texture("trophy2.png", Coord2d(0.0, options_y), Coord2d(trophy_size, trophy_size * self.window_ratio), wrap=False)
         )
         self.options_latency_anim = self.options_latency_tester.animate(AnimType.FillRadial)
         self.options_latency_anim.mag = 1.0
         self.options_latency_anim.time = 1.0
         self.options_latency_anim.set_action(1.0, options_latency_test_action, {"menu":self})
-
-        output_latency_y -= 0.15
+        options_y -= 0.15
 
         button_size = Coord2d(0.15, 0.06 * self.window_ratio)
         self.options_latency_test_button = WidgetFactory.create_button(
             self.dialogs[Dialogs.OPTIONS], self.textures, "gui/panel.tga",
-            Coord2d(-0.1, output_latency_y), button_size,
+            Coord2d(-0.1, options_y), button_size,
             options_latency_test_start, {"menu": self},
             font=self.font, text="Test", text_size=10,
             text_offset=Coord2d(-0.03, -0.012)
@@ -500,7 +513,7 @@ class Menu():
 
         self.options_stop_button = WidgetFactory.create_button(
             self.dialogs[Dialogs.OPTIONS], self.textures, "gui/panel.tga",
-            Coord2d(0.1, output_latency_y), button_size,
+            Coord2d(0.1, options_y), button_size,
             options_latency_test_stop, {"menu": self},
             font=self.font, text="Stop", text_size=10,
             text_offset=Coord2d(-0.03, -0.012)

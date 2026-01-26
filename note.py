@@ -15,7 +15,6 @@ class NoteType(Enum):
     REST_SIXTEENTH = auto()
     REST_THIRTYSECOND = auto()
 
-
 class NoteDecoration(Enum):
     """Fit all note decoration types into an int matching values in the shader."""
     NONE = 0
@@ -26,7 +25,6 @@ class NoteDecoration(Enum):
     DOTTED_FLAT = auto()
     DOTTED_NATURAL = auto()
     DOTTED_SHARP = auto()
-
 
 class Note():
     """Note is a POD style container for a note in a piece of music with representation."""
@@ -49,7 +47,6 @@ class Note():
                 return k, dotted
         return 1, False
 
-
     @staticmethod
     def get_quanitized_rest(note_length):
         for _, k in enumerate(Note.NoteLengthTypes):
@@ -57,16 +54,13 @@ class Note():
                 return k
         return 1
 
-
     @staticmethod
     def get_note_type(length) -> NoteType:
         return NoteType(Note.NoteLengthTypes[length])
 
-
     @staticmethod
     def get_rest_type(length) -> NoteType:
         return NoteType(Note.NoteLengthTypes[length] + int(NoteType.THIRTYSECOND.value))
-
 
     def __init__(self, note: int, time: int, length: int):
         # These fields come from the music file and are required for playing
