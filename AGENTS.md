@@ -216,12 +216,44 @@ After implementing the change:
    - [ ] Rest notes don't show letters (already handled in shader, line 302)
    - [ ] Performance impact negligible
 
+## GameJam Framework Dependency
+
+MidiMaster is built on the **GameJam** rendering framework located at `C:\projects\gamejam`.
+
+**See**: [C:\projects\gamejam\AGENTS.md](C:\projects\gamejam\AGENTS.md) for complete framework documentation.
+
+### Key Components Used by MidiMaster:
+
+1. **Graphics.process_shader_source()** - String substitution for shader preprocessing
+   - Used in [note_render.py:38-46](note_render.py:38-46) to inject staff positioning constants
+   - Simple find/replace before shader compilation
+
+2. **SpriteTexture** - Custom shader-based sprite rendering
+   - Used for note rendering with custom `notes.frag` shader
+   - Supports custom uniform callbacks
+
+3. **Font** - GPU-accelerated text rendering
+   - FreeType-based glyph atlas
+   - Used for UI text and note letters
+
+4. **Input** - Event-driven keyboard/MIDI handling
+   - Key mapping system for game controls
+   - MIDI device integration
+
+5. **Gui/Widget** - Hierarchical UI system
+   - Menu system and dialogs
+   - YAML-based layout persistence
+
+6. **GameJam** - Main game loop base class
+   - MidiMaster extends this for core loop
+   - Built-in profiler and debug mode
+
 ## Additional Notes
 
 - The shader uses procedural geometry to draw letters (no texture atlas)
 - Letter drawing code is quite extensive (lines 178-273) with each letter defined as strokes and ellipses
 - The note letter calculation uses modulo arithmetic to map staff position to letter (line 305)
-- Gamejam framework is a git submodule (not currently checked out in workspace)
+- Gamejam framework is located at C:\projects\gamejam (separate repository)
 - The game supports both performance mode and "pause & learn" mode
 
 ## Menu System Integration

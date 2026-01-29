@@ -11,7 +11,8 @@ from gamejam.input import InputActionKey, InputActionModifier
 from key_signature import KeySignature
 from menu import Menu, Menus
 from score import (
-    score_player_note_on, score_update_draw, score_setup_display, score_playable_note_on
+    score_player_note_on, score_update_draw, score_setup_display, score_playable_note_on,
+    score_reset_ui
 )
 from album_defaults import setup_songbook_albums
 from song import Song
@@ -62,6 +63,9 @@ class MidiMaster(GameJam):
 
         if self.music:
             self.score_max = self.music.song.get_max_score()
+
+        # Reset UI elements
+        score_reset_ui(self)
 
 
     def prepare(self):

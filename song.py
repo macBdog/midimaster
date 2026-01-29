@@ -115,7 +115,7 @@ class Song:
                          tonic:int=60,
                          note_range:int=4,
                          note_length:int=32,
-                         note_spacing:int=32,
+                         note_spacing:int=0,
                          time: int=0):
         """Add a sequence of random notes to the song.
         Args:
@@ -147,7 +147,7 @@ class Song:
         for _ in range(num_notes):
             note_value = rng.choice(allowed_notes)
             self.notes.append(Note(note_value, time_in_32s, note_length))
-            time_in_32s += note_spacing
+            time_in_32s += note_length + note_spacing
 
     def from_random(self,
                     key:str="C",

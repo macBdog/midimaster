@@ -23,7 +23,7 @@ uniform vec2 NoteExtra[NUM_NOTES];
 #define note_spacing_32nd 0.015
 
 uniform int note_names;
-#define note_name_y 0.988
+#define note_name_y 0.989
 #define note_name_size 0.035
 
 #define note_type_whole 1

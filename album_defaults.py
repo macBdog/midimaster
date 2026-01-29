@@ -21,7 +21,7 @@ def setup_songbook_albums() -> SongBook:
             del songbook.songs
 
     # Add/regenerate all the tutorial songs
-    def get_random_song(title:str, key: str) -> Song:
+    def get_random_song(title:str, key: str, tempo: int = 100) -> Song:
         s = Song()
         s.key_signature = key
         s.artist = f"Tutorial"
@@ -31,11 +31,15 @@ def setup_songbook_albums() -> SongBook:
         s.player_track_id = 0
         s.track_names = ["The Player", "Backing Track"]
         s.saved = False
+        s.tempo_bpm = tempo
         return s
 
     album = songbook.add_album("Play the Majors")
-    s = get_random_song(title="C Workout", key="C")
-    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=8, note_spacing=8, time=32)
+    s = get_random_song(title="C Workout", key="C", tempo=80)
+    s.add_random_notes(num_notes=1, key=s.key_signature, tonic=60, note_length=32, time=32)
+    s.add_random_notes(num_notes=4, key=s.key_signature, tonic=60, note_length=16)
+    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=8)
+    s.add_random_notes(num_notes=32, key=s.key_signature, tonic=60, note_length=4)
     album.add_update_song(s)
 
     album_name = "Real and Custom Songs"

@@ -11,6 +11,24 @@ if TYPE_CHECKING:
     from gamejam.gui import Gui
 
 
+def score_reset_ui(game: 'MidiMaster'):
+    """Reset all score UI elements for a new song."""
+    # Reset trophy animations to empty state
+    for i in range(3):
+        if hasattr(game, 'tally') and len(game.tally) > i:
+            tally_anim = game.tally[i].animation
+            tally_anim.time = 1
+            tally_anim.frac = 0.0
+            tally_anim.mag = 1.0
+            tally_anim.set_animation(AnimType.FillRadial, False)
+
+    # Reset score bar to empty
+    if hasattr(game, 'score_bar') and game.score_bar:
+        score_bar_anim = game.score_bar.animation
+        score_bar_anim.time = -1
+        score_bar_anim.frac = 0.0
+        score_bar_anim.set_animation(AnimType.FillHorizontal, False)
+
 def score_setup_display(game: 'MidiMaster', gui: 'Gui', controls_pos: Coord2d):
     tally_size = Coord2d(0.175, 0.175 * game.window_ratio)
     tally_pos = controls_pos - Coord2d(0.75, 0.0)
@@ -44,14 +62,12 @@ def score_setup_display(game: 'MidiMaster', gui: 'Gui', controls_pos: Coord2d):
     score_bar_anim.time = -1
     score_bar_anim.frac = 0.0
 
-
 def score_vfx(game: 'MidiMaster', note_id: int = None):
     game.score_fade = 1.0
     game.menu.set_event("score_vfx")
     if note_id is not None:
         spawn_pos = [-0.71, game.staff.note_positions[note_id]]
         game.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0], 1.0, game.tally_positions[0].to_list())
-
 
 def score_playable_note_on(game: 'MidiMaster', note):
     trophies = [r * game.score_max for r in TROPHY_SCORE]
@@ -63,7 +79,6 @@ def score_playable_note_on(game: 'MidiMaster', note):
         game.tally[i].animation.time = -1
         game.tally[i].animation.set_animation(anim_type, True)
 
-
 def score_player_note_on(game: 'MidiMaster', message):
     if message.note in game.scored_notes:
         score_vfx(game, message.note)
@@ -71,7 +86,6 @@ def score_player_note_on(game: 'MidiMaster', message):
         game.score += 10 - min(time_diff, 9)
         game.score_bar.animation.frac = game.score / max(game.score_max, 1.0)
         del game.scored_notes[message.note]
-
 
 def score_update_draw(game: 'MidiMaster', dt: float):
     if game.staff.is_scoring():
