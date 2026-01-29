@@ -40,7 +40,26 @@ class Song:
         return f"{self.artist} - {self.title}"
 
     def get_max_score(self):
-        return max(len(self.notes), 1) * 10
+        """Calculate maximum possible score for the song.
+
+        Uses the continuous scoring system where each note's max score
+        is based on its length. Includes completion bonuses.
+        """
+        if not self.notes:
+            return 1
+
+        from score import calculate_max_score_for_note
+
+        total_max_score = 0.0
+        for note in self.notes:
+            # Max score for note based on length
+            note_max = calculate_max_score_for_note(note.length)
+            total_max_score += note_max
+
+            # Add potential completion bonus (5 points per note)
+            total_max_score += 5.0
+
+        return int(total_max_score)
 
     @staticmethod
     def _get_notes_in_key(key: str, note_range: tuple = (48, 80)):

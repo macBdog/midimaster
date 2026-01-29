@@ -11,6 +11,22 @@ if TYPE_CHECKING:
     from gamejam.gui import Gui
 
 
+def calculate_max_score_for_note(note_length_32nds: float) -> float:
+    """Calculate maximum possible score for a note.
+
+    Args:
+        note_length_32nds: Note duration in 32nd notes
+
+    Returns:
+        Max score (float)
+    """
+    # Base score scales with note length
+    # Whole note (128 32nds) = 100 points
+    # Quarter note (32 32nds) = 25 points
+    # Eighth note (16 32nds) = 12.5 points
+    base_score = (note_length_32nds / 128.0) * 100.0
+    return max(base_score, 5.0)  # Minimum 5 points per note
+
 def score_reset_ui(game: 'MidiMaster'):
     """Reset all score UI elements for a new song."""
     # Reset trophy animations to empty state
@@ -87,13 +103,72 @@ def score_player_note_on(game: 'MidiMaster', message):
         game.score_bar.animation.frac = game.score / max(game.score_max, 1.0)
         del game.scored_notes[message.note]
 
+def score_continuous_update(game: 'MidiMaster', dt: float):
+    """Award score continuously for held notes.
+
+    Called every frame from midimaster.update().
+    Awards points proportional to:
+    - Delta time (dt)
+    - Note accuracy (how well timed the press was)
+    - Sustain quality (continuous hold without gaps)
+    """
+    if not game.music_running:
+        return  # Don't accumulate score while paused
+
+    for note_id, note_info in game.active_scorable_notes.items():
+        # Check if player is currently holding this note
+        is_holding = note_id in game.player_notes_down
+
+        if is_holding and note_info['player_started'] is not None:
+            # Calculate scoring rate
+            note_length = note_info['end_time'] - note_info['start_time']
+            max_score = note_info['max_possible']
+
+            # Base score rate (points per 32nd note)
+            # Convert note_length from 32nd notes to seconds for rate calculation
+            if note_length > 0:
+                base_rate = max_score / max(note_length, 1.0)
+            else:
+                base_rate = max_score
+
+            # Accuracy multiplier (based on timing of initial press)
+            time_diff = abs(note_info['player_started'] - note_info['start_time'])
+            accuracy = max(0.5, 1.0 - (time_diff / 2.0))  # 50% to 100%
+
+            # Award points (dt is in seconds, need to convert to 32nd notes)
+            # Assuming 120 BPM: 1 beat = 0.5 seconds, 1 32nd = 0.5/8 = 0.0625 seconds
+            from song import Song
+            tempo_factor = game.music.tempo_bpm / 60.0  # Beats per second
+            dt_in_32nds = dt * Song.SDQNotesPerBeat * tempo_factor
+
+            points_this_frame = base_rate * accuracy * dt_in_32nds
+
+            # Cap to prevent over-scoring
+            remaining = max_score - note_info['score_earned']
+            points_this_frame = min(points_this_frame, remaining)
+
+            if points_this_frame > 0:
+                note_info['score_earned'] += points_this_frame
+                game.score += points_this_frame
+
+                # Update trophy animations
+                trophies = [r * game.score_max for r in TROPHY_SCORE]
+                for i in range(3):
+                    frac = game.score / max(trophies[i], 1.0)
+                    anim_type = AnimType.Throb if frac >= 1.0 else AnimType.FillRadial
+                    game.tally[i].animation.frac = frac
+                    game.tally[i].animation.set_animation(anim_type, True)
+
+
 def score_update_draw(game: 'MidiMaster', dt: float):
     if game.staff.is_scoring():
         if game.score_fade < 0.5:
             for note in game.scored_notes:
                 score_vfx(game, note)
                 break
-        game.score_bar.animation.frac = game.score / max(game.score_max, 1.0)
+
+    # Update score bar
+    game.score_bar.animation.frac = game.score / max(game.score_max, 1.0)
 
     game.score_fade -= dt * 0.5
     game.font_game.draw(f"{math.floor(game.score)}/{game.score_max} XP", 20, game.bg_score.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])

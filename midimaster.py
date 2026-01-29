@@ -12,7 +12,7 @@ from key_signature import KeySignature
 from menu import Menu, Menus
 from score import (
     score_player_note_on, score_update_draw, score_setup_display, score_playable_note_on,
-    score_reset_ui
+    score_reset_ui, calculate_max_score_for_note, score_vfx, score_continuous_update
 )
 from album_defaults import setup_songbook_albums
 from song import Song
@@ -59,6 +59,7 @@ class MidiMaster(GameJam):
         self.player_notes_down = {}
         self.midi_notes = {}
         self.scored_notes = {}
+        self.active_scorable_notes = {}  # Continuous scoring system
         self.music_running = False
 
         if self.music:
@@ -125,8 +126,6 @@ class MidiMaster(GameJam):
 
         self.setup_input()
 
-        #self.score_max = self.music.song.get_max_score()
-
     def update(self, dt):
         self.menu.update(dt, self.music_running)
         if self.menu.running == False:
@@ -148,6 +147,14 @@ class MidiMaster(GameJam):
         for message in self.devices.get_output_messages():
             if message.type == "note_on":
                 self.player_notes_down[message.note] = 1.0
+
+                # Continuous scoring: Record when player started holding this note
+                if message.note in self.active_scorable_notes:
+                    note_info = self.active_scorable_notes[message.note]
+                    if note_info['player_started'] is None:  # First time pressing
+                        note_info['player_started'] = self.music_time
+                        score_vfx(self, message.note)  # Visual feedback
+
                 score_player_note_on(self, message)
 
             elif message.type == "note_off":
@@ -201,6 +208,17 @@ class MidiMaster(GameJam):
                 def new_note_to_play():
                     self.midi_notes[k] = note_off_time
                     self.scored_notes[k] = self.music_time
+
+                    # Continuous scoring: Track note as active scorable
+                    note_length = note_off_time - self.music_time
+                    self.active_scorable_notes[k] = {
+                        'start_time': self.music_time,
+                        'end_time': note_off_time,
+                        'player_started': None,
+                        'score_earned': 0.0,
+                        'max_possible': calculate_max_score_for_note(note_length)
+                    }
+
                     new_note_on = Message("note_on")
                     new_note_on.note = k
                     new_note_on.velocity = 100
@@ -223,11 +241,23 @@ class MidiMaster(GameJam):
                 self.devices.output(new_note_off)
                 self.midi_notes.pop(k)
 
+                # Continuous scoring: Clean up scoring data and award completion bonus
+                if k in self.active_scorable_notes:
+                    note_info = self.active_scorable_notes[k]
+                    # Award perfect sustain bonus if note was held well
+                    if note_info['score_earned'] >= note_info['max_possible'] * 0.9:
+                        bonus = 5.0
+                        self.score += bonus
+                    del self.active_scorable_notes[k]
+
             if self.mode == MusicMode.PAUSE_AND_LEARN:
                 if len(self.scored_notes) > 0 and self.music_running:
                     self.music_time -= music_time_advance
 
             self.staff.draw(dt)
+
+            # Continuous scoring: Award points for held notes
+            score_continuous_update(self, dt)
 
             # Show the play mode
             mode_string = "Performance" if self.mode == MusicMode.PERFORMANCE else "Pause & Learn"
