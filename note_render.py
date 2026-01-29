@@ -1,8 +1,8 @@
 from pathlib import Path
 from OpenGL.GL import (
     glGetUniformLocation,
-    glUniform1iv,
-    glUniform1f, 
+    glUniform1i, glUniform1iv,
+    glUniform1f,
     glUniform1fv, glUniform2fv, glUniform4fv,
 )
 
@@ -15,6 +15,7 @@ from staff import Staff
 from note import Note
 from key_signature import KeySignature
 from staff import Staff
+from song_book import SongBook
 
 
 class NoteRender:
@@ -24,8 +25,9 @@ class NoteRender:
     HitColour = [BaseColour, 0.78, BaseColour, 1.0]
     MissColour = [0.78, BaseColour, BaseColour, 1.0]
 
-    def __init__(self, graphics: Graphics, staff: Staff):
+    def __init__(self, graphics: Graphics, staff: Staff, songbook: SongBook):
         self.staff = staff
+        self.songbook = songbook
         self.calibration = False
         self.display_ratio = graphics.display_ratio
         self.ref_c4_pos = [Staff.Pos[0], staff.note_positions[60]]
@@ -50,6 +52,7 @@ class NoteRender:
 
         self.display_ratio_id = glGetUniformLocation(self.shader, "DisplayRatio")
         self.music_time_id = glGetUniformLocation(self.shader, "MusicTime")
+        self.note_names_id = glGetUniformLocation(self.shader, "note_names")
         self.key_positions_id = glGetUniformLocation(self.shader, "KeyPositions")
         self.note_positions_id = glGetUniformLocation(self.shader, "NotePositions")
         self.note_colours_id = glGetUniformLocation(self.shader, "NoteColours")
@@ -186,6 +189,7 @@ class NoteRender:
         def note_uniforms():
             glUniform1f(self.display_ratio_id, self.display_ratio)
             glUniform1f(self.music_time_id, music_time)
+            glUniform1i(self.note_names_id, 1 if self.songbook.show_note_names else 0)
             glUniform2fv(self.key_positions_id, KeySignature.NumAccidentals, self.staff.key_signature.positions)
             glUniform2fv(self.note_positions_id, NoteRender.NumNotes, self.note_positions)
             glUniform4fv(self.note_colours_id, NoteRender.NumNotes, self.note_colours)

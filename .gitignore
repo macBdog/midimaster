@@ -158,3 +158,9 @@ cython_debug/
 launch.json
 *.mid
 music/*.mid
+
+# Claude Code
+.claude/
+.claude_code/
+claude_history.jsonl
+.claude_history

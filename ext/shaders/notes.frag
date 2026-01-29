@@ -22,8 +22,8 @@ uniform vec2 NoteExtra[NUM_NOTES];
 #define note_slant_alt vec2(0.73, 0.73)
 #define note_spacing_32nd 0.015
 
-#define note_names 1
-#define note_name_y 0.98
+uniform int note_names;
+#define note_name_y 0.988
 #define note_name_size 0.035
 
 #define note_type_whole 1

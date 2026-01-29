@@ -142,7 +142,7 @@ class Song:
         if self.notes:
             last_note = self.notes[-1]
             time_in_32s = last_note.time + last_note.length
-        time_in_32s + time
+        time_in_32s += time
 
         for _ in range(num_notes):
             note_value = rng.choice(allowed_notes)
