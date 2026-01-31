@@ -58,8 +58,8 @@ class MenuConfig:
     
     # Game background
     GAME_BG_COLOR = [0.5] * 4
-    NOTE_BG_SIZE_TOP = 0.65
-    NOTE_BG_SIZE_BTM = 1.25
+    NOTE_BG_SIZE_TOP = 0.35
+    NOTE_BG_SIZE_BTM = 0.85
     
     # Device dialog
     DEVICE_DIALOG_SIZE = Coord2d(0.8, 1.0)
@@ -207,11 +207,12 @@ class Menu():
         self.song_albums: list[AlbumWidget] = []
         self.song_scroll = 0.0
         self.song_scroll_target = 0.0
-        self.note_correct_colour = [0.75, 0.75, 0.75, 0.75]
+        self.note_correct_colour = [0.5, 0.5, 0.5, 0.5]
         self.running = True
         self.dialog_overlay = None
         self.options_latency_test_running = False
         self.options_latency_test_time = 0.0
+        self.game = None  # Reference to MidiMaster game object, set after initialization
 
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", Coord2d(), Coord2d(0.25, 0.25 * self.window_ratio)))
 
@@ -251,13 +252,13 @@ class Menu():
         self.menus[Menus.GAME].add_create_widget(self.textures.create("game_background.tga", Coord2d(), Coord2d(2.0, 2.0)))
         self.menus[Menus.GAME].add_create_widget(self.textures.create(None, Coord2d(game_bg_pos_x, Staff.Pos[1] + Staff.StaffSpacing * 2.0), Coord2d(Staff.Width, Staff.StaffSpacing * 4.0), MenuConfig.GAME_BG_COLOR))
         parent_gui.add_child(self.menus[Menus.GAME])
-        
-        # Add note background gradients
+
+        # Add gradients above and below the staff that pulse with correct notes
         note_bg_top = self.menus[Menus.GAME].add_create_widget(
-            self.textures.create("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (MenuConfig.NOTE_BG_SIZE_TOP * 0.5)), Coord2d(Staff.Width, MenuConfig.NOTE_BG_SIZE_TOP * -1.0), self.note_correct_colour)
+            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, Coord2d(game_bg_pos_x, Staff.Pos[1] + (Staff.StaffSpacing * 4.0) + (MenuConfig.NOTE_BG_SIZE_TOP * 0.5)), Coord2d(Staff.Width, MenuConfig.NOTE_BG_SIZE_TOP * -1.0))
         )
         note_bg_btm = self.menus[Menus.GAME].add_create_widget(
-            self.textures.create("vgradient.png", Coord2d(game_bg_pos_x, Staff.Pos[1] - MenuConfig.NOTE_BG_SIZE_BTM * 0.5), Coord2d(Staff.Width, MenuConfig.NOTE_BG_SIZE_BTM), self.note_correct_colour)
+            self.textures.create_sprite_texture_tinted("vgradient.png", self.note_correct_colour, Coord2d(game_bg_pos_x, Staff.Pos[1] - MenuConfig.NOTE_BG_SIZE_BTM * 0.5), Coord2d(Staff.Width, MenuConfig.NOTE_BG_SIZE_BTM))
         )
         self._set_elem(Menus.GAME, "note_bg_top", note_bg_top)
         self._set_elem(Menus.GAME, "note_bg_btm", note_bg_btm)
@@ -550,11 +551,9 @@ class Menu():
                 item_pos.y -= SONG_SPACING
             item_pos.y -= ALBUM_SPACING
 
-
     def get_song_score_text(self, song, mode: MusicMode = MusicMode.PERFORMANCE):
         cur_score = 0 if mode not in song.score else song.score[mode]
         return f"{round(cur_score)}/{round(song.get_max_score())} XP"
-
 
     def refresh_song_display(self):
         num_albums = self.songbook.get_num_albums()
@@ -569,7 +568,6 @@ class Menu():
                 song_widget.score.set_text(self.get_song_score_text(song), 14)
                 song_widget.track_display.set_text(get_track_display_text(song), 9)
         self._set_album_menu_pos()
-
 
     def prepare(self, font, music, songbook):
         self.font = font
@@ -633,10 +631,7 @@ class Menu():
             menu_quit, {"menu": self}
         )
 
-        # Setup device dialog
         self._setup_device_dialog()
-
-        # Setup options dialog
         self._setup_options_dialog()
 
         # Setup game over dialog
@@ -682,7 +677,7 @@ class Menu():
                             if name == "bg": widget.draw(dt if music_running else dt * 0.1)
                             if name == "note_bg_btm": widget.sprite.set_colour(self.note_correct_colour)
                             if name == "note_bg_top": widget.sprite.set_colour(self.note_correct_colour)
-                            self.note_correct_colour = [max(0.65, i - 0.5 * dt) for index, i in enumerate(self.note_correct_colour) if index <= 3]
+                            self.note_correct_colour[3] = min(0.5, self.note_correct_colour[3] - dt)
 
         input, draw = self.is_menu_active(Menus.SONGS)
         if input or draw:
@@ -703,11 +698,6 @@ class Menu():
                     m_output += f" Note {m.note} - {Notes.note_number_to_name(m.note)}"
                     self.device_note_input_widget.set_text(m_output, 8)
             self.devices.input_flush()
-
-    def set_event(self, name:str):
-        """Element specific per-event updates"""
-        if name == "score_vfx":
-            self.note_correct_colour = [1.0 for index, i in enumerate(self.note_correct_colour) if index <= 3]
 
     def transition(self, from_menu: Menus, to_menu: Menus):
         self.menus[from_menu].set_active(False, False)
@@ -738,6 +728,9 @@ class Menu():
             self.menus[Menus.SONGS].set_active(True, False)
         if type == Dialogs.OPTIONS:
             self.menus[Menus.SONGS].set_active(True, False)
+        if type == Dialogs.GAME_OVER:
+            self.elements[Menus.GAME]["note_bg_top"].set_disabled(True)
+            self.elements[Menus.GAME]["note_bg_btm"].set_disabled(True)
         menu.dialogs[type].set_active(True, True)
         menu.dialog_overlay.set_disabled(False)
 
@@ -749,6 +742,9 @@ class Menu():
         if type == Dialogs.OPTIONS:
             self.menus[Menus.SONGS].set_active(True, True)
             menu.options_latency_test_running = False
+        if type == Dialogs.GAME_OVER:
+            self.elements[Menus.GAME]["note_bg_top"].set_disabled(False)
+            self.elements[Menus.GAME]["note_bg_btm"].set_disabled(False)
         menu.dialogs[type].set_active(False, False)
         # Hide the overlay if no dialogs are active
         if not menu.is_any_dialog_active():

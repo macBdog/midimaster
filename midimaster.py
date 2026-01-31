@@ -11,7 +11,7 @@ from gamejam.input import InputActionKey, InputActionModifier
 from key_signature import KeySignature
 from menu import Menu, Menus
 from score import (
-    score_player_note_on, score_update_draw, score_setup_display, score_playable_note_on,
+    score_update_draw, score_setup_display,
     score_reset_ui, calculate_max_score_for_note, score_vfx, score_continuous_update
 )
 from album_defaults import setup_songbook_albums
@@ -50,11 +50,11 @@ class MidiMaster(GameJam):
 
         self.reset()
 
-
     def reset(self):
         self.score = 0
         self.score_max = 0
         self.score_fade = 0.0
+        self.score_vfx_timer = 0.0  # Timer for throttling score VFX to once per 0.1s
         self.music_time = 0.0  # The number of elapsed 32nd notes as a factor of absolute time
         self.player_notes_down = {}
         self.midi_notes = {}
@@ -67,7 +67,6 @@ class MidiMaster(GameJam):
 
         # Reset UI elements
         score_reset_ui(self)
-
 
     def prepare(self):
         super().prepare()
@@ -111,6 +110,7 @@ class MidiMaster(GameJam):
         # Setup all the game systems
         self.staff = Staff()
         self.menu = Menu(self.graphics, self.input, self.gui, self.devices, self.window_width, self.window_height, self.textures)
+        self.menu.game = self  # Set game reference for menu callbacks
         self.font_game = Font(self.graphics, self.window, os.path.join("ext", "BlackMetalSans.ttf"))
         self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
         self.note_render = NoteRender(self.graphics, self.staff, self.songbook)
@@ -154,8 +154,6 @@ class MidiMaster(GameJam):
                     if note_info['player_started'] is None:  # First time pressing
                         note_info['player_started'] = self.music_time
                         score_vfx(self, message.note)  # Visual feedback
-
-                score_player_note_on(self, message)
 
             elif message.type == "note_off":
                 if message.note in self.player_notes_down:
@@ -223,7 +221,6 @@ class MidiMaster(GameJam):
                     new_note_on.note = k
                     new_note_on.velocity = 100
                     self.devices.output(new_note_on)
-                    score_playable_note_on(self, k)
 
                 # The note value in the dictionary is the time to turn off
                 if k in self.midi_notes:

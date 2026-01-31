@@ -26,13 +26,6 @@ class Tropy(Enum):
     LASER = 2,
 
 
-TROPHY_SCORE = [
-    0.55,
-    0.7,
-    0.9,
-]
-
-
 class Menus(Enum):
     SPLASH = auto()
     SONGS = auto()
@@ -49,6 +42,12 @@ def song_play(**kwargs):
     menu=kwargs["menu"]
     song=kwargs["song"]
     menu.music.load(song)
+
+    # Reset trophy animations to animate from full to empty every time we enter game screen
+    from score import score_reset_ui
+    if menu.game:
+        score_reset_ui(menu.game)
+
     menu.transition(Menus.SONGS, Menus.GAME)
 
 def song_reload(**kwargs):
@@ -254,10 +253,6 @@ def game_play_button_colour(**kwargs):
 def game_pause_button_colour(**kwargs):
     game = kwargs["game"]
     return [0.3, 0.27, 0.81, 1.0] if not game.music_running else [0.8, 0.8, 0.8, 1.0]
-
-def game_score_bg_colour(**kwargs):
-    game = kwargs["game"]
-    return [1.0, 1.0, 1.0, max(game.score_fade, 0.75)]
 
 def song_over_back(**kwargs):
     menu = kwargs["menu"]

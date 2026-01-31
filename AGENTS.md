@@ -248,6 +248,58 @@ MidiMaster is built on the **GameJam** rendering framework located at `C:\projec
    - MidiMaster extends this for core loop
    - Built-in profiler and debug mode
 
+## Scoring System
+
+### Continuous Scoring (IMPLEMENTED ✅)
+
+**Location**: [score.py](score.py), [midimaster.py](midimaster.py)
+
+The game uses a **continuous accumulation** scoring system where players earn points continuously while holding the correct notes.
+
+#### How It Works:
+
+1. **Note Tracking** ([midimaster.py:205-217](midimaster.py:205-217)):
+   - When a playable note starts, it's added to `active_scorable_notes` dictionary
+   - Stores: start_time, end_time, player_started, score_earned, max_possible
+
+2. **Player Input** ([midimaster.py:150-161](midimaster.py:150-161)):
+   - When player presses a note, records `player_started` timestamp
+   - Triggers visual feedback (particles)
+
+3. **Continuous Accumulation** ([score.py:95-137](score.py:95-137)):
+   - Called every frame via `score_continuous_update(game, dt)`
+   - Awards points based on:
+     - Delta time (dt)
+     - Note accuracy (timing of initial press: 50%-100%)
+     - Note length (longer notes = more total points)
+   - Formula: `points = (max_score / note_length) * accuracy * dt_in_32nds`
+
+4. **Cleanup** ([midimaster.py:240-249](midimaster.py:240-249)):
+   - When note ends, awards 5-point bonus for 90%+ completion
+   - Removes note from `active_scorable_notes`
+
+#### Score Calculation:
+
+- **Max Score Per Note**: `(note_length / 128) * 100` (minimum 5 points)
+  - Whole note (128 32nds) = 100 points
+  - Quarter note (32 32nds) = 25 points
+  - Eighth note (16 32nds) = 12.5 points
+
+- **Accuracy Multiplier**: `max(0.5, 1.0 - (time_diff / 2.0))`
+  - Perfect timing = 100%
+  - Late start = 50%-100% depending on delay
+
+- **Completion Bonus**: 5 points for holding 90%+ of note duration
+
+#### Benefits:
+
+- ✅ Rewards sustaining notes (like real music playing)
+- ✅ Forgiving (late starts still earn partial points)
+- ✅ Smooth visual feedback (continuous UI updates)
+- ✅ Skill-based (timing + sustain quality)
+
+**See**: [SCORING_PLAN.md](SCORING_PLAN.md) for detailed implementation plan and rationale.
+
 ## Additional Notes
 
 - The shader uses procedural geometry to draw letters (no texture atlas)
