@@ -39,7 +39,7 @@ def setup_songbook_albums() -> SongBook:
     s.add_random_notes(num_notes=1, key=s.key_signature, tonic=60, note_length=32, time=32)
     s.add_random_notes(num_notes=4, key=s.key_signature, tonic=60, note_length=16)
     s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=8)
-    s.add_random_notes(num_notes=32, key=s.key_signature, tonic=60, note_length=4)
+    #s.add_random_notes(num_notes=32, key=s.key_signature, tonic=60, note_length=4)
     album.add_update_song(s)
 
     album_name = "Real and Custom Songs"

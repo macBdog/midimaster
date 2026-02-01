@@ -2,6 +2,7 @@ from enum import Enum, auto
 from gamejam.coord import Coord2d
 from gamejam.quickmaff import clamp
 from song import Song
+from menu_config import Dialogs
 
 
 ALBUM_SPACING = 0.33
@@ -30,12 +31,6 @@ class Menus(Enum):
     SPLASH = auto()
     SONGS = auto()
     GAME = auto()
-
-
-class Dialogs(Enum):
-    DEVICES = auto()
-    GAME_OVER = auto()
-    OPTIONS = auto()
 
 
 def song_play(**kwargs):
@@ -297,14 +292,15 @@ def adjust_output_latency(**kwargs):
 
 def options_latency_test_start(**kwargs):
     menu = kwargs["menu"]
-    menu.options_latency_test_running = True
-    menu.options_latency_test_time = 0.0
+    menu.options_latency_anim.reset(time=1.0)
+    menu.options_latency_anim.active = True
 
 def options_latency_test_stop(**kwargs):
     menu = kwargs["menu"]
-    menu.options_latency_test_running = False
+    menu.options_latency_anim.reset(time=1.0)
+    menu.options_latency_anim.active = False
 
 def options_latency_test_action(**kwargs):
     menu = kwargs["menu"]
-    menu.devices.output_test()
-    menu.options_latency_anim.actioned = False
+    menu.options_latency_anim.reset(time=1.0)
+    menu.devices.output_test(note_val_min=60, note_val_max=61, note_off=False)

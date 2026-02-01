@@ -84,7 +84,6 @@ def score_setup_display(game: 'MidiMaster', gui: 'Gui', controls_pos: Coord2d):
 
 def score_vfx(game: 'MidiMaster', note_id: int = None):
     game.score_fade = 1.0
-    game.menu.note_correct_colour[3] = 1.0
     if note_id is not None:
         spawn_pos = [-0.71, game.staff.note_positions[note_id]]
         game.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0], 1.0, game.trophy_positions[0].to_list(), 3)
@@ -158,5 +157,5 @@ def score_continuous_update(game: 'MidiMaster', dt: float):
 
 def score_update_draw(game: 'MidiMaster', dt: float):
     game.score_bar.animation.frac = 0.43 + (0.57 * (game.score / max(game.score_max, 1.0)))
-    game.score_fade -= dt * 0.5
+    game.score_fade -= dt * 1.25
     game.font_game.draw(f"{math.floor(game.score)}/{game.score_max} XP", 20, game.score_bar.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])

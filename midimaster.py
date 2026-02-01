@@ -1,6 +1,8 @@
 import sys
 import os
 
+import mido
+
 from album import Album
 from gamejam.coord import Coord2d
 from gamejam.font import Font
@@ -48,18 +50,31 @@ class MidiMaster(GameJam):
         self.note_render: NoteRender = None
         self.music: Music = None
 
+        self.score: int = 0
+        self.score_max: int = 0
+        self.score_fade: float = 0.0
+        self.score_vfx_timer:float = 0.0  # Timer for throttling score VFX to once per 0.1s
+        self.music_time:float = 0.0 # The number of elapsed 32nd notes as a factor of absolute time
+
+        self.active_scorable_notes: dict[int, dict] = {}  # Continuous scoring system
+
+        self.music_running = False
+        self.player_notes_down: dict[int, float] = {}
+        self.midi_notes: dict[int, float] = {}
+        self.scored_notes: dict[int, float] = {}
+
         self.reset()
 
     def reset(self):
         self.score = 0
         self.score_max = 0
         self.score_fade = 0.0
-        self.score_vfx_timer = 0.0  # Timer for throttling score VFX to once per 0.1s
-        self.music_time = 0.0  # The number of elapsed 32nd notes as a factor of absolute time
+        self.score_vfx_timer = 0.0
+        self.music_time = 0.0  
         self.player_notes_down = {}
         self.midi_notes = {}
         self.scored_notes = {}
-        self.active_scorable_notes = {}  # Continuous scoring system
+        self.active_scorable_notes = {}
         self.music_running = False
 
         if self.music:

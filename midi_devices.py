@@ -18,18 +18,18 @@ class MidiDevices:
         mido.set_backend('mido.backends.rtmidi')
         mido.backend
 
-    def output_test(self):
-        note_val = rng.randint(32, 64)
+    def output_test(self, note_val_min:int=32, note_val_max:int=64, note_off: bool=True):
+        note_val = rng.randint(note_val_min, note_val_max)
         new_note_on = mido.Message("note_on")
         new_note_on.note = note_val
         new_note_on.velocity = 100
         self.output(new_note_on)
 
-        time.sleep(0.075)
-
-        note_off = mido.Message("note_off")
-        note_off.note = note_val
-        self.output(note_off)
+        if note_off:
+            time.sleep(0.075)
+            note_off = mido.Message("note_off")
+            note_off.note = note_val
+            self.output(note_off)
 
     def refresh_io(self):
         self._reconnect()
