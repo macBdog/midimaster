@@ -8,6 +8,7 @@ from mido import (
 import numpy.random as rng
 from note import Note
 from key_signature import KeySignature
+from score import MAX_SCORE_PER_NOTE
 
 class Song:
     """A song is a combination of music notes and metadata that the game uses to 
@@ -40,26 +41,11 @@ class Song:
         return f"{self.artist} - {self.title}"
 
     def get_max_score(self):
-        """Calculate maximum possible score for the song.
-
-        Uses the continuous scoring system where each note's max score
-        is based on its length. Includes completion bonuses.
-        """
+        """Calculate maximum possible score for the song."""
         if not self.notes:
             return 1
 
-        from score import calculate_max_score_for_note
-
-        total_max_score = 0.0
-        for note in self.notes:
-            # Max score for note based on length
-            note_max = calculate_max_score_for_note(note.length)
-            total_max_score += note_max
-
-            # Add potential completion bonus (5 points per note)
-            total_max_score += 5.0
-
-        return int(total_max_score)
+        return len(self.notes) * 10
 
     @staticmethod
     def _get_notes_in_key(key: str, note_range: tuple = (48, 80)):

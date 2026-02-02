@@ -14,7 +14,7 @@ from key_signature import KeySignature
 from menu import Menu, Menus
 from score import (
     score_update_draw, score_setup_display,
-    score_reset_ui, calculate_max_score_for_note, score_vfx, score_continuous_update
+    score_reset_ui, score_vfx, score_continuous_update
 )
 from album_defaults import setup_songbook_albums
 from song import Song
@@ -160,7 +160,8 @@ class MidiMaster(GameJam):
         # Process any output messages and transfer them to player notes down
         for message in self.devices.get_output_messages():
             if message.type == "note_on":
-                self.player_notes_down[message.note] = 1.0
+                # Track when player pressed the note (even if not scorable yet)
+                self.player_notes_down[message.note] = self.music_time
 
                 # Continuous scoring: Record when player started holding this note
                 if message.note in self.active_scorable_notes:
@@ -241,14 +242,18 @@ class MidiMaster(GameJam):
                     self.staff.note_on(k)
 
                 def setup_note_scoring():
-                    note_length = note_off_time - self.music_time
                     if k not in self.active_scorable_notes:
+                        # Check if player is already holding this note (early press)
+                        player_started = None
+                        if k in self.player_notes_down:
+                            player_started = self.player_notes_down[k]
+                            score_vfx(self, k)  # Visual feedback for early press
+
                         self.active_scorable_notes[k] = {
                             'start_time': self.music_time,
                             'end_time': note_off_time,
-                            'player_started': None,
-                            'score_earned': 0.0,
-                            'max_possible': calculate_max_score_for_note(note_length)
+                            'player_started': player_started,
+                            'score_earned': 0.0
                         }
 
                 if k in self.midi_notes:

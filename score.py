@@ -15,21 +15,8 @@ TROPHY_SCORE = [
     0.95,  # Diamond trophy (hardest) - 95% of max score
 ]
 
-def calculate_max_score_for_note(note_length_32nds: float) -> float:
-    """Calculate maximum possible score for a note.
-
-    Args:
-        note_length_32nds: Note duration in 32nd notes
-
-    Returns:
-        Max score (float)
-    """
-    # Base score scales with note length
-    # Whole note (128 32nds) = 100 points
-    # Quarter note (32 32nds) = 25 points
-    # Eighth note (16 32nds) = 12.5 points
-    base_score = (note_length_32nds / 128.0) * 100.0
-    return max(base_score, 5.0)  # Minimum 5 points per note
+MAX_SCORE_PER_NOTE = 10.0
+REQUIRED_HOLD_FRACTION = 0.75
 
 def reset_trophy(**kwargs):
     trophy: Animation = kwargs["trophy"]
@@ -104,27 +91,21 @@ def score_continuous_update(game: 'MidiMaster', dt: float):
 
         if is_holding and note_info['player_started'] is not None:
             note_length = note_info['end_time'] - note_info['start_time']
-            max_score = note_info['max_possible']
 
-            # Base score rate in points per 32nd note
-            if note_length > 0:
-                base_rate = max_score / max(note_length, 1.0)
-            else:
-                base_rate = max_score
+            # Calculate required hold duration to get full points
+            required_hold_duration = note_length * REQUIRED_HOLD_FRACTION
+            score_rate = MAX_SCORE_PER_NOTE / required_hold_duration
 
-            # Accuracy multiplier (based on timing of initial press)
-            time_diff = abs(note_info['player_started'] - note_info['start_time'])
-            accuracy = max(0.5, 1.0 - (time_diff / 2.0))  # 50% to 100%
-
-            # Award points (dt is in seconds, need to convert to 32nd notes)
-            # Assuming 120 BPM: 1 beat = 0.5 seconds, 1 32nd = 0.5/8 = 0.0625 seconds
+            # Convert dt to 32nd notes
             from song import Song
             tempo_factor = game.music.tempo_bpm / 60.0  # Beats per second
             dt_in_32nds = dt * Song.SDQNotesPerBeat * tempo_factor
-            points_this_frame = base_rate * accuracy * dt_in_32nds
+
+            # Award points for this frame
+            points_this_frame = score_rate * dt_in_32nds
 
             # Cap to prevent over-scoring
-            remaining = max_score - note_info['score_earned']
+            remaining = MAX_SCORE_PER_NOTE - note_info['score_earned']
             points_this_frame = min(points_this_frame, remaining)
 
             if points_this_frame > 0:
