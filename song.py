@@ -164,7 +164,7 @@ class Song:
         time_in_32s += time
 
         for _ in range(num_notes):
-            note_value = rng.choice(allowed_notes)
+            note_value = rng.choice(allowed_notes).item()
             self.notes.append(Note(note_value, time_in_32s, note_length))
             time_in_32s += note_length + note_spacing
 

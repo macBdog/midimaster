@@ -106,8 +106,7 @@ def score_continuous_update(game: 'MidiMaster', dt: float):
             note_length = note_info['end_time'] - note_info['start_time']
             max_score = note_info['max_possible']
 
-            # Base score rate (points per 32nd note)
-            # Convert note_length from 32nd notes to seconds for rate calculation
+            # Base score rate in points per 32nd note
             if note_length > 0:
                 base_rate = max_score / max(note_length, 1.0)
             else:
@@ -157,5 +156,5 @@ def score_continuous_update(game: 'MidiMaster', dt: float):
 
 def score_update_draw(game: 'MidiMaster', dt: float):
     game.score_bar.animation.frac = 0.43 + (0.57 * (game.score / max(game.score_max, 1.0)))
-    game.score_fade -= dt * 1.25
+    game.score_fade = max(0.0, game.score_fade - (dt * 1.25))
     game.font_game.draw(f"{math.floor(game.score)}/{game.score_max} XP", 20, game.score_bar.sprite.pos - Coord2d(0.025, 0.03), [0.1, 0.1, 0.1, 1.0])

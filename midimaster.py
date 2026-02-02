@@ -60,8 +60,7 @@ class MidiMaster(GameJam):
 
         self.music_running = False
         self.player_notes_down: dict[int, float] = {}
-        self.midi_notes: dict[int, float] = {}
-        self.scored_notes: dict[int, float] = {}
+        self.midi_notes: dict[int, float] = {} # The note value in the dictionary is the time to turn off
 
         self.reset()
 
@@ -70,10 +69,10 @@ class MidiMaster(GameJam):
         self.score_max = 0
         self.score_fade = 0.0
         self.score_vfx_timer = 0.0
-        self.music_time = 0.0  
+        self.music_time = 0.0
         self.player_notes_down = {}
         self.midi_notes = {}
-        self.scored_notes = {}
+        self.sent_notes = set()  # Track which note start times have been sent
         self.active_scorable_notes = {}
         self.music_running = False
 
@@ -204,7 +203,30 @@ class MidiMaster(GameJam):
             # Play the backing track in sync with the player
             self.music.update(self.dt, self.music_time, self.devices)
 
-            # Process all notes that have hit the play head
+            # Calculate output latency offset in 32nd note units so notes sound at the right time relative to visuals
+            latency_seconds = self.songbook.output_latency_ms / 1000.0
+            tempo_factor = self.music.tempo_bpm / 60.0
+            latency_offset_32nds = latency_seconds * Song.SDQNotesPerBeat * tempo_factor
+
+            for note in self.music.song.notes:
+                note_pitch = note.note
+                note_start = note.time
+                note_end = note.time + note.length
+
+                # Check if it's time to send this note's MIDI (with latency lookahead)
+                if (self.music_time + latency_offset_32nds >= note_start and
+                    note_start not in self.sent_notes and
+                    note_start > self.music_time - 1):  # Only process upcoming notes
+
+                    self.midi_notes[note_pitch] = note_end
+                    self.sent_notes.add(note_start)
+
+                    new_note_on = Message("note_on")
+                    new_note_on.note = note_pitch
+                    new_note_on.velocity = 100
+                    self.devices.output(new_note_on)
+
+            # Process all notes that have hit the play head (for visual display and scoring)
             music_notes_off = {}
             for k in music_notes:
                 note_off_time = 0
@@ -218,31 +240,31 @@ class MidiMaster(GameJam):
                 if note_off_time >= self.music_time:
                     self.staff.note_on(k)
 
-                def new_note_to_play():
-                    self.midi_notes[k] = note_off_time
-                    self.scored_notes[k] = self.music_time
-
-                    # Continuous scoring: Track note as active scorable
+                def setup_note_scoring():
                     note_length = note_off_time - self.music_time
-                    self.active_scorable_notes[k] = {
-                        'start_time': self.music_time,
-                        'end_time': note_off_time,
-                        'player_started': None,
-                        'score_earned': 0.0,
-                        'max_possible': calculate_max_score_for_note(note_length)
-                    }
+                    if k not in self.active_scorable_notes:
+                        self.active_scorable_notes[k] = {
+                            'start_time': self.music_time,
+                            'end_time': note_off_time,
+                            'player_started': None,
+                            'score_earned': 0.0,
+                            'max_possible': calculate_max_score_for_note(note_length)
+                        }
+
+                if k in self.midi_notes:
+                    if self.music_time >= note_off_time:
+                        music_notes_off[k] = True
+                    else:
+                        setup_note_scoring()
+                else:
+                    # If lookahead didn't send this note, send it now
+                    self.midi_notes[k] = note_off_time
+                    setup_note_scoring()
 
                     new_note_on = Message("note_on")
                     new_note_on.note = k
                     new_note_on.velocity = 100
                     self.devices.output(new_note_on)
-
-                # The note value in the dictionary is the time to turn off
-                if k in self.midi_notes:
-                    if self.music_time >= note_off_time:
-                        music_notes_off[k] = True
-                else:
-                    new_note_to_play()
 
             # Send note off messages for all the notes in the music
             for k in music_notes_off:
@@ -253,22 +275,27 @@ class MidiMaster(GameJam):
                 self.devices.output(new_note_off)
                 self.midi_notes.pop(k)
 
-                # Continuous scoring: Clean up scoring data and award completion bonus
                 if k in self.active_scorable_notes:
                     note_info = self.active_scorable_notes[k]
-                    # Award perfect sustain bonus if note was held well
-                    if note_info['score_earned'] >= note_info['max_possible'] * 0.9:
-                        bonus = 5.0
-                        self.score += bonus
                     del self.active_scorable_notes[k]
 
             if self.mode == MusicMode.PAUSE_AND_LEARN:
-                if len(self.scored_notes) > 0 and self.music_running:
+                should_pause = False
+                if len(self.active_scorable_notes) > 0 and self.music_running:
+                    for note_id, note_info in self.active_scorable_notes.items():
+                        if note_info['player_started'] is None:
+                            should_pause = True
+                            break
+                        # Note has been started but player released it before note ended
+                        if note_id not in self.player_notes_down:
+                            should_pause = True
+                            break
+
+                if should_pause:
                     self.music_time -= music_time_advance
 
             self.staff.draw(dt)
 
-            # Continuous scoring: Award points for held notes
             score_continuous_update(self, dt)
 
             # Show the play mode

@@ -10,7 +10,7 @@ from widget_factory import WidgetFactory
 from menu_func import (
     toggle_show_note_names, toggle_click,
     adjust_output_latency,
-    options_latency_test_start, options_latency_test_stop, options_latency_test_action
+    options_latency_test_start, options_latency_test_stop
 )
 
 
@@ -88,16 +88,42 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
     )
     options_y -= 0.1
 
-    trophy_size = 0.1
-    options_latency_tester = dialog.add_create_widget(
-        textures.create_sprite_texture("trophy2.png", Coord2d(0.0, options_y), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+    # Output note widget (what the game plays)
+    WidgetFactory.create_text(
+        dialog, font,
+        "Output Note", 9, Coord2d(-0.15, options_y),
+        color=MenuConfig.TEXT_COLOR_DIM
     )
-    options_latency_anim = options_latency_tester.animate(AnimType.FillRadial)
-    options_latency_anim.set_action(1.0, options_latency_test_action, {"menu": menu})
-    options_latency_anim.reset(time=1.0)
-    options_latency_anim.active = False
+    trophy_size = 0.1
+    options_output_note = dialog.add_create_widget(
+        textures.create_sprite_texture("trophy2.png", Coord2d(-0.15, options_y - 0.09), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+    )
+    options_output_anim = options_output_note.animate(AnimType.FillRadial)
+    options_output_anim.reset(time=1.0)
+    options_output_anim.active = False
+    # Note: Timing is handled directly in menu.py update loop, not via animation callback
 
-    options_y -= 0.15
+    # Input note widget (what the player plays)
+    WidgetFactory.create_text(
+        dialog, font,
+        "Input Note", 9, Coord2d(0.15, options_y),
+        color=MenuConfig.TEXT_COLOR_DIM
+    )
+    options_input_note = dialog.add_create_widget(
+        textures.create_sprite_texture("trophy1.png", Coord2d(0.15, options_y - 0.09), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+    )
+    options_input_anim = options_input_note.animate(AnimType.FillRadial)
+    options_input_anim.reset(time=1.0)
+    options_input_anim.active = False
+
+    # Score display (shows timing accuracy in real-time)
+    options_score_widget = WidgetFactory.create_text(
+        dialog, font,
+        "Score", 10, Coord2d(0.25, options_y - 0.09),
+        color=MenuConfig.TEXT_COLOR_BRIGHT
+    )
+
+    options_y -= 0.25
 
     # Test start and stop buttons
     button_size = Coord2d(0.15, 0.06 * window_ratio)
@@ -120,5 +146,7 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
     options_latency_stop_button.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
 
     return (options_checkbox_on, options_checkbox_off, options_latency_widget,
-            options_latency_tester, options_latency_anim,
+            options_output_note, options_output_anim,
+            options_input_note, options_input_anim,
+            options_score_widget,
             options_latency_start_button, options_latency_stop_button)

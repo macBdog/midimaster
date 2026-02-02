@@ -1,4 +1,4 @@
-import math
+import time
 
 from dataclasses import dataclass
 from typing import List
@@ -76,6 +76,12 @@ class Menu():
         self.running = True
         self.dialog_overlay = None
         self.game = None  # Reference to MidiMaster game object, set after initialization
+
+        # Options dialog latency test state
+        self.options_latency_test_running = False
+        self.options_latency_test_cycle_start_time = None  # When the current 1-second cycle started
+        self.options_latency_note_play_time = None  # When the note should actually play
+        self.options_latency_note_played = False  # Whether we've played the note for this cycle
 
         self.input.cursor.set_sprite(self.textures.create_sprite_texture("gui/cursor.png", Coord2d(), Coord2d(0.25, 0.25 * self.window_ratio)))
 
@@ -328,7 +334,9 @@ class Menu():
 
         # Setup options dialog widgets
         (self.options_checkbox_on, self.options_checkbox_off, self.options_latency_widget,
-         self.options_latency_tester, self.options_latency_anim,
+         self.options_output_note, self.options_output_anim,
+         self.options_input_note, self.options_input_anim,
+         self.options_score_widget,
          self.options_latency_start_button, self.options_latency_stop_button) = setup_options_dialog(
             self.dialogs[Dialogs.OPTIONS], self.font, self.textures, self.window_ratio,
             self.songbook, self.music, self
@@ -392,6 +400,91 @@ class Menu():
                 if hasattr(m, "note"):
                     m_output += f" Note {m.note} - {Notes.note_number_to_name(m.note)}"
                     self.device_note_input_widget.set_text(m_output, 8)
+            self.devices.input_flush()
+
+        # Options dialog latency test
+        options_active = self.is_dialog_active(Dialogs.OPTIONS)
+        if options_active and self.options_latency_test_running:
+            import time
+            current_time = time.time()
+
+            if self.options_latency_test_cycle_start_time is not None:
+                elapsed = current_time - self.options_latency_test_cycle_start_time
+
+                # Calculate when the note should play relative to the cycle start
+                # Visual animation completes at 1.0 second
+                # Note plays at: 1.0s + (output_latency_ms / 1000.0)
+                # This allows negative latency (note plays before visual completes)
+                latency_seconds = self.songbook.output_latency_ms / 1000.0
+                note_play_offset = 1.0 + latency_seconds
+
+                # Check if it's time to play the note
+                # note_play_offset = 1.0 + (latency_ms / 1000)
+                # - Positive latency (e.g., +100ms): note plays at 1.1s (after visual)
+                # - Negative latency (e.g., -200ms): note plays at 0.8s (before visual)
+                # - Zero latency: note plays at 1.0s (with visual)
+                if not self.options_latency_note_played and elapsed >= note_play_offset:
+                    self.devices.output_test(note_val_min=60, note_val_max=61, note_off=False)
+                    self.options_latency_note_play_time = current_time
+                    self.options_latency_note_played = True
+
+                # Reset cycle every 1.0 second for next iteration
+                # Use a slightly longer period if latency is very positive to ensure note plays
+                cycle_duration = max(1.0, note_play_offset + 0.1)
+                if elapsed >= cycle_duration:
+                    self.options_latency_test_cycle_start_time = current_time
+                    self.options_latency_note_played = False
+                    self.options_latency_note_play_time = None
+
+            self.devices.update()
+            for m in self.devices.get_input_messages():
+                # Check if player hit the test note (Middle C = 60)
+                if hasattr(m, "note") and m.note == 60 and m.type == "note_on":
+                    # Calculate timing difference (can be early or late)
+                    if self.options_latency_note_play_time is not None:
+                        # Note has already played - this is a late or on-time press
+                        time_diff = current_time - self.options_latency_note_play_time
+                        time_diff_ms = time_diff * 1000
+                    elif self.options_latency_test_cycle_start_time is not None:
+                        # Calculate expected note play time and compare
+                        latency_seconds = self.songbook.output_latency_ms / 1000.0
+                        expected_note_time = self.options_latency_test_cycle_start_time + 1.0 + latency_seconds
+                        time_diff = current_time - expected_note_time
+                        time_diff_ms = time_diff * 1000  # Will be negative if early
+                    else:
+                        # No cycle running - ignore this press
+                        continue
+
+                    # Calculate score (100 points for perfect timing, decreasing with time difference)
+                    # Use absolute value since we now track both early and late presses
+                    # Perfect timing (0-50ms) = 100 points
+                    # Good timing (50-100ms) = 75-100 points
+                    # Okay timing (100-200ms) = 50-75 points
+                    # Poor (>200ms) = 25-50 points
+                    abs_time_diff_ms = abs(time_diff_ms)
+                    if abs_time_diff_ms <= 50:
+                        score = 100
+                    elif abs_time_diff_ms <= 100:
+                        score = int(75 + (25 * (1.0 - (abs_time_diff_ms - 50) / 50)))
+                    elif abs_time_diff_ms <= 200:
+                        score = int(50 + (25 * (1.0 - (abs_time_diff_ms - 100) / 100)))
+                    else:
+                        score = max(25, int(50 - (abs_time_diff_ms - 200) / 10))
+
+                    # Update score display with timing information
+                    timing_rounded = round(time_diff_ms / 10) * 10
+
+                    # Format timing string: positive = late, negative = early
+                    if timing_rounded > 0:
+                        timing_str = f"+{int(timing_rounded)}ms"
+                    elif timing_rounded < 0:
+                        timing_str = f"{int(timing_rounded)}ms"
+                    else:
+                        timing_str = "±0ms"
+
+                    self.options_score_widget.set_text(f"{score} pts {timing_str}", 9)
+
+                    self.options_input_anim.active = True
             self.devices.input_flush()
 
     def transition(self, from_menu: Menus, to_menu: Menus):

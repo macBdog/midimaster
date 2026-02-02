@@ -292,15 +292,26 @@ def adjust_output_latency(**kwargs):
 
 def options_latency_test_start(**kwargs):
     menu = kwargs["menu"]
-    menu.options_latency_anim.reset(time=1.0)
-    menu.options_latency_anim.active = True
+    import time
+    menu.options_latency_test_running = True
+    menu.options_latency_test_cycle_start_time = time.time()
+    menu.options_latency_note_played = False
+    menu.options_output_anim.reset(time=1.0)
+    menu.options_output_anim.active = True
+    menu.options_output_anim.loop = True  # Loop the animation
+    menu.options_input_anim.reset(time=1.0)
+    menu.options_input_anim.active = False
+    menu.options_score_widget.set_text("---", 10)
 
 def options_latency_test_stop(**kwargs):
     menu = kwargs["menu"]
-    menu.options_latency_anim.reset(time=1.0)
-    menu.options_latency_anim.active = False
-
-def options_latency_test_action(**kwargs):
-    menu = kwargs["menu"]
-    menu.options_latency_anim.reset(time=1.0)
-    menu.devices.output_test(note_val_min=60, note_val_max=61, note_off=False)
+    menu.options_latency_test_running = False
+    menu.options_latency_test_cycle_start_time = None
+    menu.options_latency_note_play_time = None
+    menu.options_latency_note_played = False
+    menu.options_output_anim.reset(time=1.0)
+    menu.options_output_anim.active = False
+    menu.options_output_anim.loop = False
+    menu.options_input_anim.reset(time=1.0)
+    menu.options_input_anim.active = False
+    menu.options_score_widget.set_text("---", 10)
