@@ -488,7 +488,10 @@ class Menu():
 
                     self.options_score_widget.set_text(f"{score} pts {timing_str}", 9)
 
+                    # Trigger input note animation
+                    self.options_input_anim.reset(time=1.0)
                     self.options_input_anim.active = True
+                    self.options_input_anim.loop = True
             self.devices.input_flush()
 
     def transition(self, from_menu: Menus, to_menu: Menus):
