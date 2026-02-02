@@ -154,6 +154,89 @@ class Song:
             self.notes.append(Note(note_value, time_in_32s, note_length))
             time_in_32s += note_length + note_spacing
 
+    def add_arpeggio(self,
+                     num_notes: int,
+                     key: str = "C",
+                     tonic: int = 60,
+                     octaves: int = 1,
+                     pattern: str = "up",
+                     chord_type: str = "triad",
+                     note_length: int = 16,
+                     note_spacing: int = 0,
+                     time: int = 0):
+        """Add an arpeggio pattern to the song.
+
+        Args:
+            num_notes: Number of notes to add
+            key: Musical key (e.g., 'C', 'Gm' for G minor)
+            tonic: Starting MIDI note number (root of the chord)
+            octaves: Number of octaves to span
+            pattern: Arpeggio pattern - 'up', 'down', 'up-down', or 'down-up'
+            chord_type: 'triad' (1-3-5) or 'seventh' (1-3-5-7)
+            note_length: Length of each note in 32nd notes
+            note_spacing: Spacing between notes in 32nd notes
+            time: Additional time offset in 32nd notes
+        """
+        # Determine if major or minor
+        is_major = key.find('m') < 0
+
+        # Build scale degrees for the key
+        # Major: W-W-H-W-W-W-H (2-2-1-2-2-2-1 semitones)
+        # Minor: W-H-W-W-H-W-W (2-1-2-2-1-2-2 semitones)
+        semitone_pattern = [2, 2, 1, 2, 2, 2, 1] if is_major else [2, 1, 2, 2, 1, 2, 2]
+
+        # Build scale starting from tonic
+        scale_notes = [tonic]
+        current = tonic
+        for interval in semitone_pattern[:-1]:
+            current += interval
+            scale_notes.append(current)
+
+        # Build arpeggio notes (chord tones: 1, 3, 5, and optionally 7)
+        if chord_type == "triad":
+            chord_degrees = [0, 2, 4]  # Root, 3rd, 5th
+        else:  # seventh
+            chord_degrees = [0, 2, 4, 6]  # Root, 3rd, 5th, 7th
+
+        # Build arpeggio pattern across octaves
+        arpeggio_notes = []
+        for octave in range(octaves):
+            for degree in chord_degrees:
+                note = scale_notes[degree] + (octave * 12)
+                arpeggio_notes.append(note)
+        # Add the root an octave up to complete the pattern
+        arpeggio_notes.append(tonic + (octaves * 12))
+
+        # Generate note sequence based on pattern
+        note_sequence = []
+        if pattern == "up":
+            note_sequence = arpeggio_notes * (num_notes // len(arpeggio_notes) + 1)
+        elif pattern == "down":
+            note_sequence = list(reversed(arpeggio_notes)) * (num_notes // len(arpeggio_notes) + 1)
+        elif pattern == "up-down":
+            up_down = arpeggio_notes + list(reversed(arpeggio_notes[1:-1]))
+            note_sequence = up_down * (num_notes // len(up_down) + 1)
+        elif pattern == "down-up":
+            down_up = list(reversed(arpeggio_notes)) + arpeggio_notes[1:-1]
+            note_sequence = down_up * (num_notes // len(down_up) + 1)
+        else:
+            raise ValueError(f"Unknown pattern: {pattern}. Use 'up', 'down', 'up-down', or 'down-up'")
+
+        # Trim to requested number of notes
+        note_sequence = note_sequence[:num_notes]
+
+        # Calculate starting time based on existing notes
+        time_in_32s = 0
+        if self.notes:
+            last_note = self.notes[-1]
+            time_in_32s = last_note.time + last_note.length
+        time_in_32s += time
+
+        # Add notes to song
+        for note_value in note_sequence:
+            self.notes.append(Note(note_value, time_in_32s, note_length))
+            time_in_32s += note_length + note_spacing
+
     def from_random(self,
                     key:str="C",
                     tonic:int=60,

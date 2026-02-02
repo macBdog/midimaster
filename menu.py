@@ -36,8 +36,8 @@ from dialog_options import create_options_dialog, setup_options_dialog
 class SongWidget:
     play: Widget
     score: Widget
-    delete: Widget
-    reload: Widget
+    delete: Widget | None
+    reload: Widget | None
     track_up: Widget
     track_down: Widget
     track_display: Widget
@@ -184,18 +184,18 @@ class Menu():
         )
         
         # Delete and reload buttons
-        song_widget.delete = WidgetFactory.create_button(
-            self.menus[Menus.SONGS], self.textures, "gui/btntrash.png",
-            Coord2d(), button_size,
-            song_delete, {"menu": self, "album": album, "song": song, "widget": song_widget}
-        )
-        
-        song_widget.reload = WidgetFactory.create_button(
-            self.menus[Menus.SONGS], self.textures, "gui/btnreload.png",
-            Coord2d(), button_size,
-            song_reload, {"menu": self, "album": album, "song": song}
-        )
-        
+        if song.saved:
+            song_widget.delete = WidgetFactory.create_button(
+                self.menus[Menus.SONGS], self.textures, "gui/btntrash.png",
+                Coord2d(), button_size,
+                song_delete, {"menu": self, "album": album, "song": song, "widget": song_widget}
+            )
+            song_widget.reload = WidgetFactory.create_button(
+                self.menus[Menus.SONGS], self.textures, "gui/btnreload.png",
+                Coord2d(), button_size,
+                song_reload, {"menu": self, "album": album, "song": song}
+            )
+            
         # Track display and navigation buttons
         song_widget.track_display = WidgetFactory.create_text(
             self.menus[Menus.SONGS], self.font,
@@ -228,16 +228,20 @@ class Menu():
             for song_widget in album_widget.songs:
                 track_pos = Coord2d(item_pos.x+0.125, item_pos.y-0.1)
                 song_widget.play.set_offset(Coord2d(item_pos.x, item_pos.y))
-                song_widget.delete.set_offset(Coord2d(item_pos.x-0.09, item_pos.y))
-                song_widget.reload.set_offset(Coord2d(item_pos.x-0.14, item_pos.y))
+                if hasattr(song_widget, 'delete'):
+                    song_widget.delete.set_offset(Coord2d(item_pos.x-0.09, item_pos.y))
+                if hasattr(song_widget, 'reload'):
+                    song_widget.reload.set_offset(Coord2d(item_pos.x-0.14, item_pos.y))
                 song_widget.score.set_offset(Coord2d(item_pos.x+0.75, item_pos.y-0.03))
                 song_widget.track_display.set_offset(Coord2d(track_pos.x, track_pos.y))
                 song_widget.track_down.set_offset(Coord2d(track_pos.x-0.02, track_pos.y + 0.02))
                 song_widget.track_up.set_offset(Coord2d(track_pos.x+0.3, track_pos.y + 0.02))
 
                 song_widget.play.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
-                song_widget.delete.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
-                song_widget.reload.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                if hasattr(song_widget, 'delete'):
+                    song_widget.delete.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                if hasattr(song_widget, 'reload'):
+                    song_widget.reload.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
                 song_widget.score.set_disabled(item_pos.y < -1.0 or item_pos.y-0.03 > cutoff)
                 song_widget.track_display.set_disabled(item_pos.y < -1.0 or track_pos.y > cutoff)
                 song_widget.track_down.set_disabled(item_pos.y < -1.0 or track_pos.y + 0.02 > cutoff)
