@@ -40,11 +40,17 @@ def setup_songbook_albums() -> SongBook:
     s.add_random_notes(num_notes=4, key=s.key_signature, tonic=60, note_length=16)
     s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=8)
     s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=4)
+    s.add_random_notes(num_notes=1, key=s.key_signature, tonic=60, note_range=8, note_length=32)
+    s.add_random_notes(num_notes=4, key=s.key_signature, tonic=60, note_range=8, note_length=16)
+    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_range=8, note_length=8)
+    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_range=8, note_length=4)
     album.add_update_song(s)
 
     s = get_random_song(title="C-peggio", key="C", tempo=80)
     s.add_arpeggio(num_notes=4, key=s.key_signature, tonic=60, note_length=16, pattern="up",time=32)
-    s.add_arpeggio(num_notes=4, key=s.key_signature, tonic=60, note_length=16, pattern="down",time=32)
+    s.add_arpeggio(num_notes=4, key=s.key_signature, tonic=60, note_length=16, pattern="down")
+    s.add_arpeggio(num_notes=8, key=s.key_signature, tonic=60, note_length=8, pattern="up",time=32)
+    s.add_arpeggio(num_notes=8, key=s.key_signature, tonic=60, note_length=8, pattern="down")
     album.add_update_song(s)
 
     album_name = "Real and Custom Songs"
