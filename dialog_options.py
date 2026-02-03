@@ -21,7 +21,7 @@ def create_options_dialog(parent_gui: Gui, graphics, textures: TextureManager, w
 
     # Close button
     close_button_size = Coord2d(MenuConfig.MEDIUM_BUTTON_SIZE, MenuConfig.MEDIUM_BUTTON_SIZE * window_ratio)
-    close_button_pos_options = Coord2d(MenuConfig.DEVICE_DIALOG_SIZE.x * 0.5, MenuConfig.DEVICE_DIALOG_SIZE.y * 0.5)
+    close_button_pos_options = Coord2d(MenuConfig.DEVICE_DIALOG_SIZE.x * 0.5, MenuConfig.DEVICE_DIALOG_SIZE.y * 0.65)
     WidgetFactory.create_button(
         dialog, textures, "gui/checkboxon.tga",
         close_button_pos_options, close_button_size,
@@ -86,17 +86,17 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
         adjust_output_latency, {"menu": menu, "dir": 1, "widget": options_latency_widget},
         width=0.06, height=0.0
     )
-    options_y -= 0.1
+    options_y -= 0.15
 
     # Output note widget (what the game plays)
     WidgetFactory.create_text(
         dialog, font,
-        "Output Note", 9, Coord2d(-0.15, options_y),
+        "Output Note", 9, Coord2d(-0.25, options_y),
         color=MenuConfig.TEXT_COLOR_DIM
     )
-    trophy_size = 0.1
+    trophy_size = 0.15
     options_output_note = dialog.add_create_widget(
-        textures.create_sprite_texture("trophy2.png", Coord2d(-0.15, options_y - 0.09), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+        textures.create_sprite_texture("trophy2.png", Coord2d(-0.15, options_y - 0.25), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
     )
     options_output_anim = options_output_note.animate(AnimType.FillRadial)
     options_output_anim.reset(time=1.0)
@@ -106,11 +106,11 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
     # Input note widget (what the player plays)
     WidgetFactory.create_text(
         dialog, font,
-        "Input Note", 9, Coord2d(0.15, options_y),
+        "Input Note", 9, Coord2d(0.25, options_y),
         color=MenuConfig.TEXT_COLOR_DIM
     )
     options_input_note = dialog.add_create_widget(
-        textures.create_sprite_texture("trophy1.png", Coord2d(0.15, options_y - 0.09), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+        textures.create_sprite_texture("trophy1.png", Coord2d(0.15, options_y - 0.25), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
     )
     options_input_anim = options_input_note.animate(AnimType.FillRadial)
     options_input_anim.reset(time=1.0)
@@ -119,11 +119,11 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
     # Score display (shows timing accuracy in real-time)
     options_score_widget = WidgetFactory.create_text(
         dialog, font,
-        "Score", 10, Coord2d(0.25, options_y - 0.09),
+        "Score", 10, Coord2d(0.2, options_y - 0.09),
         color=MenuConfig.TEXT_COLOR_BRIGHT
     )
 
-    options_y -= 0.25
+    options_y -= 0.45
 
     # Test start and stop buttons
     button_size = Coord2d(0.15, 0.06 * window_ratio)

@@ -114,6 +114,93 @@ class Song:
             self.backing_tracks[0].append(click_off)
             time_in_32s += note_spacing
 
+    def add_backing_chord(self,
+                  root: int,
+                  chord_type: str = "major",
+                  duration: int = 32,
+                  track_id: int = 1,
+                  time: int = 0,
+                  velocity: int = 80):
+        """Add a chord to the backing track.
+
+        Args:
+            root: Root MIDI note number (e.g., 60 for middle C)
+            chord_type: Type of chord to play. Supported types:
+                Basic triads: "major", "minor", "dim", "aug"
+                Seventh chords: "maj7", "min7", "dom7", "dim7", "halfdim7"
+                Extended chords: "maj9", "min9", "dom9", "maj11", "dom13"
+                Alterations: "7b5", "7#5", "7b9", "7#9", "maj7#5"
+            duration: Length of chord in 32nd notes
+            track_id: Which backing track to add to
+            time: Start time in 32nd notes (0 = start from last note, >0 = add offset)
+            velocity: MIDI velocity (0-127)
+        """
+        # Define chord intervals in semitones from root
+        chord_intervals = {
+            # Basic triads
+            "major": [0, 4, 7],
+            "minor": [0, 3, 7],
+            "dim": [0, 3, 6],
+            "aug": [0, 4, 8],
+
+            # Seventh chords
+            "maj7": [0, 4, 7, 11],
+            "min7": [0, 3, 7, 10],
+            "dom7": [0, 4, 7, 10],
+            "dim7": [0, 3, 6, 9],
+            "halfdim7": [0, 3, 6, 10],  # m7b5
+
+            # Extended chords
+            "maj9": [0, 4, 7, 11, 14],
+            "min9": [0, 3, 7, 10, 14],
+            "dom9": [0, 4, 7, 10, 14],
+            "maj11": [0, 4, 7, 11, 14, 17],
+            "dom13": [0, 4, 7, 10, 14, 21],
+
+            # Altered chords
+            "7b5": [0, 4, 6, 10],
+            "7#5": [0, 4, 8, 10],
+            "7b9": [0, 4, 7, 10, 13],
+            "7#9": [0, 4, 7, 10, 15],
+            "maj7#5": [0, 4, 8, 11],
+        }
+
+        if chord_type not in chord_intervals:
+            raise ValueError(f"Unknown chord type: {chord_type}. Supported types: {', '.join(chord_intervals.keys())}")
+
+        intervals = chord_intervals[chord_type]
+
+        # Calculate start time based on existing notes in this track
+        time_in_32s = time
+        if track_id in self.backing_tracks and self.backing_tracks[track_id]:
+            # Find the latest time in this track
+            max_time = max(msg.time for msg in self.backing_tracks[track_id])
+            time_in_32s += max_time
+
+        # Initialize track if needed
+        if track_id not in self.backing_tracks:
+            self.backing_tracks[track_id] = []
+
+        # Create note_on messages for all chord notes
+        for interval in intervals:
+            note_value = root + interval
+            if 0 <= note_value <= 127:  # Valid MIDI note range
+                note_on = Message("note_on")
+                note_on.note = note_value
+                note_on.velocity = velocity
+                note_on.time = time_in_32s
+                self.backing_tracks[track_id].append(note_on)
+
+        # Create note_off messages for all chord notes
+        for interval in intervals:
+            note_value = root + interval
+            if 0 <= note_value <= 127:
+                note_off = Message("note_on")
+                note_off.note = note_value
+                note_off.velocity = 0  # velocity 0 = note off
+                note_off.time = time_in_32s + duration
+                self.backing_tracks[track_id].append(note_off)
+
     def add_random_notes(self,
                          num_notes:int,
                          key:str="C",
