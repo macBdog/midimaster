@@ -17,11 +17,11 @@ from menu_func import (
 def create_options_dialog(parent_gui: Gui, graphics, textures: TextureManager, window_ratio: float, hide_dialog_func, menu) -> Gui:
     """Create the options dialog"""
     dialog = Gui("options", graphics, parent_gui.debug_font, False)
-    WidgetFactory.create_dialog_background(dialog, textures, MenuConfig.DEVICE_DIALOG_SIZE)
+    WidgetFactory.create_dialog_background(dialog, textures, MenuConfig.OPTIONS_DIALOG_SIZE)
 
     # Close button
     close_button_size = Coord2d(MenuConfig.MEDIUM_BUTTON_SIZE, MenuConfig.MEDIUM_BUTTON_SIZE * window_ratio)
-    close_button_pos_options = Coord2d(MenuConfig.DEVICE_DIALOG_SIZE.x * 0.5, MenuConfig.DEVICE_DIALOG_SIZE.y * 0.65)
+    close_button_pos_options = Coord2d(MenuConfig.OPTIONS_DIALOG_SIZE.x * 0.5, MenuConfig.OPTIONS_DIALOG_SIZE.y * 0.5)
     WidgetFactory.create_button(
         dialog, textures, "gui/checkboxon.tga",
         close_button_pos_options, close_button_size,
@@ -35,7 +35,7 @@ def create_options_dialog(parent_gui: Gui, graphics, textures: TextureManager, w
 def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, window_ratio: float,
                         songbook, music, menu):
     """Setup all widgets for the options dialog"""
-    options_y = 0.3
+    options_y = 0.45
 
     # Show note names option
     WidgetFactory.create_text(
@@ -65,65 +65,65 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
     )
     options_y -= 0.25
 
-    # Output latency options and tester
+    # Output latency - centered above the value display
     WidgetFactory.create_text(
         dialog, font,
         "Output latency", 10, Coord2d(-0.3, options_y),
         color=MenuConfig.TEXT_COLOR_BRIGHT
     )
+
+    # Latency value centered between up and down buttons
     options_latency_widget = WidgetFactory.create_text(
         dialog, font,
-        f"{songbook.output_latency_ms}ms", 11, Coord2d(0.0, options_y),
+        f"{songbook.output_latency_ms}ms", 11, Coord2d(0.12, options_y),
         color=MenuConfig.TEXT_COLOR_BRIGHT
     )
-    options_y -= 0.015
 
     WidgetFactory.create_button_pair(
         dialog, textures, window_ratio,
         "gui/btnback.png", "gui/btnnext.png",
-        Coord2d(0.2, options_y), MenuConfig.SMALL_BUTTON_SIZE,
+        Coord2d(0.18, options_y-0.05), MenuConfig.SMALL_BUTTON_SIZE,
         adjust_output_latency, {"menu": menu, "dir": -1, "widget": options_latency_widget},
         adjust_output_latency, {"menu": menu, "dir": 1, "widget": options_latency_widget},
-        width=0.06, height=0.0
+        width=0.09, height=0.0
     )
-    options_y -= 0.15
+    options_y -= 0.1
 
-    # Output note widget (what the game plays)
+    # Output note widget (what the game plays) - centered text above animation
     WidgetFactory.create_text(
         dialog, font,
-        "Output Note", 9, Coord2d(-0.25, options_y),
+        "Output Note", 9, Coord2d(-0.2, options_y),
         color=MenuConfig.TEXT_COLOR_DIM
     )
     trophy_size = 0.15
     options_output_note = dialog.add_create_widget(
-        textures.create_sprite_texture("trophy2.png", Coord2d(-0.15, options_y - 0.25), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+        textures.create_sprite_texture("trophy2.png", Coord2d(-0.15, options_y - 0.15), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
     )
     options_output_anim = options_output_note.animate(AnimType.FillRadial)
     options_output_anim.reset(time=1.0)
     options_output_anim.active = False
-    # Note: Timing is handled directly in menu.py update loop, not via animation callback
 
-    # Input note widget (what the player plays)
+    # Input note widget (what the player plays) - centered text above animation
     WidgetFactory.create_text(
         dialog, font,
-        "Input Note", 9, Coord2d(0.25, options_y),
+        "Input Note", 9, Coord2d(0.1, options_y),
         color=MenuConfig.TEXT_COLOR_DIM
     )
     options_input_note = dialog.add_create_widget(
-        textures.create_sprite_texture("trophy1.png", Coord2d(0.15, options_y - 0.25), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
+        textures.create_sprite_texture("trophy1.png", Coord2d(0.15, options_y - 0.15), Coord2d(trophy_size, trophy_size * window_ratio), wrap=False)
     )
     options_input_anim = options_input_note.animate(AnimType.FillRadial)
     options_input_anim.reset(time=1.0)
     options_input_anim.active = False
 
-    # Score display (shows timing accuracy in real-time)
+    # Score display centered between the two animations
     options_score_widget = WidgetFactory.create_text(
         dialog, font,
-        "Score", 10, Coord2d(0.2, options_y - 0.09),
+        "Score", 10, Coord2d(-0.025, options_y - 0.08),
         color=MenuConfig.TEXT_COLOR_BRIGHT
     )
 
-    options_y -= 0.45
+    options_y -= 0.375
 
     # Test start and stop buttons
     button_size = Coord2d(0.15, 0.06 * window_ratio)

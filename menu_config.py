@@ -41,5 +41,7 @@ class MenuConfig:
     DEVICE_NOTE_INPUT_Y = 0.05
     DEVICE_BUTTON_SPACING = 0.4  # Horizontal spacing between left and right buttons
 
+    OPTIONS_DIALOG_SIZE = Coord2d(0.8, 1.2)
+
     # Game over dialog
     GAME_OVER_DIALOG_SIZE = Coord2d(0.7, 0.9)

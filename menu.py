@@ -409,12 +409,10 @@ class Menu():
         # Options dialog latency test
         options_active = self.is_dialog_active(Dialogs.OPTIONS)
         if options_active and self.options_latency_test_running:
-            import time
             current_time = time.time()
 
             if self.options_latency_test_cycle_start_time is not None:
                 elapsed = current_time - self.options_latency_test_cycle_start_time
-
                 # Calculate when the note should play relative to the cycle start
                 # Visual animation completes at 1.0 second
                 # Note plays at: 1.0s + (output_latency_ms / 1000.0)
@@ -459,34 +457,18 @@ class Menu():
                         # No cycle running - ignore this press
                         continue
 
-                    # Calculate score (100 points for perfect timing, decreasing with time difference)
-                    # Use absolute value since we now track both early and late presses
-                    # Perfect timing (0-50ms) = 100 points
-                    # Good timing (50-100ms) = 75-100 points
-                    # Okay timing (100-200ms) = 50-75 points
-                    # Poor (>200ms) = 25-50 points
-                    abs_time_diff_ms = abs(time_diff_ms)
-                    if abs_time_diff_ms <= 50:
-                        score = 100
-                    elif abs_time_diff_ms <= 100:
-                        score = int(75 + (25 * (1.0 - (abs_time_diff_ms - 50) / 50)))
-                    elif abs_time_diff_ms <= 200:
-                        score = int(50 + (25 * (1.0 - (abs_time_diff_ms - 100) / 100)))
-                    else:
-                        score = max(25, int(50 - (abs_time_diff_ms - 200) / 10))
-
                     # Update score display with timing information
                     timing_rounded = round(time_diff_ms / 10) * 10
 
                     # Format timing string: positive = late, negative = early
                     if timing_rounded > 0:
-                        timing_str = f"+{int(timing_rounded)}ms"
+                        timing_str = f"Late {int(timing_rounded)}ms"
                     elif timing_rounded < 0:
-                        timing_str = f"{int(timing_rounded)}ms"
+                        timing_str = f"Early {int(timing_rounded)}ms"
                     else:
-                        timing_str = "±0ms"
+                        timing_str = "PERFECT!"
 
-                    self.options_score_widget.set_text(f"{score} pts {timing_str}", 9)
+                    self.options_score_widget.set_text(f"{timing_str}", 9)
 
                     # Trigger input note animation
                     self.options_input_anim.reset(time=1.0)

@@ -298,8 +298,6 @@ The game uses a **continuous accumulation** scoring system where players earn po
 - ✅ Smooth visual feedback (continuous UI updates)
 - ✅ Skill-based (timing + sustain quality)
 
-**See**: [SCORING_PLAN.md](SCORING_PLAN.md) for detailed implementation plan and rationale.
-
 ## Additional Notes
 
 - The shader uses procedural geometry to draw letters (no texture atlas)
@@ -316,3 +314,9 @@ For future work, the `show_note_names` setting could be exposed in the options m
 - Could add a checkbox/toggle in options menu
 - Would require adding UI widget and callback to modify `songbook.show_note_names`
 - Callback would need to rebuild shader with new setting (recreate NoteRender instance)
+
+
+## Code Style
+
+- Do not make comments that specifically regurgitate instructions
+- Do not make comments where the code is self-evident
