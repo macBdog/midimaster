@@ -51,6 +51,7 @@ class SongBook:
         if not hasattr(self, "song_scores"): self.song_scores = ""
         if not hasattr(self, "show_note_names"): self.show_note_names = False
         if not hasattr(self, "output_latency_ms"): self.output_latency_ms = 0
+        if not hasattr(self, "player_instrument"): self.player_instrument = 0  # Default to Acoustic Grand Piano
 
     def sort(self):
         sorted(self.albums, key=lambda album: album.get_max_score())

@@ -330,8 +330,8 @@ class Menu():
         )
 
         # Setup device dialog widgets
-        (self.device_input_widget, self.device_output_widget, self.device_note_input_widget,
-         self.devices_apply, self.devices_test) = setup_devices_dialog(
+        (self.device_input_widget, self.device_output_widget, self.device_instrument_widget,
+         self.device_note_input_widget, self.devices_apply, self.devices_test) = setup_devices_dialog(
             self.dialogs[Dialogs.DEVICES], self.font, self.textures, self.window_ratio,
             self.devices, self
         )

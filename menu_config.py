@@ -34,13 +34,15 @@ class MenuConfig:
     NOTE_BG_SIZE_TOP = 0.35
     NOTE_BG_SIZE_BTM = 0.85
 
+    # General GUI spacing
+    DIALOG_LINE_HEIGHT = 0.1
+    BUTTON_PAIR_OFFSET_Y = 0.015
+
     # Device dialog
     DEVICE_DIALOG_SIZE = Coord2d(0.8, 1.0)
-    DEVICE_INPUT_Y = 0.25
-    DEVICE_OUTPUT_Y = 0.15
-    DEVICE_NOTE_INPUT_Y = 0.05
     DEVICE_BUTTON_SPACING = 0.4  # Horizontal spacing between left and right buttons
 
+    # Options dialog
     OPTIONS_DIALOG_SIZE = Coord2d(0.8, 1.2)
 
     # Game over dialog

@@ -1,9 +1,10 @@
+import mido
+
 from enum import Enum, auto
 from gamejam.coord import Coord2d
 from gamejam.quickmaff import clamp
 from song import Song
 from menu_config import Dialogs
-
 
 ALBUM_SPACING = 0.33
 SONG_SPACING = 0.25
@@ -11,32 +12,67 @@ DIALOG_COLOUR = [0.26, 0.15, 0.32, 1.0]
 ACTIVE_COLOR = [1.0] * 4
 INACTIVE_COLOR = [0.6] * 4
 
+# General MIDI Instrument Map (selected common instruments)
+MIDI_INSTRUMENTS = {
+    "Acoustic Piano": 0,
+    "Electric Piano": 4,
+    "Harpsichord": 6,
+    "Vibraphone": 11,
+    "Marimba": 12,
+    "Church Organ": 19,
+    "Accordion": 21,
+    "Nylon Guitar": 24,
+    "Steel Guitar": 25,
+    "Jazz Guitar": 26,
+    "Acoustic Bass": 32,
+    "Fingered Bass": 33,
+    "Slap Bass": 36,
+    "Violin": 40,
+    "Cello": 42,
+    "Strings": 48,
+    "Choir": 52,
+    "Trumpet": 56,
+    "Trombone": 57,
+    "French Horn": 60,
+    "Alto Sax": 65,
+    "Tenor Sax": 66,
+    "Oboe": 68,
+    "Clarinet": 71,
+    "Flute": 73,
+    "Synth Lead": 80,
+    "Synth Pad": 88,
+}
+
+# Reverse lookup for displaying current instrument name
+MIDI_PROGRAM_TO_NAME = {v: k for k, v in MIDI_INSTRUMENTS.items()}
+INSTRUMENT_NAMES = list(MIDI_INSTRUMENTS.keys())
+
 class KeyboardMapping(Enum):
     NOTE_NAMES = auto()
     QWERTY_PIANO = auto()
 
-
 class MusicMode(Enum):
     PAUSE_AND_LEARN = auto() # Music pauses at each note and counts down from max to min score
     PERFORMANCE = auto() # Each note's score is determined time to note start
-
 
 class Tropy(Enum):
     VINYL = 0,
     TAPE = 1,
     LASER = 2,
 
-
 class Menus(Enum):
     SPLASH = auto()
     SONGS = auto()
     GAME = auto()
 
-
 def song_play(**kwargs):
     menu=kwargs["menu"]
     song=kwargs["song"]
     menu.music.load(song)
+
+    # Send program change to set player's instrument
+    program_change = mido.Message("program_change", program=menu.songbook.player_instrument)
+    menu.devices.output(program_change)
 
     # Reset trophy animations to animate from full to empty every time we enter game screen
     from score import score_reset_ui
@@ -158,7 +194,12 @@ def devices_refresh(**kwargs):
     menu.devices.refresh_io()
 
 def devices_output_test(**kwargs):
-    menu=kwargs["menu"]
+    menu = kwargs["menu"]
+    # Send program change to set instrument
+    import mido
+    program_change = mido.Message("program_change", program=menu.songbook.player_instrument)
+    menu.devices.output(program_change)
+    # Play test note
     menu.devices.output_test()
 
 def set_devices_input(**kwargs):
@@ -209,6 +250,10 @@ def menu_transition(**kwargs):
 
 def game_play(**kwargs):
     game = kwargs["game"]
+    # Send program change to set player's instrument
+    import mido
+    program_change = mido.Message("program_change", program=game.menu.songbook.player_instrument)
+    game.devices.output(program_change)
     game.music_running = True
 
 def game_pause(**kwargs):
@@ -293,6 +338,11 @@ def adjust_output_latency(**kwargs):
 def options_latency_test_start(**kwargs):
     menu = kwargs["menu"]
     import time
+    import mido
+    # Send program change to set player's instrument
+    program_change = mido.Message("program_change", program=menu.songbook.player_instrument)
+    menu.devices.output(program_change)
+
     menu.options_latency_test_running = True
     menu.options_latency_test_cycle_start_time = time.time()
     menu.options_latency_note_played = False
@@ -315,3 +365,47 @@ def options_latency_test_stop(**kwargs):
     menu.options_input_anim.reset(time=1.0)
     menu.options_input_anim.active = False
     menu.options_score_widget.set_text("---", 10)
+
+def get_instrument_name(program: int) -> str:
+    """Get instrument name from MIDI program number."""
+    return MIDI_PROGRAM_TO_NAME.get(program, f"Program {program}")
+
+def set_player_instrument(**kwargs):
+    """Change the player's MIDI instrument."""
+    menu = kwargs["menu"]
+    dir = kwargs["dir"]
+    current_program = menu.songbook.player_instrument
+    if current_program in MIDI_PROGRAM_TO_NAME:
+        current_name = MIDI_PROGRAM_TO_NAME[current_program]
+        current_idx = INSTRUMENT_NAMES.index(current_name)
+    else:
+        current_idx = 0
+
+    # Move to next/prev instrument
+    new_idx = clamp(current_idx + dir, 0, len(INSTRUMENT_NAMES) - 1)
+    new_name = INSTRUMENT_NAMES[new_idx]
+    new_program = MIDI_INSTRUMENTS[new_name]
+    menu.songbook.player_instrument = new_program
+
+    # Update widget if provided
+    if "widget" in kwargs:
+        widget = kwargs["widget"]
+        widget.set_text(new_name, 9)
+
+    program_change = mido.Message("program_change", program=new_program)
+    menu.devices.output(program_change)
+
+def get_player_instrument_disabled(**kwargs) -> bool:
+    """Check if instrument navigation buttons should be disabled."""
+    menu = kwargs["menu"]
+    dir = kwargs["dir"]
+
+    current_program = menu.songbook.player_instrument
+    if current_program in MIDI_PROGRAM_TO_NAME:
+        current_name = MIDI_PROGRAM_TO_NAME[current_program]
+        current_idx = INSTRUMENT_NAMES.index(current_name)
+    else:
+        current_idx = 0
+
+    new_idx = current_idx + dir
+    return new_idx < 0 or new_idx >= len(INSTRUMENT_NAMES)
