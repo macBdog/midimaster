@@ -11,7 +11,7 @@ from key_signature import KeySignature
 from score import MAX_SCORE_PER_NOTE
 
 class Song:
-    """A song is a combination of music notes and metadata that the game uses to 
+    """A song is a combination of music notes and metadata that the game uses to
     play and display each song. Player score and progress data is stored with the
     music alongside per-song options.
     """
@@ -19,6 +19,8 @@ class Song:
     MinNoteLength32s = 2 # 16th note
     QuantizeTime32s = 2 # Snap to each 16th note
     MinVelocity = 64 # 50% of max
+    BackingChannel = 1
+    BackingProgram = 0  # Acoustic Grand Piano
 
     def __init__(self):
         self.artist = "Unknown Artist"
@@ -185,7 +187,7 @@ class Song:
         for interval in intervals:
             note_value = root + interval
             if 0 <= note_value <= 127:  # Valid MIDI note range
-                note_on = Message("note_on")
+                note_on = Message("note_on", channel=Song.BackingChannel)
                 note_on.note = note_value
                 note_on.velocity = velocity
                 note_on.time = time_in_32s
@@ -195,7 +197,7 @@ class Song:
         for interval in intervals:
             note_value = root + interval
             if 0 <= note_value <= 127:
-                note_off = Message("note_on")
+                note_off = Message("note_on", channel=Song.BackingChannel)
                 note_off.note = note_value
                 note_off.velocity = 0  # velocity 0 = note off
                 note_off.time = time_in_32s + duration

@@ -32,6 +32,7 @@ class Music:
         self.click_init = False
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
+        self.backing_program_set = False
 
     def load(self, song:Song):
         """ Post-process the raw note data of the music, adding rests and decoration"""
@@ -42,7 +43,10 @@ class Music:
 
         for id in self.song.backing_tracks:
             self.backing_index[id] = 0
-            self.backing_time[id] = 0.0
+            track = self.song.backing_tracks[id]
+            self.backing_time[id] = track[0].time if track else 0.0
+
+        self.backing_program_set = False
 
         self.staff.key_signature.set(song.key_signature, self.note_positions)
         self.notes.assign_notes(song.notes)
@@ -50,10 +54,11 @@ class Music:
     def rewind(self):
         """Restore all the notes and backing in the music to the state just after loading."""
         self.notes.rewind()
-        self.backing_index = {track: 0 for track in self.backing_index}
-        self.backing_time = {track: 0.0 for track in self.backing_time}
+        self.backing_index = {id: 0 for id in self.backing_index}
+        self.backing_time = {id: self.song.backing_tracks[id][0].time if self.song.backing_tracks[id] else 0.0 for id in self.backing_time}
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
+        self.backing_program_set = False
 
     def reset(self):
         self.notes.reset()
@@ -62,6 +67,7 @@ class Music:
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
         self.click_init = False
+        self.backing_program_set = False
 
     def update(self, dt: float, music_time: float, devices: MidiDevices):
         """Play MIDI messages that are not for interactive scoring by the player."""
@@ -107,6 +113,11 @@ class Music:
 
         if not self.song:
             return
+
+        if not self.backing_program_set and self.song.backing_tracks:
+            program_change = mido.Message("program_change", channel=Song.BackingChannel, program=Song.BackingProgram)
+            devices.output(program_change)
+            self.backing_program_set = True
 
         for _, id in enumerate(self.song.backing_tracks):
             update_backing_track(id, music_time_in_ticks)

@@ -4,6 +4,8 @@ from gamejam.coord import Coord2d
 from gamejam.widget import Alignment, AlignX, AlignY
 
 from typing import TYPE_CHECKING
+
+from staff import Staff
 if TYPE_CHECKING:
     from midimaster import MidiMaster
     from gamejam.gui import Gui
@@ -72,8 +74,9 @@ def score_setup_display(game: 'MidiMaster', gui: 'Gui', controls_pos: Coord2d):
 def score_vfx(game: 'MidiMaster', note_id: int = None):
     game.score_fade = 1.0
     if note_id is not None:
-        spawn_pos = [-0.71, game.staff.note_positions[note_id]]
-        game.particles.spawn(2.0, spawn_pos, [0.37, 0.82, 0.4, 1.0], 1.0, game.trophy_positions[0].to_list(), 3)
+        spawn_pos = [-0.85, game.staff.note_positions[note_id]]
+        spawn_col = Staff.NoteColours[note_id % 12]
+        game.particles.spawn(2.0, spawn_pos, spawn_col, 1.0, game.trophy_positions[0].to_list(), 3)
 
 def score_continuous_update(game: 'MidiMaster', dt: float):
     """Award score continuously for held notes."""
