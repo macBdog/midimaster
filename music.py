@@ -73,6 +73,12 @@ class Music:
         """Play MIDI messages that are not for interactive scoring by the player."""
         music_time_in_ticks = (music_time / Song.SDQNotesPerBeat) * self.ticks_per_beat
 
+        # Set backing track instrument before any other MIDI messages
+        if self.song and not self.backing_program_set and self.song.backing_tracks:
+            program_change = mido.Message("program_change", channel=Song.BackingChannel, program=Song.BackingProgram)
+            devices.output(program_change)
+            self.backing_program_set = True
+
         if self.click:
             if not self.click_init:
                 click_control = mido.Message("control_change", channel=Music.ClickChannel, control=1, value=Music.ClickProgram, time=0)
@@ -113,11 +119,6 @@ class Music:
 
         if not self.song:
             return
-
-        if not self.backing_program_set and self.song.backing_tracks:
-            program_change = mido.Message("program_change", channel=Song.BackingChannel, program=Song.BackingProgram)
-            devices.output(program_change)
-            self.backing_program_set = True
 
         for _, id in enumerate(self.song.backing_tracks):
             update_backing_track(id, music_time_in_ticks)
