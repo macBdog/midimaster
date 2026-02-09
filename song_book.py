@@ -4,6 +4,7 @@ from pathlib import Path
 
 from song import Song
 from album import Album
+from career import Career
 
 class SongBook:
     """A song book is a persistent, versionable collection of albums stored along with game options.
@@ -29,10 +30,27 @@ class SongBook:
         self.validate()
 
     def __getstate__(self):
-        if hasattr(self, "book_version"):
-            return self.__dict__
-        else:
+        if not hasattr(self, "book_version"):
             print(f"Song book must define book_version class variable!")
+            return None
+
+        # Create a copy of the state, filtering out unsaved songs
+        state = self.__dict__.copy()
+
+        # Filter albums to only include those with saved songs
+        filtered_albums = []
+        for album in self.albums:
+            # Filter songs to only include saved ones
+            saved_songs = [song for song in album.songs if song.saved]
+            if saved_songs:
+                # Create a copy of the album with only saved songs
+                filtered_album = Album(album.name)
+                filtered_album.songs = saved_songs
+                filtered_album.expanded = album.expanded
+                filtered_albums.append(filtered_album)
+
+        state["albums"] = filtered_albums
+        return state
 
     def __setstate__(self, dict_):
         version_present_in_pickle = dict_.pop("book_version")
@@ -52,9 +70,19 @@ class SongBook:
         if not hasattr(self, "show_note_names"): self.show_note_names = False
         if not hasattr(self, "output_latency_ms"): self.output_latency_ms = 0
         if not hasattr(self, "player_instrument"): self.player_instrument = 0  # Default to Acoustic Grand Piano
+        if not hasattr(self, "career"): self.career = Career()
 
     def sort(self):
         sorted(self.albums, key=lambda album: album.get_max_score())
+
+    def get_num_albums(self):
+        return len(self.albums)
+
+    def get_num_songs(self):
+        num_songs = 0
+        for album in self.albums:
+            num_songs += album.get_num_songs()
+        return num_songs
 
     def get_album_by_name(self, name: str) -> Album:
         for a in self.albums:

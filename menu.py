@@ -26,7 +26,9 @@ from menu_func import (
     song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
     get_track_display_text,
     menu_quit, menu_transition,
+    start_career,
 )
+from procedural_songs import get_tier_for_album, is_venue_album
 from widget_factory import WidgetFactory
 from dialog_devices import create_devices_dialog, setup_devices_dialog
 from dialog_options import create_options_dialog, setup_options_dialog
@@ -41,6 +43,9 @@ class SongWidget:
     track_up: Widget
     track_down: Widget
     track_display: Widget
+    locked: bool = False
+    venue_tier: int | None = None
+    set_index: int = 0
 
 
 @dataclass()
@@ -76,6 +81,7 @@ class Menu():
         self.running = True
         self.dialog_overlay = None
         self.game = None  # Reference to MidiMaster game object, set after initialization
+        self.current_career_song = None  # Tracks current career song being played
 
         # Options dialog latency test state
         self.options_latency_test_running = False
@@ -163,19 +169,34 @@ class Menu():
     def _set_elem(self, menu: Menus, name: str, widget):
         self.elements[menu][name] = widget
     
-    def _create_song_widget(self, album, song) -> SongWidget:
+    def _create_song_widget(self, album, song, song_index: int = 0) -> SongWidget:
         """Create all widgets for a single song entry"""
         song_widget = SongWidget()
         button_size = Coord2d(MenuConfig.MEDIUM_BUTTON_SIZE, MenuConfig.MEDIUM_BUTTON_SIZE * self.window_ratio)
-        
+
+        # Check if this is a venue album and if the song is locked
+        venue_tier = get_tier_for_album(album.name)
+        song_widget.venue_tier = venue_tier
+        song_widget.set_index = song_index
+
+        if venue_tier is not None:
+            song_widget.locked = not self.songbook.career.is_set_unlocked(venue_tier, song_index)
+        else:
+            song_widget.locked = False
+
         # Play button with text
         song_widget.play = WidgetFactory.create_button(
             self.menus[Menus.SONGS], self.textures, "gui/btnplay.tga",
             Coord2d(), Coord2d(0.125, 0.1),
-            song_play, {"menu": self, "song": song},
+            song_play, {"menu": self, "song": song, "song_widget": song_widget, "album": album},
             font=self.font
         )
-        song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
+
+        # Set locked appearance
+        if song_widget.locked:
+            song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
+        else:
+            song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
         
         # Score display
         song_widget.score = WidgetFactory.create_text(
@@ -253,6 +274,24 @@ class Menu():
         cur_score = 0 if mode not in song.score else song.score[mode]
         return f"{round(cur_score)}/{round(song.get_max_score())} XP"
 
+    def _get_career_status_text(self) -> str:
+        """Get the current career status text."""
+        career = self.songbook.career
+        if not career.active:
+            if career.fans == 0:
+                return "Career Over! No fans left."
+            return "No active career"
+        return career.get_status_text()
+
+    def _update_career_display(self):
+        """Update the career status display and button visibility."""
+        if hasattr(self, 'career_status_widget'):
+            self.career_status_widget.set_text(self._get_career_status_text(), 11)
+
+        if hasattr(self, 'start_career_button'):
+            # Show start button only if no active career
+            self.start_career_button.set_disabled(self.songbook.career.active)
+
     def refresh_song_display(self):
         num_albums = self.songbook.get_num_albums()
         for i in range(num_albums):
@@ -261,11 +300,25 @@ class Menu():
 
             for count, song in enumerate(album.songs):
                 song_widget = album_widget.songs[count]
-                song_widget.play.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
+
+                # Update locked state based on career
+                if song_widget.venue_tier is not None:
+                    song_widget.locked = not self.songbook.career.is_set_unlocked(
+                        song_widget.venue_tier, song_widget.set_index
+                    )
+
+                # Update display based on locked state
+                if song_widget.locked:
+                    song_widget.play.set_text(f"[Locked]", 12, Coord2d(0.08, -0.02))
+                    song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
+                else:
+                    song_widget.play.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
+                    song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
 
                 song_widget.score.set_text(self.get_song_score_text(song), 14)
                 song_widget.track_display.set_text(get_track_display_text(song), 9)
         self._set_album_menu_pos()
+        self._update_career_display()
 
     def prepare(self, font, music, songbook):
         self.font = font
@@ -292,6 +345,23 @@ class Menu():
         )
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
+        # Career status display
+        self.career_status_widget = WidgetFactory.create_text(
+            self.menus[Menus.SONGS], font,
+            self._get_career_status_text(), 11,
+            Coord2d(-0.65, 0.85),
+            color=MenuConfig.TEXT_COLOR_BRIGHT
+        )
+        self.start_career_button = WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
+            Coord2d(-0.65, -0.85), Coord2d(0.25, 0.07 * self.window_ratio),
+            start_career, {"menu": self},
+            font=font, text="Start Career", text_size=10,
+            text_offset=Coord2d(-0.08, -0.012)
+        )
+        self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
+        self._update_career_display()
+
         # Create album and song widgets
         num_albums = self.songbook.get_num_albums()
         for i in range(num_albums):
@@ -304,8 +374,8 @@ class Menu():
             album_widget = AlbumWidget(album_name, [])
             self.song_albums.append(album_widget)
 
-            for song in album.songs:
-                song_widget = self._create_song_widget(album, song)
+            for song_index, song in enumerate(album.songs):
+                song_widget = self._create_song_widget(album, song, song_index)
                 album_widget.songs.append(song_widget)
 
         self.refresh_song_display()

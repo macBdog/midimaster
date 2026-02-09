@@ -68,6 +68,25 @@ class Menus(Enum):
 def song_play(**kwargs):
     menu=kwargs["menu"]
     song=kwargs["song"]
+    song_widget=kwargs.get("song_widget")
+    album=kwargs.get("album")
+
+    # Check if the song is locked
+    if song_widget and song_widget.locked:
+        return  # Don't allow playing locked songs
+
+    # Track current career song if applicable
+    if song_widget and song_widget.venue_tier is not None:
+        menu.current_career_song = {
+            "tier": song_widget.venue_tier,
+            "set_index": song_widget.set_index,
+            "album": album,
+            "song": song,
+            "song_widget": song_widget,
+        }
+    else:
+        menu.current_career_song = None
+
     menu.music.load(song)
 
     # Send program change to set player's instrument
@@ -129,8 +148,8 @@ def song_list_scroll(**kwargs):
     elif "y" in kwargs:
         dir = kwargs["y"]
 
-    scroll_max = 20 * SONG_SPACING
-    menu.song_scroll_target = clamp(menu.song_scroll_target + dir, 0, scroll_max)
+    scroll_max = menu.songbook.get_num_songs() * SONG_SPACING
+    menu.song_scroll_target = clamp(menu.song_scroll_target - (dir * 0.25), 0, scroll_max)
 
 def get_track_display_text(song: Song) -> str:
     track = song.player_track_id
@@ -294,10 +313,47 @@ def game_pause_button_colour(**kwargs):
     game = kwargs["game"]
     return [0.3, 0.27, 0.81, 1.0] if not game.music_running else [0.8, 0.8, 0.8, 1.0]
 
+def _process_career_result(menu, game):
+    """Process the career result after a song ends."""
+    from procedural_songs import TIER_CONFIGS, regenerate_set
+
+    career_info = menu.current_career_song
+    if not career_info:
+        return
+
+    tier = career_info["tier"]
+    set_index = career_info["set_index"]
+    album = career_info["album"]
+    song = career_info["song"]
+
+    # Calculate score percentage
+    max_score = song.get_max_score()
+    score_percent = game.score / max_score if max_score > 0 else 0
+
+    # Process the result with the career system
+    num_sets = TIER_CONFIGS[tier]["num_sets"]
+    result = menu.songbook.career.process_set_result(score_percent, num_sets)
+
+    # If bombed, regenerate the song
+    if result["result"].value == "bombed" and not result["career_over"]:
+        new_song = regenerate_set(tier, set_index)
+        album.songs[set_index] = new_song
+
+    # Clear the current career song
+    menu.current_career_song = None
+
+    # Save the songbook to persist career state
+    menu.songbook.save(menu.songbook)
+
+
 def song_over_back(**kwargs):
     menu = kwargs["menu"]
     game = kwargs["game"]
     menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
+
+    # Process career result if this was a career song
+    if hasattr(menu, 'current_career_song') and menu.current_career_song:
+        _process_career_result(menu, game)
 
     game.reset()
     game.music.rewind()
@@ -409,3 +465,12 @@ def get_player_instrument_disabled(**kwargs) -> bool:
 
     new_idx = current_idx + dir
     return new_idx < 0 or new_idx >= len(INSTRUMENT_NAMES)
+
+
+def start_career(**kwargs):
+    """Start a new career run."""
+    menu = kwargs["menu"]
+    menu.songbook.career.start_new_career()
+    menu.songbook.save(menu.songbook)
+    menu._update_career_display()
+    menu.refresh_song_display()

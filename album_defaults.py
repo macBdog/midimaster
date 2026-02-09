@@ -2,6 +2,7 @@ from album import Album
 from song import Song
 from song_book import SongBook
 from pathlib import Path
+from procedural_songs import generate_venue_album, TIER_CONFIGS
 
 
 def setup_songbook_albums() -> SongBook:
@@ -20,39 +21,12 @@ def setup_songbook_albums() -> SongBook:
                 album.add_update_song(s)
             del songbook.songs
 
-    # Add/regenerate all the tutorial songs
-    def get_random_song(title:str, key: str, tempo: int = 100) -> Song:
-        s = Song()
-        s.key_signature = key
-        s.artist = f"Tutorial"
-        s.title = title
-        s.path = ""
-        s.ticks_per_beat = Song.SDQNotesPerBeat
-        s.player_track_id = 0
-        s.track_names = ["The Player", "Backing Track"]
-        s.saved = False
-        s.tempo_bpm = tempo
-        return s
-
-    album = songbook.add_album("Play the Majors")
-    s = get_random_song(title="C Workout", key="C", tempo=80)
-    s.add_backing_chord(root=60, chord_type="major", duration=32, track_id=1, time=32)
-    s.add_random_notes(num_notes=1, key=s.key_signature, tonic=60, note_length=32, time=32)
-    s.add_random_notes(num_notes=4, key=s.key_signature, tonic=60, note_length=16)
-    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=8)
-    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=60, note_length=4)
-    s.add_random_notes(num_notes=1, key=s.key_signature, tonic=72, note_range=8, note_length=32)
-    s.add_random_notes(num_notes=4, key=s.key_signature, tonic=72, note_range=8, note_length=16)
-    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=72, note_range=8, note_length=8)
-    s.add_random_notes(num_notes=16, key=s.key_signature, tonic=72, note_range=8, note_length=4)
-    album.add_update_song(s)
-
-    s = get_random_song(title="C-peggio", key="C", tempo=80)
-    s.add_arpeggio(num_notes=4, key=s.key_signature, tonic=60, note_length=16, pattern="up",time=32)
-    s.add_arpeggio(num_notes=4, key=s.key_signature, tonic=60, note_length=16, pattern="down")
-    s.add_arpeggio(num_notes=8, key=s.key_signature, tonic=60, note_length=8, pattern="up",time=32)
-    s.add_arpeggio(num_notes=8, key=s.key_signature, tonic=60, note_length=8, pattern="down")
-    album.add_update_song(s)
+    # Generate procedural venue albums for sight-reading challenges
+    for tier in TIER_CONFIGS:
+        album_name, songs = generate_venue_album(tier)
+        album = songbook.add_album(album_name)
+        for song in songs:
+            album.add_update_song(song)
 
     album_name = "Real and Custom Songs"
     songbook.add_update_from_midi(Path("music/Nursery Rhyme - MaryHadALittleLamb.mid"), 1, album_name)

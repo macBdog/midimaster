@@ -8,7 +8,6 @@ class Dialogs(Enum):
     GAME_OVER = auto()
     OPTIONS = auto()
 
-
 class MenuConfig:
     """Centralized configuration for menu layout and styling"""
     # Button sizes
