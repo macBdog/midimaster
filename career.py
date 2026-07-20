@@ -60,6 +60,16 @@ class Career:
         self.can_skip_next = False
         self.sets_completed = {1: set()}
 
+    def retire(self):
+        """Abandon the current career run and clear progression."""
+        self.fans = self.STARTING_FANS
+        self.current_venue = 1
+        self.current_set = 0
+        self.venues_unlocked = 1
+        self.active = False
+        self.can_skip_next = False
+        self.sets_completed = {}
+
     def get_result_for_score(self, score_percent: float) -> SetResult:
         """Determine the result category for a score percentage.
         Args:

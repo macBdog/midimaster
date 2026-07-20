@@ -26,7 +26,7 @@ from menu_func import (
     song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
     get_track_display_text,
     menu_quit, menu_transition,
-    start_career,
+    start_career, retire_career,
 )
 from procedural_songs import get_tier_for_album, is_venue_album
 from widget_factory import WidgetFactory
@@ -239,26 +239,34 @@ class Menu():
             item_pos.x = -0.3
 
             for song_widget in album_widget.songs:
-                track_pos = Coord2d(item_pos.x+0.125, item_pos.y-0.1)
+                offscreen = item_pos.y < -1.0 or item_pos.y > cutoff
+                locked = song_widget.locked
+                track_pos = Coord2d(item_pos.x + 0.125, item_pos.y - 0.1)
+
                 song_widget.play.set_offset(Coord2d(item_pos.x, item_pos.y))
                 if hasattr(song_widget, 'delete'):
-                    song_widget.delete.set_offset(Coord2d(item_pos.x-0.09, item_pos.y))
+                    song_widget.delete.set_offset(Coord2d(item_pos.x - 0.09, item_pos.y))
                 if hasattr(song_widget, 'reload'):
-                    song_widget.reload.set_offset(Coord2d(item_pos.x-0.14, item_pos.y))
-                song_widget.score.set_offset(Coord2d(item_pos.x+0.75, item_pos.y-0.03))
-                song_widget.track_display.set_offset(Coord2d(track_pos.x, track_pos.y))
-                song_widget.track_down.set_offset(Coord2d(track_pos.x-0.02, track_pos.y + 0.02))
-                song_widget.track_up.set_offset(Coord2d(track_pos.x+0.3, track_pos.y + 0.02))
+                    song_widget.reload.set_offset(Coord2d(item_pos.x - 0.14, item_pos.y))
+                song_widget.score.set_offset(Coord2d(item_pos.x + 0.75, item_pos.y - 0.03))
 
-                song_widget.play.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                # Locked career sets: hide play + track controls; show label at song row
+                if locked:
+                    song_widget.track_display.set_offset(Coord2d(item_pos.x, item_pos.y - 0.02))
+                else:
+                    song_widget.track_display.set_offset(Coord2d(track_pos.x, track_pos.y))
+                song_widget.track_down.set_offset(Coord2d(track_pos.x - 0.02, track_pos.y + 0.02))
+                song_widget.track_up.set_offset(Coord2d(track_pos.x + 0.3, track_pos.y + 0.02))
+
+                song_widget.play.set_disabled(offscreen or locked)
                 if hasattr(song_widget, 'delete'):
-                    song_widget.delete.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+                    song_widget.delete.set_disabled(offscreen or locked)
                 if hasattr(song_widget, 'reload'):
-                    song_widget.reload.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
-                song_widget.score.set_disabled(item_pos.y < -1.0 or item_pos.y-0.03 > cutoff)
-                song_widget.track_display.set_disabled(item_pos.y < -1.0 or track_pos.y > cutoff)
-                song_widget.track_down.set_disabled(item_pos.y < -1.0 or track_pos.y + 0.02 > cutoff)
-                song_widget.track_up.set_disabled(item_pos.y < -1.0 or track_pos.y + 0.02 > cutoff)
+                    song_widget.reload.set_disabled(offscreen or locked)
+                song_widget.score.set_disabled(offscreen or item_pos.y - 0.03 > cutoff)
+                song_widget.track_display.set_disabled(offscreen or (not locked and track_pos.y > cutoff))
+                song_widget.track_down.set_disabled(offscreen or locked or track_pos.y + 0.02 > cutoff)
+                song_widget.track_up.set_disabled(offscreen or locked or track_pos.y + 0.02 > cutoff)
                 item_pos.y -= SONG_SPACING
             item_pos.y -= ALBUM_SPACING
 
@@ -276,20 +284,19 @@ class Menu():
         return career.get_status_text()
 
     def _update_career_display(self):
-        """Update the career strip status and start-button state."""
+        """Update the career strip status and start/retire button state."""
         if hasattr(self, 'career_status_widget'):
             self.career_status_widget.set_text(self._get_career_status_text(), 10)
 
         if hasattr(self, 'start_career_button'):
             active = self.songbook.career.active
-            # Keep the button drawn (disabled widgets are not rendered) and only
-            # gate the action so the strip layout stays stable during a run.
             text_size = MenuConfig.CAREER_BUTTON_TEXT_SIZE
             text_offset = MenuConfig.CAREER_BUTTON_TEXT_OFFSET
             if active:
-                self.start_career_button.set_text("In Progress", text_size, text_offset)
-                self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
-                self.start_career_button.set_action(None, {})
+                # Active run: retire abandons progress so the player can restart cleanly
+                self.start_career_button.set_text("Retire", text_size, text_offset)
+                self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
+                self.start_career_button.set_action(retire_career, {"menu": self})
             else:
                 self.start_career_button.set_text("Start Career", text_size, text_offset)
                 self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
@@ -312,14 +319,16 @@ class Menu():
 
                 # Update display based on locked state
                 if song_widget.locked:
-                    song_widget.play.set_text(f"[Locked]", 12, Coord2d(0.08, -0.02))
-                    song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
+                    song_widget.play.set_text("", 12, Coord2d(0.08, -0.02))
+                    song_widget.track_display.set_text(f"[Locked]  {song.get_name()}", 11)
+                    song_widget.track_display.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
+                    song_widget.score.set_text("—", 14)
                 else:
                     song_widget.play.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
                     song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
-
-                song_widget.score.set_text(self.get_song_score_text(song), 14)
-                song_widget.track_display.set_text(get_track_display_text(song), 9)
+                    song_widget.track_display.set_text(get_track_display_text(song), 9)
+                    song_widget.track_display.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
+                    song_widget.score.set_text(self.get_song_score_text(song), 14)
         self._set_album_menu_pos()
         self._update_career_display()
 

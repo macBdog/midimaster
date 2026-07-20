@@ -40,15 +40,15 @@ class MidiMaster(GameJam):
     def __init__(self):
         super(MidiMaster, self).__init__()
         self.name = "MidiMaster"
-        self.note_width_32nd = Staff.NoteWidth32nd       
+        self.note_width_32nd = Staff.NoteWidth32nd
         self.mode = MusicMode.PERFORMANCE
         self.keyboard_mapping = KeyboardMapping.NOTE_NAMES
 
-        self.staff: Staff = None
-        self.menu: Menu = None
-        self.font_game: Font = None
-        self.note_render: NoteRender = None
-        self.music: Music = None
+        self.staff: Staff | None = None
+        self.menu: Menu | None  = None
+        self.font_game: Font | None  = None
+        self.note_render: NoteRender | None  = None
+        self.music: Music | None  = None
 
         self.score: int = 0
         self.score_max: int = 0

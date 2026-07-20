@@ -474,3 +474,13 @@ def start_career(**kwargs):
     menu.songbook.save(menu.songbook)
     menu._update_career_display()
     menu.refresh_song_display()
+
+
+def retire_career(**kwargs):
+    """End an active career run and return venue locks to the default state."""
+    menu = kwargs["menu"]
+    menu.songbook.career.retire()
+    menu.current_career_song = None
+    menu.songbook.save(menu.songbook)
+    menu._update_career_display()
+    menu.refresh_song_display()
