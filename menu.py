@@ -54,14 +54,6 @@ class AlbumWidget:
     songs: List[SongWidget]
 
 
-# Pos and size of song selection scroll bar
-SONG_SCRL_PX = 0.9
-SONG_SCRL_PY = -0.2
-SONG_SCRL_SX = 0.05
-SONG_SCRL_SY = 1.4
-SONG_SCRL_H = SONG_SCRL_SY - SONG_SCRL_SX * 3
-
-
 class Menu():
     """Utility class to separate all the gui element drawing from main game logic."""
     def __init__(self, graphics: Graphics, input: Input, gui: Gui, devices: MidiDevices, width: int, height: int, textures: TextureManager):
@@ -237,8 +229,8 @@ class Menu():
 
 
     def _set_album_menu_pos(self):
-        cutoff = 0.55
-        item_pos = Coord2d(-0.5, self.song_scroll+0.25)
+        cutoff = MenuConfig.SONG_LIST_TOP_CUTOFF
+        item_pos = Coord2d(-0.5, self.song_scroll + MenuConfig.SONG_LIST_START_Y)
         for album_widget in self.song_albums:
             item_pos.x = -0.5
             album_widget.name.set_offset(Coord2d(item_pos.x, item_pos.y))
@@ -275,22 +267,33 @@ class Menu():
         return f"{round(cur_score)}/{round(song.get_max_score())} XP"
 
     def _get_career_status_text(self) -> str:
-        """Get the current career status text."""
+        """Get the current career status text for the top career strip."""
         career = self.songbook.career
         if not career.active:
             if career.fans == 0:
-                return "Career Over! No fans left."
-            return "No active career"
+                return "Career over — no fans left. Start again to unlock venue sets."
+            return "Play venue sets from the song list, or start a new career run."
         return career.get_status_text()
 
     def _update_career_display(self):
-        """Update the career status display and button visibility."""
+        """Update the career strip status and start-button state."""
         if hasattr(self, 'career_status_widget'):
-            self.career_status_widget.set_text(self._get_career_status_text(), 11)
+            self.career_status_widget.set_text(self._get_career_status_text(), 10)
 
         if hasattr(self, 'start_career_button'):
-            # Show start button only if no active career
-            self.start_career_button.set_disabled(self.songbook.career.active)
+            active = self.songbook.career.active
+            # Keep the button drawn (disabled widgets are not rendered) and only
+            # gate the action so the strip layout stays stable during a run.
+            text_size = MenuConfig.CAREER_BUTTON_TEXT_SIZE
+            text_offset = MenuConfig.CAREER_BUTTON_TEXT_OFFSET
+            if active:
+                self.start_career_button.set_text("In Progress", text_size, text_offset)
+                self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
+                self.start_career_button.set_action(None, {})
+            else:
+                self.start_career_button.set_text("Start Career", text_size, text_offset)
+                self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
+                self.start_career_button.set_action(start_career, {"menu": self})
 
     def refresh_song_display(self):
         num_albums = self.songbook.get_num_albums()
@@ -330,37 +333,69 @@ class Menu():
         # Bar to highlight the menu options at top of screen
         self.menus[Menus.SONGS].add_create_widget(self.textures.create("vgradient.png", Coord2d(0.0, MenuConfig.MENU_ROW_Y), Coord2d(2.0, 0.5), [0.7, 0.5, 0.7, 0.56]))
 
-        # Scroll indicator for song list
-        self.menus[Menus.SONGS].add_create_widget(self.textures.create(None, Coord2d(SONG_SCRL_PX, SONG_SCRL_PY),  Coord2d(SONG_SCRL_SX, SONG_SCRL_SY), [0.4, 0.4, 0.4, 0.5]))
-        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create("gui/sliderknob.png", Coord2d(SONG_SCRL_PX, SONG_SCRL_PY + SONG_SCRL_H * 0.5), Coord2d(0.035, 0.035 * self.window_ratio)))
+        # Scroll indicator for song list (centered between career strip and page bottom)
+        self.menus[Menus.SONGS].add_create_widget(self.textures.create(
+            None,
+            Coord2d(MenuConfig.SONG_SCRL_PX, MenuConfig.SONG_SCRL_PY),
+            Coord2d(MenuConfig.SONG_SCRL_SX, MenuConfig.SONG_SCRL_SY),
+            [0.4, 0.4, 0.4, 0.5],
+        ))
+        self.scroll_widget = self.menus[Menus.SONGS].add_create_widget(self.textures.create(
+            "gui/sliderknob.png",
+            Coord2d(MenuConfig.SONG_SCRL_PX, MenuConfig.SONG_SCRL_PY + MenuConfig.SONG_SCRL_H * 0.5),
+            Coord2d(0.035, 0.035 * self.window_ratio),
+        ))
 
         # Scroll buttons
         WidgetFactory.create_button_pair(
             self.menus[Menus.SONGS], self.textures, self.window_ratio,
             "gui/btnup.png", "gui/btndown.png",
-            Coord2d(SONG_SCRL_PX, SONG_SCRL_PY), SONG_SCRL_SX,
+            Coord2d(MenuConfig.SONG_SCRL_PX, MenuConfig.SONG_SCRL_PY), MenuConfig.SONG_SCRL_SX,
             song_list_scroll, {"menu": self, "dir": -0.333},
             song_list_scroll, {"menu": self, "dir": 0.333},
-            width=0.0, height=SONG_SCRL_SY * 0.5
+            width=0.0, height=MenuConfig.SONG_SCRL_SY * 0.5
         )
         self.input.add_scroll_mapping(song_list_scroll, {"menu":self})
 
-        # Career status display
+        # Career strip: separate band under top nav, above the song list
+        self.menus[Menus.SONGS].add_create_widget(
+            self.textures.create(
+                None,
+                Coord2d(0.0, MenuConfig.CAREER_STRIP_Y),
+                MenuConfig.CAREER_STRIP_SIZE,
+                MenuConfig.CAREER_STRIP_COLOR,
+            )
+        )
+        WidgetFactory.create_text(
+            self.menus[Menus.SONGS], font,
+            "CAREER", 12,
+            MenuConfig.CAREER_TITLE_POS,
+            color=MenuConfig.TEXT_COLOR_BRIGHT,
+        )
         self.career_status_widget = WidgetFactory.create_text(
             self.menus[Menus.SONGS], font,
-            self._get_career_status_text(), 11,
-            Coord2d(-0.65, 0.85),
-            color=MenuConfig.TEXT_COLOR_BRIGHT
+            self._get_career_status_text(), 10,
+            MenuConfig.CAREER_STATUS_POS,
+            color=MenuConfig.TEXT_COLOR_NORMAL,
         )
         self.start_career_button = WidgetFactory.create_button(
             self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
-            Coord2d(-0.65, -0.85), Coord2d(0.25, 0.07 * self.window_ratio),
+            MenuConfig.CAREER_BUTTON_POS, MenuConfig.CAREER_BUTTON_SIZE,
             start_career, {"menu": self},
-            font=font, text="Start Career", text_size=10,
-            text_offset=Coord2d(-0.08, -0.012)
+            font=font, text="Start Career",
+            text_size=MenuConfig.CAREER_BUTTON_TEXT_SIZE,
+            text_offset=MenuConfig.CAREER_BUTTON_TEXT_OFFSET,
         )
         self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
         self._update_career_display()
+
+        # Fixed section header for the scrollable song repertoire
+        WidgetFactory.create_text(
+            self.menus[Menus.SONGS], font,
+            "SONGS", 12,
+            MenuConfig.SONGS_HEADER_POS,
+            color=MenuConfig.TEXT_COLOR_BRIGHT,
+        )
 
         # Create album and song widgets
         num_albums = self.songbook.get_num_albums()
@@ -462,8 +497,11 @@ class Menu():
             if abs(self.song_scroll - self.song_scroll_target) > 0.01:
                 scroll_max = 20 * SONG_SPACING
                 scrl_frac = self.song_scroll / scroll_max
-                scrl_start = SONG_SCRL_PY + (SONG_SCRL_H * 0.5)
-                self.scroll_widget.set_offset(Coord2d(SONG_SCRL_PX, scrl_start - (scrl_frac * SONG_SCRL_H)))
+                scrl_start = MenuConfig.SONG_SCRL_PY + (MenuConfig.SONG_SCRL_H * 0.5)
+                self.scroll_widget.set_offset(Coord2d(
+                    MenuConfig.SONG_SCRL_PX,
+                    scrl_start - (scrl_frac * MenuConfig.SONG_SCRL_H),
+                ))
                 self._set_album_menu_pos()
 
         devices_active = self.is_dialog_active(Dialogs.DEVICES)
