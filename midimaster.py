@@ -197,6 +197,22 @@ class MidiMaster(GameJam):
                 if self.mode not in self.music.song.score or self.score > self.music.song.score[self.mode]:
                     self.music.song.score[self.mode] = round(self.score)
 
+                # Persist best XP immediately so menu/boot always see it
+                venue_tier = None
+                set_index = None
+                career_info = getattr(self.menu, "current_career_song", None)
+                if career_info:
+                    venue_tier = career_info.get("tier")
+                    set_index = career_info.get("set_index")
+                self.songbook.record_score(
+                    self.music.song,
+                    round(self.score),
+                    venue_tier=venue_tier,
+                    set_index=set_index,
+                    mode=self.mode,
+                )
+                SongBook.save(self.songbook)
+
                 score_widget = self.menu.dialogs[Dialogs.GAME_OVER].get_widget("score")
                 score_widget.set_text(f"Score: {round(self.score)} / {self.score_max}", 18, Coord2d())
                 self.menu.show_dialog(menu=self.menu, type=Dialogs.GAME_OVER)

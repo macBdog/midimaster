@@ -131,7 +131,6 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
         Coord2d(-0.1, dialog_y), button_size,
         options_latency_test_start, {"menu": menu},
         font=font, text="Test", text_size=10,
-        text_offset=Coord2d(-0.03, -0.012)
     )
     options_latency_start_button.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
 
@@ -140,7 +139,6 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
         Coord2d(0.1, dialog_y), button_size,
         options_latency_test_stop, {"menu": menu},
         font=font, text="Stop", text_size=10,
-        text_offset=Coord2d(-0.03, -0.012)
     )
     options_latency_stop_button.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
 

@@ -93,10 +93,9 @@ def song_play(**kwargs):
     program_change = mido.Message("program_change", program=menu.songbook.player_instrument)
     menu.devices.output(program_change)
 
-    # Reset trophy animations to animate from full to empty every time we enter game screen
-    from score import score_reset_ui
+    # Init score/score_max from the loaded song (menu XP must match in-game XP)
     if menu.game:
-        score_reset_ui(menu.game)
+        menu.game.reset()
 
     menu.transition(Menus.SONGS, Menus.GAME)
 
@@ -116,7 +115,8 @@ def song_delete(**kwargs):
     song=kwargs["song"]
     widget=kwargs["widget"]
     menu.menus[Menus.SONGS].delete_widget(widget.play)
-    menu.menus[Menus.SONGS].delete_widget(widget.score)
+    if widget.score is not None:
+        menu.menus[Menus.SONGS].delete_widget(widget.score)
     menu.menus[Menus.SONGS].delete_widget(widget.delete)
     menu.menus[Menus.SONGS].delete_widget(widget.reload)
     menu.menus[Menus.SONGS].delete_widget(widget.track_display)
@@ -288,6 +288,29 @@ def game_mode_toggle(**kwargs):
     game = kwargs["game"]
     game.mode = MusicMode.PAUSE_AND_LEARN if game.mode == MusicMode.PERFORMANCE else MusicMode.PERFORMANCE
 
+def _persist_run_score(game, menu):
+    """Write the best score for the current song into the songbook and save."""
+    song = game.music.song if game.music else None
+    if song is None:
+        return
+
+    venue_tier = None
+    set_index = None
+    career_info = getattr(menu, "current_career_song", None)
+    if career_info:
+        venue_tier = career_info.get("tier")
+        set_index = career_info.get("set_index")
+
+    # Prefer the higher of the live run and anything already on the song
+    existing = song.score[game.mode] if game.mode in song.score else 0
+    run_score = max(float(game.score), float(existing or 0))
+    menu.songbook.record_score(
+        song, run_score, venue_tier=venue_tier, set_index=set_index, mode=game.mode
+    )
+    from song_book import SongBook
+    SongBook.save(menu.songbook)
+
+
 def game_back_to_menu(**kwargs):
     game = kwargs["game"]
     menu = kwargs["menu"]
@@ -295,8 +318,7 @@ def game_back_to_menu(**kwargs):
         return
 
     game_pause(**kwargs)
-    existing_score = game.music.song.score[game.mode] if game.mode in game.music.song.score else 0
-    game.music.song.score[game.mode] = max(game.score, existing_score)
+    _persist_run_score(game, menu)
     game.reset()
     game.music.reset()
 
@@ -326,23 +348,28 @@ def _process_career_result(menu, game):
     album = career_info["album"]
     song = career_info["song"]
 
+    # Persist score before any song regeneration (still have live game.score)
+    _persist_run_score(game, menu)
+
     # Calculate score percentage
     max_score = song.get_max_score()
     score_percent = game.score / max_score if max_score > 0 else 0
 
-    # Process the result with the career system
+    # Process the result with the career system (no-op if career inactive)
     num_sets = TIER_CONFIGS[tier]["num_sets"]
     result = menu.songbook.career.process_set_result(score_percent, num_sets)
 
-    # If bombed, regenerate the song
-    if result["result"].value == "bombed" and not result["career_over"]:
-        new_song = regenerate_set(tier, set_index)
-        album.songs[set_index] = new_song
+    if "error" not in result:
+        # If bombed, regenerate the song but keep showing best XP
+        if result["result"].value == "bombed" and not result["career_over"]:
+            new_song = regenerate_set(tier, set_index)
+            menu.songbook.apply_stored_score(new_song, venue_tier=tier, set_index=set_index)
+            album.songs[set_index] = new_song
 
     # Clear the current career song
     menu.current_career_song = None
 
-    # Save the songbook to persist career state
+    # Save career progression (scores already saved in _persist_run_score)
     menu.songbook.save(menu.songbook)
 
 
@@ -351,11 +378,13 @@ def song_over_back(**kwargs):
     game = kwargs["game"]
     menu.dialogs[Dialogs.GAME_OVER].set_active(False, False)
 
-    # Process career result if this was a career song
+    # Process career result if this was a career song (also persists score)
     if hasattr(menu, 'current_career_song') and menu.current_career_song:
         _process_career_result(menu, game)
+    else:
+        _persist_run_score(game, menu)
 
-    game.reset()
+    # Do not zero score before back-to-menu; _persist_run_score already ran.
     game.music.rewind()
     game_back_to_menu(**{"menu": menu, "game":game})
 

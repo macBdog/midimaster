@@ -29,7 +29,7 @@ class MenuConfig:
     # Absolute NDC size so the button fits inside the strip height
     CAREER_BUTTON_SIZE = Coord2d(0.216, 0.085)
     CAREER_BUTTON_TEXT_SIZE = 9
-    CAREER_BUTTON_TEXT_OFFSET = Coord2d(-0.07, -0.01)
+    CAREER_BUTTON_TEXT_OFFSET = Coord2d()
 
     # Fixed song-list header (does not scroll with albums)
     SONGS_HEADER_POS = Coord2d(-0.5, 0.38)

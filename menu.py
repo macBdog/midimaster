@@ -11,7 +11,7 @@ from gamejam.input import Input
 from gamejam.settings import GameSettings
 from gamejam.quickmaff import lerp
 from gamejam.texture import TextureManager
-from gamejam.widget import Widget
+from gamejam.widget import Widget, Alignment, AlignX, AlignY
 
 from music import Music
 from notes import Notes
@@ -37,7 +37,7 @@ from dialog_options import create_options_dialog, setup_options_dialog
 @dataclass(init=False)
 class SongWidget:
     play: Widget
-    score: Widget
+    score: Widget | None
     delete: Widget | None
     reload: Widget | None
     track_up: Widget
@@ -189,13 +189,16 @@ class Menu():
             song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
         else:
             song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
-        
-        # Score display
-        song_widget.score = WidgetFactory.create_text(
-            self.menus[Menus.SONGS], self.font,
-            self.get_song_score_text(song), 14
-        )
-        
+
+        # XP only for career/venue sets — custom songs do not award XP
+        if venue_tier is not None:
+            song_widget.score = WidgetFactory.create_text(
+                self.menus[Menus.SONGS], self.font,
+                self.get_song_score_text(song), 14
+            )
+        else:
+            song_widget.score = None
+
         # Delete and reload buttons
         if song.saved:
             song_widget.delete = WidgetFactory.create_button(
@@ -248,7 +251,8 @@ class Menu():
                     song_widget.delete.set_offset(Coord2d(item_pos.x - 0.09, item_pos.y))
                 if hasattr(song_widget, 'reload'):
                     song_widget.reload.set_offset(Coord2d(item_pos.x - 0.14, item_pos.y))
-                song_widget.score.set_offset(Coord2d(item_pos.x + 0.75, item_pos.y - 0.03))
+                if song_widget.score is not None:
+                    song_widget.score.set_offset(Coord2d(item_pos.x + 0.75, item_pos.y - 0.03))
 
                 # Locked career sets: hide play + track controls; show label at song row
                 if locked:
@@ -263,7 +267,8 @@ class Menu():
                     song_widget.delete.set_disabled(offscreen or locked)
                 if hasattr(song_widget, 'reload'):
                     song_widget.reload.set_disabled(offscreen or locked)
-                song_widget.score.set_disabled(offscreen or item_pos.y - 0.03 > cutoff)
+                if song_widget.score is not None:
+                    song_widget.score.set_disabled(offscreen or item_pos.y - 0.03 > cutoff)
                 song_widget.track_display.set_disabled(offscreen or (not locked and track_pos.y > cutoff))
                 song_widget.track_down.set_disabled(offscreen or locked or track_pos.y + 0.02 > cutoff)
                 song_widget.track_up.set_disabled(offscreen or locked or track_pos.y + 0.02 > cutoff)
@@ -271,7 +276,9 @@ class Menu():
             item_pos.y -= ALBUM_SPACING
 
     def get_song_score_text(self, song, mode: MusicMode = MusicMode.PERFORMANCE):
-        cur_score = 0 if mode not in song.score else song.score[mode]
+        # Best of in-session song.score and persistent songbook.song_scores
+        # (venue songs are regenerated each boot and do not pickle).
+        cur_score = self.songbook.get_best_score(song)
         return f"{round(cur_score)}/{round(song.get_max_score())} XP"
 
     def _get_career_status_text(self) -> str:
@@ -318,17 +325,24 @@ class Menu():
                     )
 
                 # Update display based on locked state
+                # Song title sits to the right of the play icon (left-aligned pen).
+                play_text_align = Alignment(AlignX.Left, AlignY.Middle)
+                play_text_offset = Coord2d(0.08, 0.0)
                 if song_widget.locked:
-                    song_widget.play.set_text("", 12, Coord2d(0.08, -0.02))
+                    song_widget.play.set_text("", 12, play_text_offset, play_text_align)
                     song_widget.track_display.set_text(f"[Locked]  {song.get_name()}", 11)
                     song_widget.track_display.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
-                    song_widget.score.set_text("—", 14)
+                    if song_widget.score is not None:
+                        song_widget.score.set_text("—", 14)
                 else:
-                    song_widget.play.set_text(song.get_name(), 12, Coord2d(0.08, -0.02))
+                    song_widget.play.set_text(
+                        song.get_name(), 12, play_text_offset, play_text_align
+                    )
                     song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
                     song_widget.track_display.set_text(get_track_display_text(song), 9)
                     song_widget.track_display.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
-                    song_widget.score.set_text(self.get_song_score_text(song), 14)
+                    if song_widget.score is not None:
+                        song_widget.score.set_text(self.get_song_score_text(song), 14)
         self._set_album_menu_pos()
         self._update_career_display()
 
@@ -478,7 +492,6 @@ class Menu():
             self.dialogs[Dialogs.GAME_OVER], self.textures, "gui/panel.tga",
             Coord2d(0.2, -0.25), Coord2d(0.2, 0.09 * self.window_ratio),
             font=self.font, text="Retry", text_size=11,
-            text_offset=Coord2d(-0.05, -0.015)
         )
         retry_widget.name = "retry"
         retry_widget.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
@@ -487,7 +500,6 @@ class Menu():
             self.dialogs[Dialogs.GAME_OVER], self.textures, "gui/panel.tga",
             Coord2d(-0.15, -0.25), Coord2d(0.27, 0.09 * self.window_ratio),
             font=self.font, text="Play Another", text_size=11,
-            text_offset=Coord2d(-0.1, -0.015)
         )
         back_widget.name = "back"
         back_widget.set_text_colour(MenuConfig.TEXT_COLOR_DIM)

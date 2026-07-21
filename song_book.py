@@ -1,5 +1,6 @@
 import os
 import pickle
+import re
 from pathlib import Path
 
 from song import Song
@@ -50,6 +51,7 @@ class SongBook:
                 filtered_albums.append(filtered_album)
 
         state["albums"] = filtered_albums
+        # song_scores is kept in state (venue songs are not pickled; scores live here)
         return state
 
     def __setstate__(self, dict_):
@@ -66,11 +68,82 @@ class SongBook:
         if not hasattr(self, "default_song_title"): self.default_song_title = ""
         if not hasattr(self, "input_device"): self.input_device = ""
         if not hasattr(self, "output_device"): self.output_device = ""
-        if not hasattr(self, "song_scores"): self.song_scores = ""
+        if not hasattr(self, "song_scores") or not isinstance(getattr(self, "song_scores", None), dict):
+            self.song_scores = {}
         if not hasattr(self, "show_note_names"): self.show_note_names = False
         if not hasattr(self, "output_latency_ms"): self.output_latency_ms = 0
         if not hasattr(self, "player_instrument"): self.player_instrument = 0  # Default to Acoustic Grand Piano
         if not hasattr(self, "career"): self.career = Career()
+
+    @staticmethod
+    def score_key(song: Song, venue_tier: int | None = None, set_index: int | None = None) -> str:
+        """Stable key for best-score storage (venue sets outlive regenerated Song objects)."""
+        from procedural_songs import get_tier_for_album
+
+        tier = venue_tier if venue_tier is not None else get_tier_for_album(song.artist)
+        if tier is None:
+            # Prefer path for on-disk midi; fall back to display name
+            if song.path:
+                return f"song:{song.path}"
+            return f"song:{song.get_name()}"
+
+        if set_index is None:
+            match = re.match(r"Set (\d+)", song.title or "")
+            set_index = int(match.group(1)) - 1 if match else 0
+        return f"venue:{tier}:{set_index}"
+
+    def get_best_score(
+        self, song: Song, venue_tier: int | None = None, set_index: int | None = None
+    ) -> float:
+        """Best score from the live song object and persistent song_scores."""
+        best = 0.0
+        if song.score:
+            for value in song.score.values():
+                try:
+                    best = max(best, float(value))
+                except (TypeError, ValueError):
+                    pass
+        key = self.score_key(song, venue_tier, set_index)
+        best = max(best, float(self.song_scores.get(key, 0) or 0))
+        return best
+
+    def record_score(
+        self,
+        song: Song,
+        score: float,
+        venue_tier: int | None = None,
+        set_index: int | None = None,
+        mode=None,
+    ) -> float:
+        """Keep the best score on the song and in persistent song_scores. Returns best."""
+        score = float(score)
+        if mode is not None:
+            existing = song.score.get(mode, 0) if mode in song.score else 0
+            song.score[mode] = max(score, existing)
+        key = self.score_key(song, venue_tier, set_index)
+        best = max(score, float(self.song_scores.get(key, 0) or 0))
+        if song.score:
+            for value in song.score.values():
+                try:
+                    best = max(best, float(value))
+                except (TypeError, ValueError):
+                    pass
+        self.song_scores[key] = best
+        return best
+
+    def apply_stored_score(
+        self, song: Song, venue_tier: int | None = None, set_index: int | None = None, mode=None
+    ):
+        """Copy persistent best score onto a newly generated song for menu display."""
+        key = self.score_key(song, venue_tier, set_index)
+        best = float(self.song_scores.get(key, 0) or 0)
+        if best <= 0:
+            return
+        if mode is not None:
+            song.score[mode] = max(best, song.score.get(mode, 0) if mode in song.score else 0)
+        else:
+            # Mode-agnostic stash so get_best_score still sees it if score dict is empty of enums
+            song.score["_best"] = max(best, float(song.score.get("_best", 0) or 0))
 
     def sort(self):
         sorted(self.albums, key=lambda album: album.get_max_score())

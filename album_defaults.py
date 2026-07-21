@@ -21,17 +21,20 @@ def setup_songbook_albums() -> SongBook:
                 album.add_update_song(s)
             del songbook.songs
 
-    # Generate procedural venue albums for sight-reading challenges
+    songbook.validate()
+
+    # Generate procedural venue albums for sight-reading challenges.
+    # Fresh Song objects each boot — re-apply persisted best scores.
     for tier in TIER_CONFIGS:
         album_name, songs = generate_venue_album(tier)
         album = songbook.add_album(album_name)
-        for song in songs:
+        for set_index, song in enumerate(songs):
+            songbook.apply_stored_score(song, venue_tier=tier, set_index=set_index)
             album.add_update_song(song)
 
     album_name = "Real and Custom Songs"
     songbook.add_update_from_midi(Path("music/Nursery Rhyme - MaryHadALittleLamb.mid"), 1, album_name)
 
-    songbook.validate()
     songbook.sort()
 
     return songbook

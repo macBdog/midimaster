@@ -128,7 +128,6 @@ def setup_devices_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
         Coord2d(0.2, -0.2), Coord2d(0.2, 0.08 * window_ratio),
         devices_refresh, {"menu": menu},
         font=font, text="Reconnect", text_size=11,
-        text_offset=Coord2d(-0.07, -0.015)
     )
     devices_apply.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
 
@@ -137,7 +136,6 @@ def setup_devices_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
         Coord2d(-0.2, -0.2), Coord2d(0.25, 0.08 * window_ratio),
         devices_output_test, {"menu": menu},
         font=font, text="Test Output", text_size=11,
-        text_offset=Coord2d(-0.1, -0.015)
     )
     devices_test.set_text_colour(MenuConfig.TEXT_COLOR_BRIGHT)
 
