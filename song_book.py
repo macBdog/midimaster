@@ -92,19 +92,29 @@ class SongBook:
             set_index = int(match.group(1)) - 1 if match else 0
         return f"venue:{tier}:{set_index}"
 
+    @staticmethod
+    def _is_practice_mode(mode) -> bool:
+        """Pause & Learn is practice-only and must not affect career XP."""
+        return getattr(mode, "name", None) == "PAUSE_AND_LEARN"
+
     def get_best_score(
         self, song: Song, venue_tier: int | None = None, set_index: int | None = None
     ) -> float:
-        """Best score from the live song object and persistent song_scores."""
+        """Best career/performance score from the song object and song_scores.
+
+        Pause & Learn scores are excluded — practice runs do not count toward XP.
+        """
         best = 0.0
         if song.score:
-            for value in song.score.values():
+            for key, value in song.score.items():
+                if self._is_practice_mode(key):
+                    continue
                 try:
                     best = max(best, float(value))
                 except (TypeError, ValueError):
                     pass
-        key = self.score_key(song, venue_tier, set_index)
-        best = max(best, float(self.song_scores.get(key, 0) or 0))
+        score_key = self.score_key(song, venue_tier, set_index)
+        best = max(best, float(self.song_scores.get(score_key, 0) or 0))
         return best
 
     def record_score(
@@ -119,15 +129,22 @@ class SongBook:
 
         Venue set XP is only written to song_scores during an active career so
         free-play / inactive runs do not leave stale bests on the next boot.
+        Pause & Learn (practice) updates only song.score[mode], never career XP.
         """
         score = float(score)
         if mode is not None:
             existing = song.score.get(mode, 0) if mode in song.score else 0
             song.score[mode] = max(score, existing)
+
+        if self._is_practice_mode(mode):
+            return score
+
         key = self.score_key(song, venue_tier, set_index)
         best = max(score, float(self.song_scores.get(key, 0) or 0))
         if song.score:
-            for value in song.score.values():
+            for score_key, value in song.score.items():
+                if self._is_practice_mode(score_key):
+                    continue
                 try:
                     best = max(best, float(value))
                 except (TypeError, ValueError):

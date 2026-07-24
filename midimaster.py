@@ -13,6 +13,7 @@ from gamejam.input import InputActionKey, InputActionModifier
 from key_signature import KeySignature
 from menu import Menu, Menus
 from score import (
+    MAX_SCORE_PER_NOTE,
     score_update_draw, score_setup_display,
     score_reset_ui, score_vfx, score_continuous_update
 )
@@ -169,6 +170,12 @@ class MidiMaster(GameJam):
                     if note_info['player_started'] is None:  # First time pressing
                         note_info['player_started'] = self.music_time
                         score_vfx(self, message.note)  # Visual feedback
+                        # Pause & Learn: one correct press is enough — grant remaining XP
+                        if self.mode == MusicMode.PAUSE_AND_LEARN:
+                            remaining = MAX_SCORE_PER_NOTE - note_info['score_earned']
+                            if remaining > 0:
+                                note_info['score_earned'] += remaining
+                                self.score += remaining
 
             elif message.type == "note_off":
                 if message.note in self.player_notes_down:
@@ -261,15 +268,20 @@ class MidiMaster(GameJam):
                     if k not in self.active_scorable_notes:
                         # Check if player is already holding this note (early press)
                         player_started = None
+                        score_earned = 0.0
                         if k in self.player_notes_down:
                             player_started = self.player_notes_down[k]
                             score_vfx(self, k)  # Visual feedback for early press
+                            # Pause & Learn: already holding counts as the one required play
+                            if self.mode == MusicMode.PAUSE_AND_LEARN:
+                                score_earned = MAX_SCORE_PER_NOTE
+                                self.score += MAX_SCORE_PER_NOTE
 
                         self.active_scorable_notes[k] = {
                             'start_time': self.music_time,
                             'end_time': note_off_time,
                             'player_started': player_started,
-                            'score_earned': 0.0
+                            'score_earned': score_earned
                         }
 
                 if k in self.midi_notes:
@@ -301,14 +313,13 @@ class MidiMaster(GameJam):
                     del self.active_scorable_notes[k]
 
             if self.mode == MusicMode.PAUSE_AND_LEARN:
+                # Pause until each active note has been played once. Do not require
+                # holding through the full duration — releasing early in anticipation
+                # of the next note should not freeze the scroll mid-tail.
                 should_pause = False
                 if len(self.active_scorable_notes) > 0 and self.music_running:
-                    for note_id, note_info in self.active_scorable_notes.items():
+                    for note_info in self.active_scorable_notes.values():
                         if note_info['player_started'] is None:
-                            should_pause = True
-                            break
-                        # Note has been started but player released it before note ended
-                        if note_id not in self.player_notes_down:
                             should_pause = True
                             break
 

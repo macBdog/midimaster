@@ -210,7 +210,9 @@ class Song:
                          note_range:int=4,
                          note_length:int=32,
                          note_spacing:int=0,
-                         time: int=0):
+                         time: int=0,
+                         pitch_min: int | None = None,
+                         pitch_max: int | None = None):
         """Add a sequence of random notes to the song.
         Args:
             num_notes: Number of notes to add
@@ -219,15 +221,31 @@ class Song:
             note_range: Number of notes above and below the tonic to generate from
             note_length: Length of each note in 32nd notes
             note_spacing: Spacing between notes in 32nd notes
-            
+            pitch_min: Optional inclusive lower MIDI clamp (e.g. clef range)
+            pitch_max: Optional inclusive upper MIDI clamp (e.g. clef range)
         """
-        allowed_notes = [tonic - note_range + n for n in range(note_range*2)]
+        allowed_notes = [tonic - note_range + n for n in range(note_range * 2)]
 
         # Filter to only notes that are both in the key and in allowed_notes
         min_note = min(allowed_notes)
         max_note = max(allowed_notes) + 1
         notes_in_key = self._get_notes_in_key(key, (min_note, max_note))
         allowed_notes = [n for n in allowed_notes if n in notes_in_key]
+
+        if pitch_min is not None or pitch_max is not None:
+            lo = pitch_min if pitch_min is not None else 0
+            hi = pitch_max if pitch_max is not None else 127
+            allowed_notes = [n for n in allowed_notes if lo <= n <= hi]
+
+        if not allowed_notes:
+            # Fall back to in-key pitches inside the clamp window so generation never fails
+            lo = pitch_min if pitch_min is not None else tonic - note_range
+            hi = (pitch_max if pitch_max is not None else tonic + note_range) + 1
+            allowed_notes = self._get_notes_in_key(key, (lo, hi))
+            if pitch_min is not None or pitch_max is not None:
+                plo = pitch_min if pitch_min is not None else 0
+                phi = pitch_max if pitch_max is not None else 127
+                allowed_notes = [n for n in allowed_notes if plo <= n <= phi]
         if not allowed_notes:
             raise ValueError(f"No notes in key '{key}' within the allowed note range")
 
@@ -252,7 +270,9 @@ class Song:
                      chord_type: str = "triad",
                      note_length: int = 16,
                      note_spacing: int = 0,
-                     time: int = 0):
+                     time: int = 0,
+                     pitch_min: int | None = None,
+                     pitch_max: int | None = None):
         """Add an arpeggio pattern to the song.
 
         Args:
@@ -265,6 +285,8 @@ class Song:
             note_length: Length of each note in 32nd notes
             note_spacing: Spacing between notes in 32nd notes
             time: Additional time offset in 32nd notes
+            pitch_min: Optional inclusive lower MIDI clamp (e.g. clef range)
+            pitch_max: Optional inclusive upper MIDI clamp (e.g. clef range)
         """
         # Determine if major or minor
         is_major = key.find('m') < 0
@@ -313,6 +335,22 @@ class Song:
 
         # Trim to requested number of notes
         note_sequence = note_sequence[:num_notes]
+
+        # Clamp to clef/display range by octave-shifting each pitch
+        if pitch_min is not None or pitch_max is not None:
+            lo = pitch_min if pitch_min is not None else 0
+            hi = pitch_max if pitch_max is not None else 127
+            clamped = []
+            for pitch in note_sequence:
+                p = pitch
+                while p < lo:
+                    p += 12
+                while p > hi:
+                    p -= 12
+                if p < lo:
+                    p = max(lo, min(hi, p))
+                clamped.append(p)
+            note_sequence = clamped
 
         # Calculate starting time based on existing notes
         time_in_32s = 0

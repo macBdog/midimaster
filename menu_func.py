@@ -343,6 +343,13 @@ def _process_career_result(menu, game):
     if not career_info:
         return
 
+    # Pause & Learn is practice-only: keep a personal best for that mode, but do
+    # not advance career / write venue XP / regenerate sets.
+    if game.mode == MusicMode.PAUSE_AND_LEARN:
+        _persist_run_score(game, menu)
+        menu.current_career_song = None
+        return
+
     tier = career_info["tier"]
     set_index = career_info["set_index"]
     album = career_info["album"]

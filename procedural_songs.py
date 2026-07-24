@@ -5,8 +5,45 @@ sight-reading ability while sounding musical through proper chord progressions
 and melodic patterns.
 """
 
+from enum import Enum, auto
+
 import numpy.random as rng
 from song import Song
+
+
+class ClefMode(Enum):
+    """Staff clef used for notation display and melodic pitch limits.
+
+    Only TREBLE is active today; BASS is reserved for future dual-staff support.
+    """
+    TREBLE = auto()
+    BASS = auto()
+
+
+# Inclusive MIDI note limits for pitches that render cleanly on each clef.
+# Treble: low E (E3, ledger lines below the staff) through high F (F5, top line).
+# Bass: placeholder (E2–middle C) until bass-clef rendering exists.
+CLEF_PITCH_RANGE = {
+    ClefMode.TREBLE: (52, 77),  # E3 .. F5
+    ClefMode.BASS: (40, 60),    # E2 .. C4 (future)
+}
+
+# Game currently draws a single treble staff only.
+DEFAULT_CLEF_MODE = ClefMode.TREBLE
+
+
+def fit_pitch_to_range(pitch: int, lo: int, hi: int) -> int:
+    """Shift pitch by octaves until it lies in [lo, hi] (inclusive)."""
+    if lo > hi:
+        return pitch
+    while pitch < lo:
+        pitch += 12
+    while pitch > hi:
+        pitch -= 12
+    if pitch < lo:
+        return max(lo, min(hi, pitch))
+    return pitch
+
 
 # Chord progressions library - intervals from root with chord types
 CHORD_PROGRESSIONS = {
@@ -180,18 +217,34 @@ def add_backing_progression(song: Song, progression_name: str, start_time: int =
         is_first = False
         chord_index += 1
 
-def generate_melodic_content(song: Song, config: dict, tonic: int, total_notes: int):
+def generate_melodic_content(
+    song: Song,
+    config: dict,
+    tonic: int,
+    total_notes: int,
+    clef_mode: ClefMode | None = DEFAULT_CLEF_MODE,
+):
     """Generate melodic content using a mix of random notes and arpeggios.
+
+    When ``clef_mode`` is set (default treble), every generated pitch is clamped
+    to that clef's displayable MIDI range so notes stay on-screen.
+
     Args:
         song: Song to add notes to
         config: Configuration dict with generation parameters
         tonic: MIDI note number for the tonal center
         total_notes: Total number of notes to generate
+        clef_mode: Clef used for pitch limits, or None to leave pitches unrestricted
     """
     notes_remaining = total_notes
     phrase_length = min(8, max(4, total_notes // 4))
     use_arpeggios = config.get("use_arpeggios", False)
     is_first_phrase = True
+
+    pitch_min = pitch_max = None
+    if clef_mode is not None:
+        pitch_min, pitch_max = CLEF_PITCH_RANGE[clef_mode]
+        tonic = fit_pitch_to_range(int(tonic), pitch_min, pitch_max)
 
     while notes_remaining > 0:
         notes_in_phrase = min(phrase_length, notes_remaining)
@@ -209,7 +262,9 @@ def generate_melodic_content(song: Song, config: dict, tonic: int, total_notes: 
                 tonic=tonic,
                 pattern=pattern,
                 note_length=note_length,
-                time=32 if is_first_phrase else 0  # Start after 1 bar lead-in
+                time=32 if is_first_phrase else 0,  # Start after 1 bar lead-in
+                pitch_min=pitch_min,
+                pitch_max=pitch_max,
             )
         else:
             # Use random notes within the key
@@ -219,7 +274,9 @@ def generate_melodic_content(song: Song, config: dict, tonic: int, total_notes: 
                 tonic=tonic,
                 note_range=config["note_range"],
                 note_length=note_length,
-                time=32 if is_first_phrase else 0  # Start after 1 bar lead-in
+                time=32 if is_first_phrase else 0,  # Start after 1 bar lead-in
+                pitch_min=pitch_min,
+                pitch_max=pitch_max,
             )
 
         is_first_phrase = False
@@ -228,14 +285,22 @@ def generate_melodic_content(song: Song, config: dict, tonic: int, total_notes: 
         # Occasionally shift tonic for variety (if multiple options available)
         if notes_remaining > phrase_length and len(config["tonic_options"]) > 1:
             if rng.random() > 0.7:
-                tonic = rng.choice(config["tonic_options"]).item()
+                tonic = int(rng.choice(config["tonic_options"]).item())
+                if pitch_min is not None and pitch_max is not None:
+                    tonic = fit_pitch_to_range(tonic, pitch_min, pitch_max)
 
-def generate_procedural_song(config: dict, title: str, artist: str) -> Song:
+def generate_procedural_song(
+    config: dict,
+    title: str,
+    artist: str,
+    clef_mode: ClefMode | None = DEFAULT_CLEF_MODE,
+) -> Song:
     """Generate a single procedural song from configuration.
     Args:
         config: Configuration dict with all generation parameters
         title: Song title
         artist: Artist/album name
+        clef_mode: Clef for melodic pitch limits (default treble)
     Returns:
         Generated Song object
     """
@@ -248,9 +313,9 @@ def generate_procedural_song(config: dict, title: str, artist: str) -> Song:
     song.track_names = ["Player", "Backing"]
     song.saved = False
 
-    # Generate melodic content
+    # Generate melodic content (clamped to clef range when mode is set)
     tonic = rng.choice(config["tonic_options"]).item()
-    generate_melodic_content(song, config, tonic, config["num_notes"])
+    generate_melodic_content(song, config, tonic, config["num_notes"], clef_mode=clef_mode)
 
     # Add backing track
     progression = rng.choice(config["progressions"]).item()
