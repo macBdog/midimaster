@@ -394,11 +394,16 @@ float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec,
                in vec2 hat_size, in float tie_32s, in vec2 extra_geo)
 {
     // Optional pitch letter under the note
+    // Staff step 0 = bottom line (E); +1 per diatonic step upward.
+    // Letter indices: 0=A,1=B,2=C,3=D,4=E,5=F,6=G.
+    // Use round + GLSL mod (positive remainder) so ledger notes below the
+    // staff wrap correctly — int() truncates toward zero and broke extents.
     float letters = 0.0;
     if (note_names > 0 && note_type < note_type_rest_whole)
     {
-        float letf = 1.0 - (p.y - staff_pos_y) / staff_note_spacing;
-        int leti = abs(int(letf) - 5) % 7;
+        float staff_step = (p.y - staff_pos_y) / staff_note_spacing;
+        int step = int(round(staff_step));
+        int leti = int(mod(4.0 + float(step), 7.0));
         letters = drawLetter(uv, p, leti);
     }
 
