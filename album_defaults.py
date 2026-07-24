@@ -23,13 +23,27 @@ def setup_songbook_albums() -> SongBook:
 
     songbook.validate()
 
+    # Venue XP is career-scoped. Stale venue:* scores were re-applied on every
+    # boot even with no active career, so Set 1 showed e.g. 80/80 XP unplayed.
+    career_active = bool(getattr(songbook.career, "active", False))
+    if not career_active:
+        had_venue_scores = any(str(k).startswith("venue:") for k in songbook.song_scores)
+        songbook.song_scores = {
+            key: value
+            for key, value in songbook.song_scores.items()
+            if not str(key).startswith("venue:")
+        }
+        if had_venue_scores:
+            SongBook.save(songbook)
+
     # Generate procedural venue albums for sight-reading challenges.
-    # Fresh Song objects each boot — re-apply persisted best scores.
+    # Fresh Song objects each boot — re-apply bests only during an active run.
     for tier in TIER_CONFIGS:
         album_name, songs = generate_venue_album(tier)
         album = songbook.add_album(album_name)
         for set_index, song in enumerate(songs):
-            songbook.apply_stored_score(song, venue_tier=tier, set_index=set_index)
+            if career_active:
+                songbook.apply_stored_score(song, venue_tier=tier, set_index=set_index)
             album.add_update_song(song)
 
     album_name = "Real and Custom Songs"

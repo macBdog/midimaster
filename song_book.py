@@ -115,7 +115,11 @@ class SongBook:
         set_index: int | None = None,
         mode=None,
     ) -> float:
-        """Keep the best score on the song and in persistent song_scores. Returns best."""
+        """Keep the best score on the song and in persistent song_scores. Returns best.
+
+        Venue set XP is only written to song_scores during an active career so
+        free-play / inactive runs do not leave stale bests on the next boot.
+        """
         score = float(score)
         if mode is not None:
             existing = song.score.get(mode, 0) if mode in song.score else 0
@@ -128,6 +132,11 @@ class SongBook:
                     best = max(best, float(value))
                 except (TypeError, ValueError):
                     pass
+
+        is_venue = str(key).startswith("venue:")
+        if is_venue and not getattr(self.career, "active", False):
+            return best
+
         self.song_scores[key] = best
         return best
 
@@ -144,6 +153,21 @@ class SongBook:
         else:
             # Mode-agnostic stash so get_best_score still sees it if score dict is empty of enums
             song.score["_best"] = max(best, float(song.score.get("_best", 0) or 0))
+
+    def clear_venue_scores(self):
+        """Reset all career/venue set XP (for a new or abandoned career run)."""
+        from procedural_songs import get_tier_for_album
+
+        self.song_scores = {
+            key: value
+            for key, value in self.song_scores.items()
+            if not str(key).startswith("venue:")
+        }
+        for album in self.albums:
+            if get_tier_for_album(album.name) is None:
+                continue
+            for song in album.songs:
+                song.score = {}
 
     def sort(self):
         sorted(self.albums, key=lambda album: album.get_max_score())

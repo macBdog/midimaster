@@ -140,6 +140,12 @@ class Notes:
                 hat_dir = hats[0].note_drawn < 72 and hats[num_hats -1].note_drawn < 72
                 hat_tallest_note = 0 if hat_dir else 999
                 straight_hat = True # TODO Handle hats slanting up and down
+                # Must stay in sync with stalk_length_* in notes.frag:
+                # stalk_uv = clamp(0.2 + extra[1]*0.5, 0.10, 0.399) → |extra| ≤ 0.398
+                stalk_extra_max = 0.398
+
+                def clamp_stalk_extra(y):
+                    return max(-stalk_extra_max, min(y, stalk_extra_max))
 
                 # Find the tallest note stem (lowest note)
                 hcount = 0
@@ -160,7 +166,7 @@ class Notes:
                     if abs(y_diff) >= max_hat_diff:
                         capped_y = -max_hat_diff if y_diff < 0 else max_hat_diff
                         hat_note.hat = [hat_note.length, capped_y * 0.5]
-                        hat_note_next.extra[1] = -(y_diff - max_hat_diff)
+                        hat_note_next.extra[1] = clamp_stalk_extra(-(y_diff - max_hat_diff))
                     else:
                         hat_note.hat = [hat_note.length, y_diff * 0.5]
                     hat_note_next.hat = [0.0, 0.0]
@@ -173,7 +179,7 @@ class Notes:
                             y_diff = note_positions[hat_tallest_note] - note_positions[hat_note.note_drawn]
                         elif hat_tallest_note in note_positions:
                             y_diff = note_positions[hat_note.note_drawn] - note_positions[hat_tallest_note]
-                        hat_note.extra = [0.0, y_diff]
+                        hat_note.extra = [0.0, clamp_stalk_extra(y_diff)]
 
                 # Remove the tail from the last note in the chain
                 hats[num_hats - 1].hat = [0.0, -1.0]
