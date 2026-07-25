@@ -189,40 +189,38 @@ class SongBook:
     def sort(self):
         sorted(self.albums, key=lambda album: album.get_max_score())
 
-    def get_num_albums(self):
-        return len(self.albums)
-
     def get_num_songs(self):
         num_songs = 0
         for album in self.albums:
             num_songs += album.get_num_songs()
         return num_songs
 
-    def get_album_by_name(self, name: str) -> Album:
+    def get_album_by_name(self, name: str) -> Album | None:
         for a in self.albums:
             if a.name == name:
                 return a
         return None
 
-    def get_num_albums(self):
+    def get_num_albums(self) -> int:
         return len(self.albums)
 
     def is_empty(self):
         return len(self.albums) == 0
 
-    def get_default_song(self) -> Song:
+    def get_default_song(self) -> Song | None:
         for album in self.albums:
             song = album.find_song(title=self.default_song_title)
             if song is not None:
                 return song
         if len(self.albums) > 0:
-            self.albums[0].get_song[0]
+            self.albums[0].get_song(0)
         return None
 
-    def find_song(self, title:str, artist:str) -> Song:
+    def find_song(self, title:str, artist:str) -> Song | None:
         """Return a song from any album where the title and artist matches."""
         for a in self.albums:
             return a.find_song(title, artist)
+        return None
 
     def delete_album(self, album_id:int):
         del self.albums[album_id]
@@ -243,5 +241,5 @@ class SongBook:
 
         if midi_path.exists():
             new_song = Song()
-            new_song.from_midi_file(midi_path, track_id)
+            new_song.from_midi_file(str(midi_path), track_id)
             album.add_update_song(new_song)

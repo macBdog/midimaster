@@ -332,7 +332,7 @@ class MidiMaster(GameJam):
 
             # Show the play mode
             mode_string = "Performance" if self.mode == MusicMode.PERFORMANCE else "Pause & Learn"
-            self.font_game.draw(f"{mode_string}", 16, Coord2d(0.5, 0.8), [0.6, 0.6, 0.6, 1.0])
+            self.font_game.draw(f"{mode_string}", 16, Coord2d(0.51, 0.8), [0.6, 0.6, 0.6, 1.0])
 
             # Show music time
             if GameSettings.DEV_MODE:

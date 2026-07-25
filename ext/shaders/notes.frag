@@ -293,11 +293,12 @@ float drawTie(in vec2 uv, in vec2 start, in vec2 end, bool above)
 //   stalk length is clamped to [stalk_length_min, stalk_length_max]
 float drawRest(in vec2 uv, in vec2 p, int note_type)
 {
+    vec2 rest_rec = vec2(0.04, 0.03);
     if (note_type == note_type_rest_whole)
-        return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 5.6), vec2(0.04, 0.03));
+        return drawRect(uv, vec2(p.x, staff_pos_y + (staff_note_spacing * 5.0) + (rest_rec.y * 0.4)), rest_rec);
 
     if (note_type == note_type_rest_half)
-        return drawRect(uv, vec2(p.x, staff_pos_y + staff_note_spacing * 4.4), vec2(0.04, 0.03));
+        return drawRect(uv, vec2(p.x, staff_pos_y + (staff_note_spacing * 4.0) + (rest_rec.y * 0.5)), rest_rec);
 
     if (note_type == note_type_rest_quarter)
     {
@@ -393,11 +394,8 @@ float drawNoteBeams(in vec2 uv, in vec2 hat_start, in vec2 hat_size,
 float drawNote(in vec2 uv, in vec2 p, in int note_type, in int dec,
                in vec2 hat_size, in float tie_32s, in vec2 extra_geo)
 {
-    // Optional pitch letter under the note
-    // Staff step 0 = bottom line (E); +1 per diatonic step upward.
+    // Optional pitch letter under the note 0 = bottom line (E); +1 per diatonic step upward.
     // Letter indices: 0=A,1=B,2=C,3=D,4=E,5=F,6=G.
-    // Use round + GLSL mod (positive remainder) so ledger notes below the
-    // staff wrap correctly — int() truncates toward zero and broke extents.
     float letters = 0.0;
     if (note_names > 0 && note_type < note_type_rest_whole)
     {
