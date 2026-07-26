@@ -12,6 +12,27 @@ MidiMaster is a rhythm game written in Python that uses musical score notation f
 
 ## Project Structure
 
+```
+midimaster/
+  *.py                 # game modules (flat layout)
+  ext/shaders/         # GLSL including notes.frag
+  tests/               # game tests (MIDI latency, etc.)
+  utils/               # developer tools (pitchfork-style)
+    note_shader_test/  # offscreen notes.frag harness + atomic fixtures
+    audio_to_midi/     # scaffold: audio → MIDI
+  music/               # MIDI song files
+  tex/                 # textures
+```
+
+### Utils ([utils/README.md](utils/README.md))
+
+Supporting tools for verifying and authoring content — not imported by the game runtime.
+
+- **note_shader_test**: Renders `ext/shaders/notes.frag` offscreen with the same uniforms/substitutions as `NoteRender`, compares against JSON fixtures and golden PNGs. Atomic rest/duration cases under `utils/note_shader_test/fixtures/cases/atomic/`.
+  - Run: `pytest utils/note_shader_test/tests -v` (repo-root `pytest.ini` sets `pythonpath = utils`)
+  - CLI: `python -m note_shader_test …` with `PYTHONPATH=utils`
+- **audio_to_midi**: Planned melody extraction to MidiMaster-loadable MIDI (scaffold only).
+
 ### Core Components
 
 #### 1. SongBook ([song_book.py](song_book.py))

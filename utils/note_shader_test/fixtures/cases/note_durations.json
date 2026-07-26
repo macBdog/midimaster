@@ -1,0 +1,11 @@
+{
+  "name": "note_durations",
+  "description": "Whole, half, quarter, eighth, sixteenth on G4 — heads, stems, flags",
+  "notes": [
+    {"midi": 67, "x": -0.55, "type": "whole"},
+    {"midi": 67, "x": -0.25, "type": "half"},
+    {"midi": 67, "x":  0.05, "type": "quarter"},
+    {"midi": 67, "x":  0.30, "type": "eighth"},
+    {"midi": 67, "x":  0.55, "type": "sixteenth"}
+  ]
+}

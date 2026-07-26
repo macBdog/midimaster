@@ -1,0 +1,29 @@
+{
+  "name": "atom_note_only_thirtysecond",
+  "description": "Single thirtysecond note (G4) \u2014 isolate head/stem/flag for this duration",
+  "group": "note_solo",
+  "tags": [
+    "atomic",
+    "note",
+    "solo",
+    "thirtysecond"
+  ],
+  "atomic": true,
+  "note_names": false,
+  "music_time": 0.0,
+  "notes": [
+    {
+      "midi": 67,
+      "x": 0.0,
+      "type": "thirtysecond",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    }
+  ],
+  "golden": "atom_note_only_thirtysecond"
+}

@@ -1,0 +1,43 @@
+{
+  "name": "atom_seq_note_quarter_rest_eighth",
+  "description": "quarter note then eighth rest \u2014 mixed durations",
+  "group": "seq_note_rest_cross",
+  "tags": [
+    "atomic",
+    "sequence",
+    "note_rest",
+    "cross_length",
+    "quarter",
+    "eighth"
+  ],
+  "atomic": true,
+  "note_names": false,
+  "music_time": 0.0,
+  "notes": [
+    {
+      "midi": 67,
+      "x": -0.36,
+      "type": "quarter",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.0,
+      "type": "rest_eighth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    }
+  ],
+  "golden": "atom_seq_note_quarter_rest_eighth"
+}

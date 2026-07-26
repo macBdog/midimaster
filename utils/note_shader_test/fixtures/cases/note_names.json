@@ -1,0 +1,11 @@
+{
+  "name": "note_names",
+  "description": "Quarter notes with note_names uniform enabled — letters A–G under heads",
+  "note_names": true,
+  "notes": [
+    {"midi": 60, "x": -0.40, "type": "quarter"},
+    {"midi": 64, "x": -0.10, "type": "quarter"},
+    {"midi": 67, "x":  0.20, "type": "quarter"},
+    {"midi": 72, "x":  0.50, "type": "quarter"}
+  ]
+}

@@ -164,3 +164,6 @@ music/*.mid
 .claude_code/
 claude_history.jsonl
 .claude_history
+
+# utils tool outputs (note_shader_test diffs / smoke renders)
+utils/output/

@@ -1,0 +1,53 @@
+{
+  "name": "atom_seq_note_eighth_rest_eighth_note_eighth",
+  "description": "eighth + eighth-rest + eighth \u2014 short-rest interruption",
+  "group": "seq_three",
+  "tags": [
+    "atomic",
+    "sequence",
+    "three_event",
+    "eighth"
+  ],
+  "atomic": true,
+  "note_names": false,
+  "music_time": 0.0,
+  "notes": [
+    {
+      "midi": 67,
+      "x": -0.36,
+      "type": "eighth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.0,
+      "type": "rest_eighth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.36,
+      "type": "eighth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    }
+  ],
+  "golden": "atom_seq_note_eighth_rest_eighth_note_eighth"
+}

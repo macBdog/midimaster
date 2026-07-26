@@ -4,3 +4,6 @@ numpy==2.2.3
 PyOpenGL==3.1.6
 python-rtmidi==1.5.8
 # gamejam Recommended install editable
+
+# utils/note_shader_test (golden PNG I/O; pytest already common in dev envs)
+Pillow>=10.0

@@ -31,6 +31,21 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
 ![MidiMaster menu screenshot](https://github.com/macBdog/midimaster/blob/main/screenshot_menu.png?raw=true)
 ![MidiMaster game screenshot](https://github.com/macBdog/midimaster/blob/main/screenshot_game.png?raw=true)
 
+## Utils (shader tests, audio tools)
+
+Developer tools live under [`utils/`](utils/) (see [utils/README.md](utils/README.md)):
+
+```bash
+# Note rendering shader tests (OpenGL required)
+pytest utils/note_shader_test/tests -v
+python -m note_shader_test compare --atomic   # PYTHONPATH=utils if needed
+```
+
+| Tool | Purpose |
+|------|---------|
+| `utils/note_shader_test` | Offscreen GPU tests for `ext/shaders/notes.frag` vs notation fixtures |
+| `utils/audio_to_midi` | (Scaffold) melody audio → MIDI for the game |
+
 ## Task Queue:
 1. Album unlocks with random songs of ramping difficulty in different keys
 2. Temporal accidentals

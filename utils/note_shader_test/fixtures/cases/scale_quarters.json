@@ -1,0 +1,15 @@
+{
+  "name": "scale_quarters",
+  "description": "C major scale C4–C5 as quarter notes — stem directions and staff placement",
+  "note_names": false,
+  "notes": [
+    {"midi": 60, "x": -0.55, "type": "quarter"},
+    {"midi": 62, "x": -0.40, "type": "quarter"},
+    {"midi": 64, "x": -0.25, "type": "quarter"},
+    {"midi": 65, "x": -0.10, "type": "quarter"},
+    {"midi": 67, "x":  0.05, "type": "quarter"},
+    {"midi": 69, "x":  0.20, "type": "quarter"},
+    {"midi": 71, "x":  0.35, "type": "quarter"},
+    {"midi": 72, "x":  0.50, "type": "quarter"}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "quarter_c4",
+  "description": "Single quarter note middle C (C4 / MIDI 60) — ledger line below treble staff",
+  "note_names": false,
+  "notes": [
+    {
+      "midi": 60,
+      "x": 0.0,
+      "type": "quarter",
+      "decoration": "none",
+      "colour": [0.11, 0.11, 0.11, 1.0]
+    }
+  ]
+}

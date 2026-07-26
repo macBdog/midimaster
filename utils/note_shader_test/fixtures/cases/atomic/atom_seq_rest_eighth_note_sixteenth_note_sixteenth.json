@@ -1,0 +1,54 @@
+{
+  "name": "atom_seq_rest_eighth_note_sixteenth_note_sixteenth",
+  "description": "eighth-rest + two sixteenths (unbeamed) \u2014 short pickup",
+  "group": "seq_three",
+  "tags": [
+    "atomic",
+    "sequence",
+    "three_event",
+    "eighth",
+    "sixteenth"
+  ],
+  "atomic": true,
+  "note_names": false,
+  "music_time": 0.0,
+  "notes": [
+    {
+      "midi": 67,
+      "x": -0.36,
+      "type": "rest_eighth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.0,
+      "type": "sixteenth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.36,
+      "type": "sixteenth",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    }
+  ],
+  "golden": "atom_seq_rest_eighth_note_sixteenth_note_sixteenth"
+}

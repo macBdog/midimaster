@@ -1,0 +1,10 @@
+{
+  "name": "accidentals",
+  "description": "Sharp, flat, natural, dotted on D5 — accidental glyph placement left of head",
+  "notes": [
+    {"midi": 74, "x": -0.45, "type": "quarter", "decoration": "sharp"},
+    {"midi": 74, "x": -0.10, "type": "quarter", "decoration": "flat"},
+    {"midi": 74, "x":  0.25, "type": "quarter", "decoration": "natural"},
+    {"midi": 74, "x":  0.55, "type": "quarter", "decoration": "dotted"}
+  ]
+}

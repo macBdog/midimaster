@@ -1,0 +1,54 @@
+{
+  "name": "atom_seq_note_half_rest_quarter_note_quarter",
+  "description": "half + quarter-rest + quarter \u2014 long then short fill",
+  "group": "seq_three",
+  "tags": [
+    "atomic",
+    "sequence",
+    "three_event",
+    "half",
+    "quarter"
+  ],
+  "atomic": true,
+  "note_names": false,
+  "music_time": 0.0,
+  "notes": [
+    {
+      "midi": 67,
+      "x": -0.36,
+      "type": "half",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.0,
+      "type": "rest_quarter",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    },
+    {
+      "midi": 67,
+      "x": 0.36,
+      "type": "quarter",
+      "decoration": "none",
+      "colour": [
+        0.11,
+        0.11,
+        0.11,
+        1.0
+      ]
+    }
+  ],
+  "golden": "atom_seq_note_half_rest_quarter_note_quarter"
+}

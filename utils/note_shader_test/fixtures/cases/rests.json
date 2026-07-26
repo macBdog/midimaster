@@ -1,0 +1,11 @@
+{
+  "name": "rests",
+  "description": "Whole through sixteenth rests — rest glyphs on staff (midi ignored for Y)",
+  "notes": [
+    {"midi": 64, "x": -0.50, "type": "rest_whole"},
+    {"midi": 64, "x": -0.25, "type": "rest_half"},
+    {"midi": 64, "x":  0.00, "type": "rest_quarter"},
+    {"midi": 64, "x":  0.25, "type": "rest_eighth"},
+    {"midi": 64, "x":  0.50, "type": "rest_sixteenth"}
+  ]
+}
