@@ -8,41 +8,30 @@ class Album():
         self.songs: list[Song] = []
         self.expanded = False
 
-
     def get_max_score(self) -> int:
         score = 0
         for s in self.songs:
             score += s.get_max_score()
         return score
 
-
     def sort(self):
         sorted(self.songs, key=lambda s: s.get_max_score())
-
 
     def get_song(self, id: int) -> Song:
         return self.songs[id]
 
-
-    def get_num_songs(self):
+    def get_num_songs(self) -> int:
         return len(self.songs)
 
-
-    def find_song(self, title:str, artist:str = "") -> Song:
+    def find_song(self, title:str, artist:str = "") -> Song | None:
         """Return a song where the title and artist matches."""
         for song in self.songs:
             if song.artist.find(artist) >= 0 or song.title.find(title) >= 0:
                 return song
-
-
-    def add_song(self, title:str, artist:str):
-        if song := self.find_song(title=title, artist=artist):
-            self.songs.append(song)
-
+        return None
 
     def add_song(self, song:Song):
         self.songs.append(song)
-
 
     def add_update_song(self, song:Song) -> bool:
         """Return True if a song with matching title and artist exists, saving the track ID."""
@@ -56,6 +45,7 @@ class Album():
         self.songs.append(song)
         return False
 
-
-    def delete_song(self, song_id:int):
-        self.songs.remove(self.songs[song_id])
+    def delete_song(self, song: Song):
+        found = self.songs.index(song)
+        if found:
+            del self.songs[found]

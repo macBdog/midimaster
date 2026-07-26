@@ -5,7 +5,7 @@ Developer utilities and support tools for MidiMaster (pitchfork-style `utils/` t
 | Tool | Status | Purpose |
 |------|--------|---------|
 | **note_shader_test** | Implemented | Offscreen-render `ext/shaders/notes.frag` against notation fixtures (incl. atomic rest/duration cases) |
-| **audio_to_midi** | Scaffolded | Convert melody audio → MIDI playable in MidiMaster |
+| **audio_to_midi** | Implemented | Convert melody audio → MIDI playable in MidiMaster |
 
 ## Layout
 
@@ -60,4 +60,14 @@ See `note_shader_test/atomic_catalog.py` and filter with `pytest -k atom_…`.
 
 ## audio_to_midi
 
-Scaffold only — see [audio_to_midi/README.md](audio_to_midi/README.md).
+Melody audio → MidiMaster-compatible MIDI. See [audio_to_midi/README.md](audio_to_midi/README.md).
+
+```bash
+# Utility-only deps (not required by the game)
+pip install -r utils/audio_to_midi/requirements.txt
+
+$env:PYTHONPATH = "utils"   # Windows PowerShell
+python -m audio_to_midi convert song.wav -o song.mid --clef treble
+# tempo is auto-detected and pinned; --bpm only to override
+pytest utils/audio_to_midi/tests -v
+```

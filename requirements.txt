@@ -7,3 +7,6 @@ python-rtmidi==1.5.8
 
 # utils/note_shader_test (golden PNG I/O; pytest already common in dev envs)
 Pillow>=10.0
+
+# utils/audio_to_midi — do NOT add librosa here; install util deps separately:
+#   pip install -r utils/audio_to_midi/requirements.txt

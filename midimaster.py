@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 import os
 
@@ -96,16 +97,16 @@ class MidiMaster(GameJam):
         if MidiMaster.get_cmd_argument(song_args):
             song_path = os.path.join(".", song_args["--song-add"])
             song_track = int(song_args["--song-track"])
-            song_album = int(song_args["--song-album"])
+            song_album = str(song_args["--song-album"])
 
             if os.path.exists(song_path):
                 if os.path.isdir(song_path):
                     for file in os.listdir(song_path):
                         full_path = os.path.join(song_path, file)
                         if os.path.isfile(full_path) and file.find("mid") >= 0:
-                            self.songbook.add_update_from_midi(full_path, song_track, song_album)
+                            self.songbook.add_update_from_midi(Path(full_path), song_track, song_album)
                 elif os.path.isfile(song_path):
-                    self.songbook.add_update_from_midi(song_path, song_album)
+                    self.songbook.add_update_from_midi(Path(song_path), song_track, song_album)
             else:
                 print(f"Cannot find specificed midi file or folder {song_path}! Exiting.")
                 exit()

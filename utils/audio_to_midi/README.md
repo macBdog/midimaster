@@ -4,64 +4,84 @@ Convert a monophonic (or melody-dominant) audio file into a MIDI file that MidiM
 
 ## Status
 
-**Scaffold only** — not implemented yet. Folder layout and interfaces are placeholders for the first real implementation.
+**Implemented** — monophonic melody extraction with librosa F0, automatic tempo detection/pinning, clef filtering, and 32nd-note quantization.
 
-## Goals
+## Install (utility only)
 
-| Input | Output |
-|-------|--------|
-| `.wav`, `.mp3`, `.flac`, `.ogg`, … | Standard MIDI (`.mid`) with the main melody |
-
-- Pitch range limited to **treble clef**, **bass clef**, or **both** (user choice)
-- Rhythm quantized to musical grid (suitable for MidiMaster’s 32nd-note timing)
-- Single melodic line preferred (humming, solo instrument, isolated vocal)
-
-## Planned CLI
+These deps are **not** required by the MidiMaster game. Install them only for this tool:
 
 ```bash
-# Not implemented yet
-python -m audio_to_midi convert song.mp3 -o song.mid --clef treble
-python -m audio_to_midi convert song.wav -o song.mid --clef both --bpm 120
+pip install -r utils/audio_to_midi/requirements.txt
 ```
 
-## Planned pipeline
+Contents: `librosa`, `soundfile`, plus `numpy` / `mido` if missing.
 
-1. **Load audio** — `librosa` / `soundfile` (resample to analysis rate)
-2. **Melody estimate** — pYIN / CREPE / librosa `piptrack` or similar F0 tracker
-3. **Clef filter** — drop or clamp pitches outside:
-   - Treble-focused: ~MIDI 60–84 (C4–C6) or staff range MidiMaster draws
-   - Bass-focused: ~MIDI 36–60
-   - Both: MidiMaster playable range (see `Staff.OriginNote` / `NumNotes`)
-4. **Note segmentation** — voiced frames → note on/off with minimum duration
-5. **Quantize** — map onsets/durations to MidiMaster’s 32nd-note units
-6. **Write MIDI** — `mido` or `pretty_midi`, channel 0 melody, tempo meta
-7. **Validate** — load with midimaster’s song path / smoke-play
+## CLI
 
-## Layout (this package)
+From the **midimaster repo root**:
+
+```bash
+# Windows PowerShell
+$env:PYTHONPATH = "utils"
+
+python -m audio_to_midi convert song.wav -o song.mid --clef treble
+python -m audio_to_midi convert song.mp3 -o song.mid --clef both
+```
+
+Tempo is **auto-detected and pinned** from the audio (half/double-time corrected, rounded).  
+Optional `--bpm` only if you need a manual override.
+
+### Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `input` | required | Audio path |
+| `-o` / `--output` | required | Output `.mid` path |
+| `--clef` | `treble` | `treble` (E3–F5), `bass` (E2–C4), or `both` (full staff) |
+| `--bpm` | auto | Optional tempo override (still pinned/normalized) |
+| `--sr` | 22050 | Analysis sample rate |
+
+## Python API
+
+```python
+from audio_to_midi import convert
+
+result = convert("melody.wav", "melody.mid", clef="treble")
+print(result.path, result.bpm, result.note_count)
+```
+
+## Pipeline
+
+1. **Load audio** — librosa (+ soundfile backends)
+2. **Tempo** — onset strength + beat track, half/double correction, pin to 0.1 BPM
+3. **Melody F0** — `librosa.pyin`
+4. **Segment** — stable voiced runs → note on/off
+5. **Clef filter** — clamp into selected range
+6. **Quantize** — thirty-second-note grid (MidiMaster time)
+7. **Write MIDI** — single melody track via `mido`
+
+## Layout
 
 ```
 audio_to_midi/
-  README.md           # this file
-  __init__.py
-  __main__.py         # entry: python -m audio_to_midi
-  cli.py              # argparse stub
-  convert.py          # convert() stub
-  pitch_track.py      # F0 estimation (TODO)
-  quantize.py         # grid / clef filtering (TODO)
-  midi_write.py       # mido export (TODO)
-  samples/            # optional short test clips (not committed large binaries)
-  tests/              # unit tests (TODO)
+  requirements.txt  # librosa + soundfile (this util only)
+  README.md
+  convert.py
+  pitch_track.py
+  quantize.py
+  midi_write.py
+  cli.py
+  tests/
 ```
 
-## MidiMaster integration notes
+## MidiMaster integration
 
-- MidiMaster loads MIDI via its song / album pipeline (`music.py`, `song.py`).
-- Prefer one track, melody only, no percussion.
-- Note numbers must fall in `Staff` playable range or they are ignored at decorate time (`notes.py`).
+- Load the `.mid` via `Song.from_midi_file` / the song menu.
+- One track, melody only; prefer `--clef treble` for the current single staff.
 
-## Dependencies (when implementing)
+## Tests
 
-```
-pip install midimaster-utils[audio]
-# or: librosa soundfile mido pretty_midi
+```bash
+$env:PYTHONPATH = "utils"
+pytest utils/audio_to_midi/tests -v
 ```
