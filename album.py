@@ -2,7 +2,12 @@ from song import Song
 
 class Album():
     """Albums are groups of songs that can be unlocked."""
-    DefaultName = "Custom"
+    # All user-imported / on-disk MIDI songs live in this album.
+    CustomName = "Real & Custom Songs"
+    DefaultName = CustomName
+    # Older songbook pickles may still use these names.
+    LegacyCustomNames = ("Real and Custom Songs", "Custom")
+
     def __init__(self, name = DefaultName):
         self.name = name
         self.songs: list[Song] = []
@@ -46,6 +51,5 @@ class Album():
         return False
 
     def delete_song(self, song: Song):
-        found = self.songs.index(song)
-        if found:
-            del self.songs[found]
+        if song in self.songs:
+            self.songs.remove(song)

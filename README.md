@@ -8,6 +8,17 @@ python3 -m pip install -r requirements.txt
 python3 midimaster.py
 ```
 
+### Importing MIDI songs
+
+User MIDI always goes into the **Real & Custom Songs** album (files are copied under `music/`).
+
+* **In-game**: Songs menu → **Import MIDI** (file picker; multi-select supported)
+* **Command line**:
+```bash
+python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1
+python3 midimaster.py --song-add ./my_midis/ --song-track 1
+```
+
 ### Command line arguments:
 Example: 
 ```bash
@@ -18,8 +29,8 @@ python3 midimaster.py --song-add 'The Temptations - My Girl.mid' --song-track 1 
     2. Show FPS and mouse coords on screen
     3. Will load straight into the game screen avoiding the menu system
 
-* `--song-add` Will load a specified Midi file or folder of files into the game data
-* `--song-track` Specifies which track of the input midi file is used for player info. Default is 1 (the second track)
+* `--song-add` Load a MIDI file or folder into **Real & Custom Songs**
+* `--song-track` Player track index in the MIDI file (default `1`, the second track)
 * `--song-default` Specified which song in the data file is loaded when using debug mode
 
 ### Hotkeys:

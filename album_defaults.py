@@ -1,5 +1,4 @@
 from album import Album
-from song import Song
 from song_book import SongBook
 from pathlib import Path
 from procedural_songs import generate_venue_album, TIER_CONFIGS
@@ -16,7 +15,7 @@ def setup_songbook_albums() -> SongBook:
             songbook.albums = []
 
         if songbook.get_num_albums() == 0 and getattr(songbook, "songs"):
-            album = songbook.add_album(Album.DefaultName)
+            album = songbook.ensure_custom_album()
             for s in songbook.songs:
                 album.add_update_song(s)
             del songbook.songs
@@ -46,8 +45,11 @@ def setup_songbook_albums() -> SongBook:
                 songbook.apply_stored_score(song, venue_tier=tier, set_index=set_index)
             album.add_update_song(song)
 
-    album_name = "Real and Custom Songs"
-    songbook.add_update_from_midi(Path("music/Nursery Rhyme - MaryHadALittleLamb.mid"), 1, album_name)
+    # All on-disk / user MIDI lives under Real & Custom Songs (merges legacy names).
+    songbook.ensure_custom_album()
+    songbook.add_update_from_midi(
+        Path("music/Nursery Rhyme - MaryHadALittleLamb.mid"), 1, Album.CustomName
+    )
 
     songbook.sort()
 

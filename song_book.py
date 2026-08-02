@@ -1,11 +1,15 @@
 import os
 import pickle
 import re
+import shutil
 from pathlib import Path
 
 from song import Song
 from album import Album
 from career import Career
+
+# On-disk MIDI imports are copied here so paths stay stable across sessions.
+MUSIC_DIR = Path("music")
 
 class SongBook:
     """A song book is a persistent, versionable collection of albums stored along with game options.
@@ -234,12 +238,63 @@ class SongBook:
             existing = a
         return existing
 
-    def add_update_from_midi(self, midi_path: Path, track_id: int, album_name:str):
-        album = self.get_album_by_name(album_name)
-        if album is None:
-            album = self.add_album(album_name)
+    def ensure_custom_album(self) -> Album:
+        """Return the Real & Custom Songs album, merging any legacy custom albums."""
+        custom = self.add_album(Album.CustomName)
+        for legacy_name in Album.LegacyCustomNames:
+            if legacy_name == Album.CustomName:
+                continue
+            old = self.get_album_by_name(legacy_name)
+            if old is None:
+                continue
+            for song in list(old.songs):
+                custom.add_update_song(song)
+            self.albums.remove(old)
+        return custom
 
-        if midi_path.exists():
-            new_song = Song()
-            new_song.from_midi_file(str(midi_path), track_id)
-            album.add_update_song(new_song)
+    def add_update_from_midi(
+        self, midi_path: Path, track_id: int, album_name: str | None = None
+    ) -> Song | None:
+        """Load a MIDI file into an album. User MIDI always goes to Real & Custom Songs."""
+        midi_path = Path(midi_path)
+        if album_name is None or album_name in Album.LegacyCustomNames or album_name == Album.CustomName:
+            album = self.ensure_custom_album()
+        else:
+            album = self.get_album_by_name(album_name)
+            if album is None:
+                album = self.add_album(album_name)
+
+        if not midi_path.exists():
+            return None
+
+        new_song = Song()
+        new_song.from_midi_file(str(midi_path), track_id)
+        album.add_update_song(new_song)
+        return new_song
+
+    def import_user_midi(self, midi_path: Path, track_id: int = 1) -> Song | None:
+        """Copy a user MIDI into music/ and add/update it in Real & Custom Songs."""
+        midi_path = Path(midi_path)
+        if not midi_path.exists() or not midi_path.is_file():
+            return None
+
+        suffix = midi_path.suffix.lower()
+        if suffix not in (".mid", ".midi"):
+            return None
+
+        MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+        dest = MUSIC_DIR / midi_path.name
+        try:
+            if midi_path.resolve() != dest.resolve():
+                shutil.copy2(midi_path, dest)
+        except OSError as exc:
+            print(f"Failed to copy MIDI to {dest}: {exc}")
+            return None
+
+        # Prefer a project-relative path for portable songbook pickles
+        try:
+            store_path = dest.relative_to(Path.cwd())
+        except ValueError:
+            store_path = dest
+
+        return self.add_update_from_midi(store_path, track_id, Album.CustomName)

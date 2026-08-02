@@ -107,23 +107,65 @@ def song_reload(**kwargs):
     new_song.from_midi_file(song.path, song.player_track_id)
     album.add_update_song(new_song)
     menu.music.load(new_song)
-    menu._set_album_menu_pos()
+    menu.rebuild_album_song_widgets(album)
+    menu.refresh_song_display()
 
 def song_delete(**kwargs):
     menu=kwargs["menu"]
     album=kwargs["album"]
     song=kwargs["song"]
     widget=kwargs["widget"]
-    menu.menus[Menus.SONGS].delete_widget(widget.play)
-    if widget.score is not None:
-        menu.menus[Menus.SONGS].delete_widget(widget.score)
-    menu.menus[Menus.SONGS].delete_widget(widget.delete)
-    menu.menus[Menus.SONGS].delete_widget(widget.reload)
-    menu.menus[Menus.SONGS].delete_widget(widget.track_display)
-    menu.menus[Menus.SONGS].delete_widget(widget.track_down)
-    menu.menus[Menus.SONGS].delete_widget(widget.track_up)
+    menu._destroy_song_widget(widget)
     album.delete_song(song)
+    for album_widget in menu.song_albums:
+        if widget in album_widget.songs:
+            album_widget.songs.remove(widget)
+            break
+    from song_book import SongBook
+    SongBook.save(menu.songbook)
     menu._set_album_menu_pos()
+
+def song_import(**kwargs):
+    """Open a file dialog and import MIDI files into Real & Custom Songs."""
+    menu = kwargs["menu"]
+
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except ImportError:
+        print("tkinter is required for the MIDI import dialog.")
+        return
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        paths = filedialog.askopenfilenames(
+            title="Import MIDI songs",
+            filetypes=[
+                ("MIDI files", "*.mid *.midi"),
+                ("All files", "*.*"),
+            ],
+        )
+    finally:
+        root.destroy()
+
+    if not paths:
+        return
+
+    imported = 0
+    for path in paths:
+        if menu.songbook.import_user_midi(path, track_id=1):
+            imported += 1
+
+    if imported:
+        from song_book import SongBook
+        from album import Album
+        SongBook.save(menu.songbook)
+        custom = menu.songbook.ensure_custom_album()
+        menu.rebuild_album_song_widgets(custom)
+        menu.refresh_song_display()
+        print(f"Imported {imported} MIDI file(s) into '{Album.CustomName}'.")
 
 def song_track_up(**kwargs):
     widget=kwargs["widget"]

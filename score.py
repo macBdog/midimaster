@@ -2,10 +2,10 @@ import math
 from gamejam.animation import Animation, AnimType
 from gamejam.coord import Coord2d
 from gamejam.widget import Alignment, AlignX, AlignY
+from staff import Staff
 
 from typing import TYPE_CHECKING
 
-from staff import Staff
 if TYPE_CHECKING:
     from midimaster import MidiMaster
     from gamejam.gui import Gui

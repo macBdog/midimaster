@@ -23,11 +23,12 @@ from menu_config import MenuConfig, Dialogs
 from menu_func import (
     ALBUM_SPACING, SONG_SPACING,
     MusicMode, Menus,
-    song_play, song_reload, song_delete, song_track_up, song_track_down, song_list_scroll,
+    song_play, song_reload, song_delete, song_import, song_track_up, song_track_down, song_list_scroll,
     get_track_display_text,
     menu_quit, menu_transition,
     start_career, retire_career,
 )
+from album import Album
 from procedural_songs import get_tier_for_album, is_venue_album
 from widget_factory import WidgetFactory
 from dialog_devices import create_devices_dialog, setup_devices_dialog
@@ -230,6 +231,39 @@ class Menu():
         
         return song_widget
 
+    def _destroy_song_widget(self, song_widget: SongWidget):
+        """Remove all GUI widgets belonging to a song row."""
+        gui = self.menus[Menus.SONGS]
+        for attr in (
+            "play", "score", "delete", "reload",
+            "track_display", "track_down", "track_up",
+        ):
+            widget = getattr(song_widget, attr, None)
+            if widget is not None:
+                gui.delete_widget(widget)
+
+    def rebuild_album_song_widgets(self, album: Album):
+        """Recreate song-row widgets for an album after import/reload/delete."""
+        try:
+            album_index = self.songbook.albums.index(album)
+        except ValueError:
+            return
+
+        if album_index >= len(self.song_albums):
+            # Album was added after prepare — create a header + empty row list
+            album_name = WidgetFactory.create_text(
+                self.menus[Menus.SONGS], self.font,
+                album.name, 16, color=MenuConfig.TEXT_COLOR_NORMAL
+            )
+            self.song_albums.append(AlbumWidget(album_name, []))
+
+        album_widget = self.song_albums[album_index]
+        for song_widget in album_widget.songs:
+            self._destroy_song_widget(song_widget)
+        album_widget.songs.clear()
+
+        for song_index, song in enumerate(album.songs):
+            album_widget.songs.append(self._create_song_widget(album, song, song_index))
 
     def _set_album_menu_pos(self):
         cutoff = MenuConfig.SONG_LIST_TOP_CUTOFF
@@ -418,6 +452,16 @@ class Menu():
             "SONGS", 12,
             MenuConfig.SONGS_HEADER_POS,
             color=MenuConfig.TEXT_COLOR_BRIGHT,
+        )
+
+        # Import user MIDI into the Real & Custom Songs album
+        WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
+            Coord2d(0.55, MenuConfig.SONGS_HEADER_POS.y),
+            Coord2d(0.28, 0.08),
+            song_import, {"menu": self},
+            font=font, text="Import MIDI",
+            text_size=10,
         )
 
         # Create album and song widgets

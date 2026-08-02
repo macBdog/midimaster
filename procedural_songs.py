@@ -64,10 +64,10 @@ TIER_CONFIGS = {
     1: {
         "album_name": "Open Mic Night",
         "keys": ["C"],
-        "tempo_range": (60, 70),
+        "tempo_range": (60, 100),
         "note_lengths": [32, 16],           # whole, half notes
-        "note_range": 5,                    # 5 semitones
-        "tonic_options": [60],              # middle C only
+        "note_range": 12,                   # 12 semitones, one octave
+        "tonic_options": [48],              # middle C only
         "notes_per_song": (8, 16),
         "num_sets": 4,
         "progressions": ["pop_basic"],
