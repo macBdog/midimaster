@@ -3,6 +3,7 @@ import mido
 
 from gamejam.graphics import Graphics
 
+from backing import Backing
 from midi_devices import MidiDevices
 from notes import Notes
 from note_render import NoteRender
@@ -33,6 +34,7 @@ class Music:
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
         self.backing_program_set = False
+        self.audio_backing = Backing()
 
     def load(self, song:Song):
         """ Post-process the raw note data of the music, adding rests and decoration"""
@@ -51,14 +53,24 @@ class Music:
         self.staff.key_signature.set(song.key_signature, self.note_positions)
         self.notes.assign_notes(song.notes)
 
+        # Prefer stem kit when the song requests it and assets exist
+        if self.audio_backing.load(song):
+            # Kit may snap tempo to native 100 BPM (no stretch) — keep Music in sync
+            self.tempo_bpm = self.audio_backing.tempo_bpm
+            song.tempo_bpm = self.tempo_bpm
+
     def rewind(self):
         """Restore all the notes and backing in the music to the state just after loading."""
         self.notes.rewind()
         self.backing_index = {id: 0 for id in self.backing_index}
-        self.backing_time = {id: self.song.backing_tracks[id][0].time if self.song.backing_tracks[id] else 0.0 for id in self.backing_time}
+        self.backing_time = {
+            id: self.song.backing_tracks[id][0].time if self.song.backing_tracks[id] else 0.0
+            for id in self.backing_time
+        }
         self.last_click = -Music.ClickFreq + 0.01
         self.last_click_off = False
         self.backing_program_set = False
+        self.audio_backing.rewind()
 
     def reset(self):
         self.notes.reset()
@@ -68,10 +80,16 @@ class Music:
         self.last_click_off = False
         self.click_init = False
         self.backing_program_set = False
+        self.audio_backing.stop()
 
-    def update(self, dt: float, music_time: float, devices: MidiDevices):
-        """Play MIDI messages that are not for interactive scoring by the player."""
+    def update(self, dt: float, music_time: float, devices: MidiDevices, music_running: bool = True):
+        """Play MIDI / audio that is not for interactive scoring by the player."""
         music_time_in_ticks = (music_time / Song.SDQNotesPerBeat) * self.ticks_per_beat
+
+        if self.audio_backing.active:
+            self.audio_backing.update(music_time, music_running)
+            # Audio kit includes count-in; skip MIDI click + MIDI backing chords
+            return
 
         # Set backing track instrument before any other MIDI messages
         if self.song and not self.backing_program_set and self.song.backing_tracks:
@@ -83,7 +101,8 @@ class Music:
             if not self.click_init:
                 click_control = mido.Message("control_change", channel=Music.ClickChannel, control=1, value=Music.ClickProgram, time=0)
                 devices.output(click_control)
-            
+                self.click_init = True
+
             if self.last_click_off:
                 self.last_click_off = False
                 click_on = mido.Message("note_off", channel=Music.ClickChannel)

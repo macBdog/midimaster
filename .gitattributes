@@ -1,1 +1,6 @@
 *.pkl filter=lfs diff=lfs merge=lfs -text
+assets/backing/**/*.wav filter=lfs diff=lfs merge=lfs -text
+assets/backing/**/*.flac filter=lfs diff=lfs merge=lfs -text
+assets/backing/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+assets/backing/**/*.opus filter=lfs diff=lfs merge=lfs -text
+assets/backing/**/*.mp3 filter=lfs diff=lfs merge=lfs -text

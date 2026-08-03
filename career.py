@@ -219,6 +219,11 @@ class Career:
         Returns:
             True if set is unlocked (current or completed)
         """
+        # Free-play / pre-career: all venue sets are sampleable. Locks apply
+        # only while a career run is active.
+        if not self.active:
+            return True
+
         if not self.is_venue_unlocked(venue_tier):
             return False
 

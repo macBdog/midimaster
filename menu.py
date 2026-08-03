@@ -191,11 +191,16 @@ class Menu():
         else:
             song_widget.play.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
 
-        # XP only for career/venue sets — custom songs do not award XP
+        # XP only during an active career for venue sets; custom songs never show XP
         if venue_tier is not None:
+            score_text = (
+                self.get_song_score_text(song)
+                if self.songbook.career.active
+                else ""
+            )
             song_widget.score = WidgetFactory.create_text(
                 self.menus[Menus.SONGS], self.font,
-                self.get_song_score_text(song), 14
+                score_text, 14
             )
         else:
             song_widget.score = None
@@ -320,8 +325,8 @@ class Menu():
         career = self.songbook.career
         if not career.active:
             if career.fans == 0:
-                return "Career over — no fans left. Start again to unlock venue sets."
-            return "Play venue sets from the song list, or start a new career run."
+                return "Career over — no fans left. Sample any set, or start a new career."
+            return "Sample any venue set freely, or start a new career run."
         return career.get_status_text()
 
     def _update_career_display(self):
@@ -339,7 +344,7 @@ class Menu():
                 self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
                 self.start_career_button.set_action(retire_career, {"menu": self})
             else:
-                self.start_career_button.set_text("Start Career", text_size, text_offset)
+                self.start_career_button.set_text("New Career", text_size, text_offset)
                 self.start_career_button.set_text_colour(MenuConfig.TEXT_COLOR_NORMAL)
                 self.start_career_button.set_action(start_career, {"menu": self})
 
@@ -352,7 +357,7 @@ class Menu():
             for count, song in enumerate(album.songs):
                 song_widget = album_widget.songs[count]
 
-                # Update locked state based on career
+                # Update locked state based on career (all open when career inactive)
                 if song_widget.venue_tier is not None:
                     song_widget.locked = not self.songbook.career.is_set_unlocked(
                         song_widget.venue_tier, song_widget.set_index
@@ -362,6 +367,7 @@ class Menu():
                 # Song title sits to the right of the play icon (left-aligned pen).
                 play_text_align = Alignment(AlignX.Left, AlignY.Middle)
                 play_text_offset = Coord2d(0.08, 0.0)
+                career_active = self.songbook.career.active
                 if song_widget.locked:
                     song_widget.play.set_text("", 12, play_text_offset, play_text_align)
                     song_widget.track_display.set_text(f"[Locked]  {song.get_name()}", 11)
@@ -376,7 +382,11 @@ class Menu():
                     song_widget.track_display.set_text(get_track_display_text(song), 9)
                     song_widget.track_display.set_text_colour(MenuConfig.TEXT_COLOR_DIM)
                     if song_widget.score is not None:
-                        song_widget.score.set_text(self.get_song_score_text(song), 14)
+                        # XP/earning only during an active career run
+                        if career_active:
+                            song_widget.score.set_text(self.get_song_score_text(song), 14)
+                        else:
+                            song_widget.score.set_text("", 14)
         self._set_album_menu_pos()
         self._update_career_display()
 
@@ -439,7 +449,7 @@ class Menu():
             self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
             MenuConfig.CAREER_BUTTON_POS, MenuConfig.CAREER_BUTTON_SIZE,
             start_career, {"menu": self},
-            font=font, text="Start Career",
+            font=font, text="New Career",
             text_size=MenuConfig.CAREER_BUTTON_TEXT_SIZE,
             text_offset=MenuConfig.CAREER_BUTTON_TEXT_OFFSET,
         )
@@ -458,7 +468,7 @@ class Menu():
         WidgetFactory.create_button(
             self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
             Coord2d(0.55, MenuConfig.SONGS_HEADER_POS.y),
-            Coord2d(0.28, 0.08),
+            Coord2d(0.1876, 0.08),
             song_import, {"menu": self},
             font=font, text="Import MIDI",
             text_size=10,

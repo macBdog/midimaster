@@ -27,7 +27,7 @@ class MenuConfig:
     CAREER_STATUS_POS = Coord2d(-0.52, CAREER_STRIP_Y)
     CAREER_BUTTON_POS = Coord2d(0.62, CAREER_STRIP_Y)
     # Absolute NDC size so the button fits inside the strip height
-    CAREER_BUTTON_SIZE = Coord2d(0.216, 0.085)
+    CAREER_BUTTON_SIZE = Coord2d(0.1728, 0.085)
     CAREER_BUTTON_TEXT_SIZE = 9
     CAREER_BUTTON_TEXT_OFFSET = Coord2d()
 

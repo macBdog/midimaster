@@ -38,6 +38,9 @@ class Song:
         self.notes: list[Note] = []
         self.saved = False
         self.dirty = False
+        # Audio stem backing (career / procedural). Empty degrees → MIDI only.
+        self.use_audio_backing = False
+        self.backing_degrees: list[int] = []
 
     def get_name(self):
         return f"{self.artist} - {self.title}"

@@ -167,3 +167,7 @@ claude_history.jsonl
 
 # utils tool outputs (note_shader_test diffs / smoke renders)
 utils/output/
+
+# Ableton Live analysis sidecars
+*.asd
+

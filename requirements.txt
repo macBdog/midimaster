@@ -5,8 +5,13 @@ PyOpenGL==3.1.6
 python-rtmidi==1.5.8
 # gamejam Recommended install editable
 
+# Runtime stem backing (backing.py)
+sounddevice>=0.5
+soundfile>=0.12
+librosa>=0.10
+
 # utils/note_shader_test (golden PNG I/O; pytest already common in dev envs)
 Pillow>=10.0
 
-# utils/audio_to_midi — do NOT add librosa here; install util deps separately:
+# utils/audio_to_midi — librosa is now a game dep too; util extras still optional:
 #   pip install -r utils/audio_to_midi/requirements.txt

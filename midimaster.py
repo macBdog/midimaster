@@ -232,7 +232,7 @@ class MidiMaster(GameJam):
                 self.menu.show_dialog(menu=self.menu, type=Dialogs.GAME_OVER)
 
             # Play the backing track in sync with the player
-            self.music.update(self.dt, self.music_time, self.devices)
+            self.music.update(self.dt, self.music_time, self.devices, self.music_running)
 
             # Calculate output latency offset in 32nd note units so notes sound at the right time relative to visuals
             latency_seconds = self.songbook.output_latency_ms / 1000.0

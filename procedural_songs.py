@@ -45,7 +45,7 @@ def fit_pitch_to_range(pitch: int, lo: int, hi: int) -> int:
     return pitch
 
 
-# Chord progressions library - intervals from root with chord types
+# Chord progressions library - intervals from root with chord types (MIDI fallback)
 CHORD_PROGRESSIONS = {
     # Tiers 1-2: Simple pop triads
     "pop_basic": [(0, "major"), (5, "major"), (7, "major"), (0, "major")],  # I-IV-V-I
@@ -57,71 +57,96 @@ CHORD_PROGRESSIONS = {
     # Tiers 4-5: Jazz seventh chords
     "jazz_251": [(2, "min7"), (7, "dom7"), (0, "maj7")],                     # ii-V-I
     "jazz_turnaround": [(0, "maj7"), (9, "min7"), (2, "min7"), (7, "dom7")], # I-vi-ii-V
+    "prog_36251": [
+        (4, "minor"), (9, "minor"), (2, "min7"), (7, "dom7"), (0, "maj7")
+    ],  # iii-vi-ii-V-I
 }
 
+# Scale-degree sequences for audio stem backing (C major kit: assets/backing/c100)
+DEGREE_PROGRESSIONS = {
+    "145": [1, 4, 5, 1],
+    "251": [2, 5, 1],
+    "36251": [3, 6, 2, 5, 1],
+}
+
+# Map didactic degree names → MIDI chord progression (fallback if stems missing)
+DEGREE_TO_MIDI_PROG = {
+    "145": "pop_basic",
+    "251": "jazz_251",
+    "36251": "prog_36251",
+}
+
+# Native stem tempo; generation clamps here so runtime stretch stays ~±10%
+AUDIO_TEMPO_MIN = 90
+AUDIO_TEMPO_MAX = 110
+
 # Configuration for each difficulty tier (venue)
+# degree_progressions: didactic stem sequences (see assets/backing/STEMS.md)
 TIER_CONFIGS = {
     1: {
         "album_name": "Open Mic Night",
         "keys": ["C"],
-        "tempo_range": (60, 100),
+        "tempo_range": (100, 100),
         "note_lengths": [32, 16],           # whole, half notes
         "note_range": 12,                   # 12 semitones, one octave
         "tonic_options": [48],              # middle C only
         "notes_per_song": (8, 16),
         "num_sets": 4,
         "progressions": ["pop_basic"],
+        # 251 matches partial test kit (comp_1/2/5); 145 needs comp_4
+        "degree_progressions": ["251"],
         "use_arpeggios": False,
     },
     2: {
         "album_name": "Coffee House Circuit",
-        "keys": ["C", "G", "F"],
-        "tempo_range": (70, 85),
+        "keys": ["C"],
+        "tempo_range": (90, 110),
         "note_lengths": [16, 8],            # half, quarter notes
         "note_range": 8,                    # octave
         "tonic_options": [60, 48],          # middle C, bass C
         "notes_per_song": (16, 24),
         "num_sets": 5,
         "progressions": ["pop_basic", "pop_vi"],
+        "degree_progressions": ["251", "145"],
         "use_arpeggios": True,
     },
     3: {
         "album_name": "Club Tour",
-        "keys": ["C", "G", "D", "F", "Bb", "Am", "Em", "Dm"],
-        "tempo_range": (80, 100),
+        "keys": ["C"],
+        "tempo_range": (90, 110),
         "note_lengths": [8, 4],             # quarter, eighth notes
         "note_range": 12,                   # 12 semitones
         "tonic_options": [48, 60, 72],
         "notes_per_song": (24, 40),
         "num_sets": 5,
-        "progressions": ["pop_basic", "pop_vi", "minor_classic"],
+        "progressions": ["jazz_251"],
+        "degree_progressions": ["251", "36251"],
         "use_arpeggios": True,
     },
     4: {
         "album_name": "Festival Stage",
-        "keys": ["C", "G", "D", "A", "E", "B", "F", "Bb", "Eb", "Ab",
-                 "Am", "Em", "Bm", "Dm", "Gm", "Cm"],
-        "tempo_range": (95, 120),
+        "keys": ["C"],
+        "tempo_range": (95, 110),
         "note_lengths": [8, 4, 2],          # quarter, eighth, 16th notes
         "note_range": 16,                   # wide range
         "tonic_options": [36, 48, 60, 72],
         "notes_per_song": (40, 64),
         "num_sets": 5,
-        "progressions": ["pop_vi", "minor_classic", "jazz_251"],
+        "progressions": ["jazz_251", "prog_36251"],
+        "degree_progressions": ["251", "36251"],
         "use_arpeggios": True,
     },
     5: {
         "album_name": "World Tour",
-        "keys": ["C", "G", "D", "A", "E", "B", "F#", "C#",
-                 "F", "Bb", "Eb", "Ab", "Db", "Gb",
-                 "Am", "Em", "Bm", "F#m", "C#m", "Dm", "Gm", "Cm", "Fm"],
-        "tempo_range": (110, 140),
+        "keys": ["C"],
+        "tempo_range": (100, 110),
         "note_lengths": [4, 2, 1],          # eighth, 16th, 32nd notes
         "note_range": 24,                   # 2+ octaves
         "tonic_options": [36, 48, 60, 72, 84],
         "notes_per_song": (64, 96),
         "num_sets": 6,
-        "progressions": ["jazz_251", "jazz_turnaround"],
+        "progressions": ["jazz_251", "prog_36251"],
+        "degree_progressions": ["145", "251", "36251"],
         "use_arpeggios": True,
     },
 }
@@ -317,9 +342,22 @@ def generate_procedural_song(
     tonic = rng.choice(config["tonic_options"]).item()
     generate_melodic_content(song, config, tonic, config["num_notes"], clef_mode=clef_mode)
 
-    # Add backing track
-    progression = rng.choice(config["progressions"]).item()
-    add_backing_progression(song, progression, start_time=32)
+    # Didactic degree progression for stem backing (C kit); MIDI chords as fallback
+    degree_names = config.get("degree_progressions")
+    if degree_names:
+        deg_name = rng.choice(degree_names).item()
+        song.backing_degrees = list(DEGREE_PROGRESSIONS[deg_name])
+        song.use_audio_backing = song.key_signature == "C"
+        if song.use_audio_backing:
+            # Stem kit is authored at 100 BPM; keep generation on native for clean tests
+            # (stretch path remains available later if tempo is deliberately moved off 100)
+            from backing import NATIVE_BPM
+            song.tempo_bpm = int(NATIVE_BPM)
+        midi_prog = DEGREE_TO_MIDI_PROG.get(deg_name, "pop_basic")
+        add_backing_progression(song, midi_prog, start_time=32)
+    else:
+        progression = rng.choice(config["progressions"]).item()
+        add_backing_progression(song, progression, start_time=32)
 
     return song
 
