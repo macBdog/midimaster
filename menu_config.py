@@ -37,6 +37,10 @@ class MenuConfig:
     SONG_LIST_TOP_CUTOFF = 0.34
     SONG_LIST_START_Y = 0.22
 
+    # Import MIDI sits on the Real & Custom Songs album header and scrolls with it
+    IMPORT_MIDI_BUTTON_SIZE = Coord2d(0.1876, 0.08)
+    IMPORT_MIDI_BUTTON_X = 0.55
+
     # Song scrollbar: equal vertical margin under career strip and above page bottom
     PAGE_BOTTOM = -1.0
     CAREER_STRIP_BOTTOM = CAREER_STRIP_Y - CAREER_STRIP_SIZE.y * 0.5

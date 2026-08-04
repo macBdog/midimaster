@@ -53,6 +53,7 @@ class SongWidget:
 class AlbumWidget:
     name: Widget
     songs: List[SongWidget]
+    import_button: Widget | None = None
 
 
 class Menu():
@@ -247,6 +248,28 @@ class Menu():
             if widget is not None:
                 gui.delete_widget(widget)
 
+    def _create_import_midi_button(self) -> Widget:
+        """Import control for Real & Custom Songs; position set while scrolling."""
+        return WidgetFactory.create_button(
+            self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
+            Coord2d(), MenuConfig.IMPORT_MIDI_BUTTON_SIZE,
+            song_import, {"menu": self},
+            font=self.font, text="Import MIDI",
+            text_size=10,
+        )
+
+    def _create_album_widget(self, album: Album) -> AlbumWidget:
+        album_name = WidgetFactory.create_text(
+            self.menus[Menus.SONGS], self.font,
+            album.name, 16, color=MenuConfig.TEXT_COLOR_NORMAL
+        )
+        import_button = (
+            self._create_import_midi_button()
+            if album.name == Album.CustomName
+            else None
+        )
+        return AlbumWidget(album_name, [], import_button)
+
     def rebuild_album_song_widgets(self, album: Album):
         """Recreate song-row widgets for an album after import/reload/delete."""
         try:
@@ -256,11 +279,7 @@ class Menu():
 
         if album_index >= len(self.song_albums):
             # Album was added after prepare — create a header + empty row list
-            album_name = WidgetFactory.create_text(
-                self.menus[Menus.SONGS], self.font,
-                album.name, 16, color=MenuConfig.TEXT_COLOR_NORMAL
-            )
-            self.song_albums.append(AlbumWidget(album_name, []))
+            self.song_albums.append(self._create_album_widget(album))
 
         album_widget = self.song_albums[album_index]
         for song_widget in album_widget.songs:
@@ -276,7 +295,13 @@ class Menu():
         for album_widget in self.song_albums:
             item_pos.x = -0.5
             album_widget.name.set_offset(Coord2d(item_pos.x, item_pos.y))
-            album_widget.name.set_disabled(item_pos.y < -1.0 or item_pos.y > cutoff)
+            header_offscreen = item_pos.y < -1.0 or item_pos.y > cutoff
+            album_widget.name.set_disabled(header_offscreen)
+            if album_widget.import_button is not None:
+                album_widget.import_button.set_offset(
+                    Coord2d(MenuConfig.IMPORT_MIDI_BUTTON_X, item_pos.y)
+                )
+                album_widget.import_button.set_disabled(header_offscreen)
             item_pos.y -= SONG_SPACING * 0.5
             item_pos.x = -0.3
 
@@ -464,26 +489,11 @@ class Menu():
             color=MenuConfig.TEXT_COLOR_BRIGHT,
         )
 
-        # Import user MIDI into the Real & Custom Songs album
-        WidgetFactory.create_button(
-            self.menus[Menus.SONGS], self.textures, "gui/panel.tga",
-            Coord2d(0.55, MenuConfig.SONGS_HEADER_POS.y),
-            Coord2d(0.1876, 0.08),
-            song_import, {"menu": self},
-            font=font, text="Import MIDI",
-            text_size=10,
-        )
-
-        # Create album and song widgets
+        # Create album and song widgets (Import MIDI lives on Real & Custom Songs)
         num_albums = self.songbook.get_num_albums()
         for i in range(num_albums):
             album = self.songbook.albums[i]
-
-            album_name = WidgetFactory.create_text(
-                self.menus[Menus.SONGS], self.font,
-                album.name, 16, color=MenuConfig.TEXT_COLOR_NORMAL
-            )
-            album_widget = AlbumWidget(album_name, [])
+            album_widget = self._create_album_widget(album)
             self.song_albums.append(album_widget)
 
             for song_index, song in enumerate(album.songs):
