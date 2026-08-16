@@ -8,6 +8,13 @@ and melodic patterns.
 from enum import Enum, auto
 
 import numpy.random as rng
+from backing import (
+    DEFAULT_ASSETS,
+    NATIVE_BPM,
+    choose_comp_instrument,
+    discover_comp_instruments,
+    harmonic_stems_present,
+)
 from song import Song
 
 
@@ -50,6 +57,9 @@ CHORD_PROGRESSIONS = {
     # Tiers 1-2: Simple pop triads
     "pop_basic": [(0, "major"), (5, "major"), (7, "major"), (0, "major")],  # I-IV-V-I
     "pop_vi": [(0, "major"), (5, "major"), (9, "minor"), (7, "major")],     # I-IV-vi-V
+    "pop_axis": [(0, "major"), (7, "major"), (9, "minor"), (5, "major")],   # I-V-vi-IV
+    "pop_50s": [(0, "major"), (9, "minor"), (5, "major"), (7, "major")],    # I-vi-IV-V
+    "pop_minor_axis": [(9, "minor"), (5, "major"), (0, "major"), (7, "major")],  # vi-IV-I-V
 
     # Tier 3: Minor keys introduced
     "minor_classic": [(0, "minor"), (5, "minor"), (7, "major"), (0, "minor")],  # i-iv-V-i
@@ -62,16 +72,32 @@ CHORD_PROGRESSIONS = {
     ],  # iii-vi-ii-V-I
 }
 
-# Scale-degree sequences for audio stem backing (C major kit: assets/backing/c100)
+# Scale-degree sequences for audio stem backing (assets/backing/)
 DEGREE_PROGRESSIONS = {
     "145": [1, 4, 5, 1],
+    "1564": [1, 5, 6, 4],
+    "1645": [1, 6, 4, 5],
+    "6415": [6, 4, 1, 5],
     "251": [2, 5, 1],
     "36251": [3, 6, 2, 5, 1],
+}
+
+# Display + preferred comp for career set titles (ASCII for the game font)
+PROGRESSION_META = {
+    "145": {"roman": "I-IV-V-I", "style": "Classic", "comp": "guitar"},
+    "1564": {"roman": "I-V-vi-IV", "style": "Pop", "comp": "guitar"},
+    "1645": {"roman": "I-vi-IV-V", "style": "Doo-wop", "comp": "guitar"},
+    "6415": {"roman": "vi-IV-I-V", "style": "Minor pop", "comp": "ep"},
+    "251": {"roman": "ii-V-I", "style": "Jazz", "comp": "ep"},
+    "36251": {"roman": "iii-vi-ii-V-I", "style": "Turnaround", "comp": "ep"},
 }
 
 # Map didactic degree names → MIDI chord progression (fallback if stems missing)
 DEGREE_TO_MIDI_PROG = {
     "145": "pop_basic",
+    "1564": "pop_axis",
+    "1645": "pop_50s",
+    "6415": "pop_minor_axis",
     "251": "jazz_251",
     "36251": "prog_36251",
 }
@@ -93,8 +119,7 @@ TIER_CONFIGS = {
         "notes_per_song": (8, 16),
         "num_sets": 4,
         "progressions": ["pop_basic"],
-        # 251 matches partial test kit (comp_1/2/5); 145 needs comp_4
-        "degree_progressions": ["251"],
+        "degree_progressions": ["145", "1564", "1645", "6415"],
         "use_arpeggios": False,
     },
     2: {
@@ -107,7 +132,7 @@ TIER_CONFIGS = {
         "notes_per_song": (16, 24),
         "num_sets": 5,
         "progressions": ["pop_basic", "pop_vi"],
-        "degree_progressions": ["251", "145"],
+        "degree_progressions": ["145", "1564", "1645", "251", "6415"],
         "use_arpeggios": True,
     },
     3: {
@@ -120,7 +145,7 @@ TIER_CONFIGS = {
         "notes_per_song": (24, 40),
         "num_sets": 5,
         "progressions": ["jazz_251"],
-        "degree_progressions": ["251", "36251"],
+        "degree_progressions": ["251", "36251", "1564", "1645", "6415"],
         "use_arpeggios": True,
     },
     4: {
@@ -133,7 +158,7 @@ TIER_CONFIGS = {
         "notes_per_song": (40, 64),
         "num_sets": 5,
         "progressions": ["jazz_251", "prog_36251"],
-        "degree_progressions": ["251", "36251"],
+        "degree_progressions": ["251", "36251", "145", "1564", "6415"],
         "use_arpeggios": True,
     },
     5: {
@@ -146,7 +171,7 @@ TIER_CONFIGS = {
         "notes_per_song": (64, 96),
         "num_sets": 6,
         "progressions": ["jazz_251", "prog_36251"],
-        "degree_progressions": ["145", "251", "36251"],
+        "degree_progressions": ["145", "1564", "1645", "251", "36251", "6415"],
         "use_arpeggios": True,
     },
 }
@@ -176,6 +201,24 @@ def get_set_config(tier_config: dict, set_num: int, total_sets: int) -> dict:
         config["note_lengths"] = tier_config["note_lengths"][1:]
 
     return config
+
+def progression_for_set(tier_config: dict, set_num: int) -> str:
+    """Deterministic degree-progression id for a set (cycles if the list is short)."""
+    progs = tier_config.get("degree_progressions") or []
+    if not progs:
+        return "145"
+    return progs[set_num % len(progs)]
+
+
+def format_set_title(set_num: int, degree_name: str) -> str:
+    """Career song title. Keep 'Set N' prefix — song_book.score_key parses it."""
+    meta = PROGRESSION_META.get(degree_name, {})
+    style = meta.get("style", degree_name)
+    roman = meta.get("roman")
+    if roman:
+        return f"Set {set_num + 1}: {style} {roman}"
+    return f"Set {set_num + 1}: {style}"
+
 
 def get_root_midi_for_key(key: str) -> int:
     """Get the MIDI note number for a key's root in the bass register.
@@ -319,6 +362,7 @@ def generate_procedural_song(
     title: str,
     artist: str,
     clef_mode: ClefMode | None = DEFAULT_CLEF_MODE,
+    degree_name: str | None = None,
 ) -> Song:
     """Generate a single procedural song from configuration.
     Args:
@@ -326,6 +370,7 @@ def generate_procedural_song(
         title: Song title
         artist: Artist/album name
         clef_mode: Clef for melodic pitch limits (default treble)
+        degree_name: Stem progression id; if omitted, pick from config list
     Returns:
         Generated Song object
     """
@@ -342,18 +387,19 @@ def generate_procedural_song(
     tonic = rng.choice(config["tonic_options"]).item()
     generate_melodic_content(song, config, tonic, config["num_notes"], clef_mode=clef_mode)
 
-    # Didactic degree progression for stem backing (C kit); MIDI chords as fallback
+    # Degree progression for stem backing; MIDI chords as fallback
     degree_names = config.get("degree_progressions")
-    if degree_names:
-        deg_name = rng.choice(degree_names).item()
-        song.backing_degrees = list(DEGREE_PROGRESSIONS[deg_name])
-        song.use_audio_backing = song.key_signature == "C"
+    if degree_name or degree_names:
+        if degree_name is None:
+            degree_name = rng.choice(degree_names).item()
+        song.backing_degrees = list(DEGREE_PROGRESSIONS[degree_name])
+        song.use_audio_backing = harmonic_stems_present(DEFAULT_ASSETS, song.key_signature)
         if song.use_audio_backing:
-            # Stem kit is authored at 100 BPM; keep generation on native for clean tests
-            # (stretch path remains available later if tempo is deliberately moved off 100)
-            from backing import NATIVE_BPM
             song.tempo_bpm = int(NATIVE_BPM)
-        midi_prog = DEGREE_TO_MIDI_PROG.get(deg_name, "pop_basic")
+            preferred = PROGRESSION_META.get(degree_name, {}).get("comp")
+            instruments = discover_comp_instruments(DEFAULT_ASSETS, song.key_signature)
+            song.backing_comp = choose_comp_instrument(instruments, preferred)
+        midi_prog = DEGREE_TO_MIDI_PROG.get(degree_name, "pop_basic")
         add_backing_progression(song, midi_prog, start_time=32)
     else:
         progression = rng.choice(config["progressions"]).item()
@@ -375,13 +421,12 @@ def generate_venue_album(tier: int) -> tuple[str, list[Song]]:
 
     for set_num in range(num_sets):
         set_config = get_set_config(tier_config, set_num, num_sets)
-
-        # Generate title with key (will be set after song is created)
-        song = generate_procedural_song(set_config, f"Set {set_num + 1}", album_name)
-
-        # Update title to include key
-        song.title = f"Set {set_num + 1} in {song.key_signature}"
-
+        deg_name = progression_for_set(tier_config, set_num)
+        title = format_set_title(set_num, deg_name)
+        song = generate_procedural_song(
+            set_config, title, album_name, degree_name=deg_name
+        )
+        song.title = title
         songs.append(song)
 
     return album_name, songs
@@ -421,7 +466,11 @@ def regenerate_set(tier: int, set_num: int) -> "Song":
     num_sets = tier_config["num_sets"]
 
     set_config = get_set_config(tier_config, set_num, num_sets)
-    song = generate_procedural_song(set_config, f"Set {set_num + 1}", album_name)
-    song.title = f"Set {set_num + 1} in {song.key_signature}"
+    deg_name = progression_for_set(tier_config, set_num)
+    title = format_set_title(set_num, deg_name)
+    song = generate_procedural_song(
+        set_config, title, album_name, degree_name=deg_name
+    )
+    song.title = title
 
     return song

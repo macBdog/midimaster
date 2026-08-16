@@ -7,8 +7,10 @@ from gamejam.font import Font
 
 from menu_config import MenuConfig, Dialogs
 from widget_factory import WidgetFactory
+from backing import comp_choice_label
 from menu_func import (
     toggle_show_note_names, toggle_click,
+    set_backing_comp,
     adjust_output_latency,
     options_latency_test_start, options_latency_test_stop
 )
@@ -63,7 +65,28 @@ def setup_options_dialog(dialog: Gui, font: Font, textures: TextureManager, wind
         toggle_click, {"menu": menu, "widget": None},
         state=music.click,
     )
-    dialog_y -= 0.25
+    dialog_y -= MenuConfig.DIALOG_LINE_HEIGHT
+
+    WidgetFactory.create_text(
+        dialog, font,
+        "Backing comp", 10, Coord2d(-0.3, dialog_y),
+        color=MenuConfig.TEXT_COLOR_BRIGHT
+    )
+    options_comp_widget = WidgetFactory.create_text(
+        dialog, font,
+        comp_choice_label(getattr(songbook, "backing_comp", "auto")),
+        9, Coord2d(0.08, dialog_y),
+        color=MenuConfig.TEXT_COLOR_BRIGHT
+    )
+    WidgetFactory.create_button_pair(
+        dialog, textures, window_ratio,
+        "gui/btnback.png", "gui/btnnext.png",
+        Coord2d(0.18, dialog_y + MenuConfig.BUTTON_PAIR_OFFSET_Y), MenuConfig.SMALL_BUTTON_SIZE,
+        set_backing_comp, {"menu": menu, "dir": -1, "widget": options_comp_widget},
+        set_backing_comp, {"menu": menu, "dir": 1, "widget": options_comp_widget},
+        width=0.12, height=0.0
+    )
+    dialog_y -= 0.16
 
     # Output latency - centered above the value display
     WidgetFactory.create_text(

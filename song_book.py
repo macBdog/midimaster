@@ -77,6 +77,7 @@ class SongBook:
         if not hasattr(self, "show_note_names"): self.show_note_names = False
         if not hasattr(self, "output_latency_ms"): self.output_latency_ms = 0
         if not hasattr(self, "player_instrument"): self.player_instrument = 0  # Default to Acoustic Grand Piano
+        if not hasattr(self, "backing_comp"): self.backing_comp = "auto"
         if not hasattr(self, "career"): self.career = Career()
 
     @staticmethod

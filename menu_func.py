@@ -454,6 +454,26 @@ def toggle_show_note_names(**kwargs):
     widget_on.set_disabled(not menu.songbook.show_note_names)
     widget_off.set_disabled(menu.songbook.show_note_names)
 
+def set_backing_comp(**kwargs):
+    """Cycle the audio backing comp instrument (persisted on the songbook)."""
+    from backing import COMP_CHOICES, comp_choice_label
+    from song_book import SongBook
+
+    menu = kwargs["menu"]
+    direction = kwargs["dir"]
+    current = getattr(menu.songbook, "backing_comp", "auto") or "auto"
+    try:
+        idx = COMP_CHOICES.index(current)
+    except ValueError:
+        idx = 0
+    new_choice = COMP_CHOICES[(idx + direction) % len(COMP_CHOICES)]
+    menu.songbook.backing_comp = new_choice
+    menu.music.audio_backing.comp_choice = new_choice
+    if "widget" in kwargs:
+        kwargs["widget"].set_text(comp_choice_label(new_choice), 9)
+    SongBook.save(menu.songbook)
+
+
 def toggle_click(**kwargs):
     menu = kwargs["menu"]
     menu.music.click = not  menu.music.click

@@ -1,7 +1,14 @@
 """Runtime audio backing: 1-bar stem loops mixed and synced to transport.
 
 Expects stems under assets/backing/ (see assets/backing/STEMS.md).
-Minimal kit: count_in.wav + drums.wav. Bass/comp per degree are optional.
+Keyless: count_in.flac, drums.flac. Per-key folder {key}/:
+
+    {key}/bass_{degree}.flac
+    {key}/comp_{instrument}_{degree}.flac
+
+Other keys may symlink to an existing loop when the chord (root and
+quality) already exists. .wav is accepted as a fallback.
+
 
 Transport: free-running sample playhead in the audio callback (no per-frame
 re-seek from game time — that causes crackle). Game sets playhead only on
@@ -31,10 +38,108 @@ STRETCH_EPSILON_BPM = 0.5
 # Hard-seek if game and audio playheads diverge by more than this (seconds)
 SEEK_SNAP_SECONDS = 0.25
 BAR_32NDS = 32  # one 4/4 bar in Song.SDQNotesPerBeat units
-_C100 = Path("assets") / "backing" / "c100"
-_FLAT = Path("assets") / "backing"
-DEFAULT_ASSETS = _C100 if (_C100 / "drums.wav").is_file() else _FLAT
+DEFAULT_ASSETS = Path("assets") / "backing"
+AUDIO_EXTS = (".flac", ".wav")  # prefer lossless
 DEGREES = (1, 2, 3, 4, 5, 6)
+COMP_PREFERENCE = ("guitar", "ep")
+COMP_CHOICES = ("auto", "ep", "guitar", "off")
+COMP_CHOICE_LABELS = {
+    "auto": "Auto",
+    "ep": "Electric Piano",
+    "guitar": "Guitar",
+    "off": "Off",
+}
+
+
+def key_token(key_signature: str | None) -> str:
+    """Filename token for a key signature ('C' → 'c', 'F#' → 'fs')."""
+    if not key_signature:
+        return "c"
+    return key_signature.strip().replace("#", "s").replace("♯", "s").lower()
+
+
+def resolve_audio(root: Path, stem: str) -> Path | None:
+    """Resolve a stem name (with or without extension) to an existing audio file."""
+    name = Path(stem).stem
+    for ext in AUDIO_EXTS:
+        path = root / f"{name}{ext}"
+        if path.is_file():
+            return path
+    return None
+
+
+def key_dir(root: Path, key: str) -> Path:
+    return Path(root) / key_token(key)
+
+
+def bass_filename(degree: int) -> str:
+    return f"bass_{int(degree)}.flac"
+
+
+def comp_filename(instrument: str, degree: int) -> str:
+    return f"comp_{instrument}_{int(degree)}.flac"
+
+
+def parse_comp_stem(name: str) -> tuple[str, int] | None:
+    """Parse 'comp_{instrument}_{degree}.flac' → (instrument, degree)."""
+    parts = Path(name).stem.split("_")
+    if len(parts) < 3 or parts[0] != "comp" or not parts[-1].isdigit():
+        return None
+    degree = int(parts[-1])
+    if degree not in DEGREES:
+        return None
+    instrument = "_".join(parts[1:-1])
+    if not instrument:
+        return None
+    return instrument, degree
+
+
+def discover_comp_instruments(root: Path, key: str) -> list[str]:
+    folder = key_dir(root, key)
+    if not folder.is_dir():
+        return []
+    found: set[str] = set()
+    for ext in AUDIO_EXTS:
+        for path in folder.glob(f"comp_*{ext}"):
+            parsed = parse_comp_stem(path.name)
+            if parsed:
+                found.add(parsed[0])
+    return sorted(found)
+
+
+def choose_comp_instrument(available: list[str], preferred: str | None = None) -> str | None:
+    if not available:
+        return None
+    if preferred and preferred in available:
+        return preferred
+    for name in COMP_PREFERENCE:
+        if name in available:
+            return name
+    return available[0]
+
+
+def resolve_comp_choice(
+    choice: str | None,
+    available: list[str],
+    preferred: str | None = None,
+) -> str | None:
+    """Map songbook choice to an instrument slug, or None for drums+bass only."""
+    choice = (choice or "auto").strip().lower()
+    if choice == "off":
+        return None
+    if choice != "auto" and choice in available:
+        return choice
+    return choose_comp_instrument(available, preferred)
+
+
+def comp_choice_label(choice: str | None) -> str:
+    key = (choice or "auto").strip().lower()
+    return COMP_CHOICE_LABELS.get(key, COMP_CHOICE_LABELS["auto"])
+
+
+def harmonic_stems_present(root: Path, key: str) -> bool:
+    folder = key_dir(root, key)
+    return any(resolve_audio(folder, f"bass_{d}") is not None for d in DEGREES)
 
 
 def music_time_to_seconds(music_time: float, tempo_bpm: float) -> float:
@@ -112,6 +217,7 @@ class Backing:
         self._playhead = 0  # samples from song start; advanced only in callback
         self._progression: list[int] = [1, 4, 5, 1]
         self._gain = 0.4
+        self.comp_choice = "auto"
 
         self._count_in: np.ndarray | None = None
         self._drums: np.ndarray | None = None
@@ -131,7 +237,7 @@ class Backing:
         if sf is None or sd is None:
             return False
         root = self.assets_root
-        return (root / "count_in.wav").is_file() and (root / "drums.wav").is_file()
+        return resolve_audio(root, "count_in") is not None and resolve_audio(root, "drums") is not None
 
     def load(self, song: Song) -> bool:
         """Load stems. No stretch when song tempo is native (100 BPM)."""
@@ -160,8 +266,13 @@ class Backing:
             stretch_rate = tempo / NATIVE_BPM
 
         try:
-            count_in, sr = self._load_wav(self.assets_root / "count_in.wav")
-            drums, sr_d = self._load_wav(self.assets_root / "drums.wav")
+            count_in_path = resolve_audio(self.assets_root, "count_in")
+            drums_path = resolve_audio(self.assets_root, "drums")
+            if count_in_path is None or drums_path is None:
+                print(f"[backing] Minimal kit missing at {self.assets_root}; MIDI fallback.")
+                return False
+            count_in, sr = self._load_wav(count_in_path)
+            drums, sr_d = self._load_wav(drums_path)
             if sr_d != sr:
                 print("[backing] Sample rate mismatch (count_in vs drums); MIDI fallback.")
                 return False
@@ -172,29 +283,42 @@ class Backing:
             loaded_comp: list[int] = []
             loaded_bass: list[int] = []
 
+            key = key_token(getattr(song, "key_signature", "C"))
+            available_comp = discover_comp_instruments(self.assets_root, key)
+            preferred_comp = getattr(song, "backing_comp", None)
+            comp_inst = resolve_comp_choice(self.comp_choice, available_comp, preferred_comp)
+            if self.comp_choice not in (None, "", "auto", "off") and self.comp_choice not in available_comp:
+                print(
+                    f"[backing] Comp '{self.comp_choice}' not found for key={key}; "
+                    f"using {comp_inst or 'none'}"
+                )
+
+            keyed = key_dir(self.assets_root, key)
             for d in DEGREES:
-                bass_path = self.assets_root / f"bass_{d}.wav"
-                comp_path = self.assets_root / f"comp_{d}.wav"
-                if bass_path.is_file():
+                bass_path = resolve_audio(keyed, bass_filename(d))
+                if bass_path is not None:
                     b, sr_b = self._load_wav(bass_path)
                     if sr_b != sr:
-                        print(f"[backing] Skip bass_{d}: sample rate {sr_b} != {sr}")
+                        print(f"[backing] Skip {bass_path.name}: sample rate {sr_b} != {sr}")
                     else:
                         if abs(b.shape[0] - ref_len) > max(1, int(ref_len * 0.02)):
                             print(
-                                f"[backing] Warn bass_{d}: {b.shape[0] / sr:.3f}s "
+                                f"[backing] Warn {bass_path.name}: {b.shape[0] / sr:.3f}s "
                                 f"vs drums {ref_len / sr:.3f}s (loop length mismatch)"
                             )
                         bass[d] = b
                         loaded_bass.append(d)
-                if comp_path.is_file():
+                if comp_inst:
+                    comp_path = resolve_audio(keyed, Path(comp_filename(comp_inst, d)).stem)
+                    if comp_path is None:
+                        continue
                     c, sr_c = self._load_wav(comp_path)
                     if sr_c != sr:
-                        print(f"[backing] Skip comp_{d}: sample rate {sr_c} != {sr}")
+                        print(f"[backing] Skip {comp_path.name}: sample rate {sr_c} != {sr}")
                     else:
                         if abs(c.shape[0] - ref_len) > max(1, int(ref_len * 0.02)):
                             print(
-                                f"[backing] Warn comp_{d}: {c.shape[0] / sr:.3f}s "
+                                f"[backing] Warn {comp_path.name}: {c.shape[0] / sr:.3f}s "
                                 f"vs drums {ref_len / sr:.3f}s (loop length mismatch)"
                             )
                         comp[d] = c
@@ -220,7 +344,8 @@ class Backing:
         prog = [int(x) for x in song.backing_degrees]
         missing = sorted({d for d in prog if d not in comp and d not in bass})
         print(
-            f"[backing] Loaded kit from {self.assets_root} @ {tempo:.0f} BPM "
+            f"[backing] Loaded kit from {self.assets_root} key={key} "
+            f"comp={comp_inst or '—'} @ {tempo:.0f} BPM "
             f"sr={sr} (comp {loaded_comp or '—'}, bass {loaded_bass or '—'})"
         )
         if missing:
