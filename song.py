@@ -41,6 +41,7 @@ class Song:
         # Audio stem backing (career / procedural). Empty degrees → MIDI only.
         self.use_audio_backing = False
         self.backing_degrees: list[int] = []
+        self.backing_comp: str | None = None  # "guitar", "ep", …; None → auto
 
     def get_name(self):
         return f"{self.artist} - {self.title}"

@@ -137,6 +137,7 @@ class MidiMaster(GameJam):
         self.staff.prepare(self.menu.get_menu(Menus.GAME), self.textures)
         self.note_render = NoteRender(self.graphics, self.staff, self.songbook)
         self.music = Music(self.graphics, self.note_render, self.staff)
+        self.music.audio_backing.comp_choice = getattr(self.songbook, "backing_comp", "auto")
         self.menu.prepare(self.font_game, self.music, self.songbook)
 
         if GameSettings.DEV_MODE:
