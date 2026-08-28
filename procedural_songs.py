@@ -238,13 +238,13 @@ def rhythm_profile(progress: float) -> tuple[list[int], int]:
     if progress < 0.12:
         return [32], 32
     if progress < 0.28:
-        return [32, 16], 32
+        return [16], 16
     if progress < 0.44:
         return [16, 8], 16
     if progress < 0.60:
-        return [16, 8], 16
-    if progress < 0.76:
         return [8, 4], 16
+    if progress < 0.76:
+        return [8, 4], 8
     if progress < 0.90:
         return [8, 4, 2], 8
     return [4, 2], 8

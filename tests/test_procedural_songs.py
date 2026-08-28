@@ -9,6 +9,7 @@ from procedural_songs import (
     PITCH_END,
     PITCH_START,
     TIER_CONFIGS,
+    bar_durations,
     career_progress,
     chord_tone_degrees,
     format_set_title,
@@ -92,6 +93,19 @@ def test_career_progress_ramps_across_venues():
     assert late_hi > early_hi
     assert 32 in rhythm_profile(0.0)[0]
     assert 2 in rhythm_profile(1.0)[0]
+
+
+def test_rhythm_profile_ramps_at_each_early_threshold():
+    assert rhythm_profile(0.0) == ([32], 32)
+    assert rhythm_profile(0.12) == ([16], 16)
+    assert rhythm_profile(0.28) == ([16, 8], 16)
+    assert rhythm_profile(0.44) == ([8, 4], 16)
+    assert rhythm_profile(0.60) == ([8, 4], 8)
+
+
+def test_first_rhythm_ramp_generates_half_notes():
+    moving, resolve = rhythm_profile(0.12)
+    assert bar_durations(moving, resolve, cadence=False) == [16, 16]
 
 
 def _bar_end_notes(song):
