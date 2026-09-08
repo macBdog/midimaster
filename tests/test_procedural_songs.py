@@ -34,16 +34,17 @@ def test_each_set_has_a_distinct_progression():
 
 
 def test_set_titles_name_the_style_and_keep_score_prefix():
-    title = format_set_title(0, "1564")
-    assert title == "Set 1: Pop I-V-vi-IV"
+    title = format_set_title(0, "1564", "C")
+    assert title == "Set 1 in C - Pop I-V-vi-IV"
     assert re.match(r"Set (\d+)", title).group(1) == "1"
-    assert format_set_title(4, "36251") == "Set 5: Turnaround iii-vi-ii-V-I"
+    assert format_set_title(4, "36251", "C") == "Set 5 in C - Turnaround iii-vi-ii-V-I"
+    assert format_set_title(0, "145", "G") == "Set 1 in G - Classic I-IV-V-I"
 
 
 def test_score_key_still_parses_set_index():
     class _Song:
         artist = "Open Mic Night"
-        title = "Set 3: Doo-wop I-vi-IV-V"
+        title = "Set 3 in C - Doo-wop I-vi-IV-V"
         path = ""
 
         def get_name(self):
@@ -56,11 +57,13 @@ def test_generated_album_titles_and_degrees_match():
     name, songs = generate_venue_album(1)
     assert name == "Open Mic Night"
     assert [s.title for s in songs] == [
-        "Set 1: Classic I-IV-V-I",
-        "Set 2: Pop I-V-vi-IV",
-        "Set 3: Doo-wop I-vi-IV-V",
-        "Set 4: Minor pop vi-IV-I-V",
+        "Set 1 in C - Classic I-IV-V-I",
+        "Set 2 in C - Pop I-V-vi-IV",
+        "Set 3 in C - Doo-wop I-vi-IV-V",
+        "Set 4 in C - Minor pop vi-IV-I-V",
     ]
+    assert songs[0].get_name() == "Set 1 in C - Classic I-IV-V-I"
+    assert name not in songs[0].get_name()
     assert songs[0].backing_degrees == [1, 4, 5, 1]
     assert songs[1].backing_degrees == [1, 5, 6, 4]
 
@@ -68,8 +71,28 @@ def test_generated_album_titles_and_degrees_match():
 def test_regenerate_keeps_the_same_progression():
     original = generate_venue_album(3)[1][0]
     retry = regenerate_set(3, 0)
-    assert original.title == retry.title == "Set 1: Jazz ii-V-I"
+    assert original.title == retry.title == "Set 1 in C - Jazz ii-V-I"
     assert original.backing_degrees == retry.backing_degrees == [2, 5, 1]
+
+
+def test_regenerate_resets_existing_song_in_place():
+    from procedural_songs import rng
+
+    rng.seed(1)
+    song = generate_venue_album(5)[1][-1]
+    original_notes = [(n.note, n.time, n.length) for n in song.notes]
+    degrees = list(song.backing_degrees)
+    artist = song.artist
+    score = dict(song.score)
+
+    rng.seed(2)
+    same = regenerate_set(5, TIER_CONFIGS[5]["num_sets"] - 1, song)
+    assert same is song
+    assert song.artist == artist
+    assert song.score == score
+    assert song.backing_degrees == degrees
+    assert song.notes
+    assert [(n.note, n.time, n.length) for n in song.notes] != original_notes
 
 
 def test_world_tour_covers_every_progression():
@@ -92,6 +115,22 @@ def test_career_progress_ramps_across_venues():
     assert late_hi > early_hi
     assert 32 in rhythm_profile(0.0)[0]
     assert 2 in rhythm_profile(1.0)[0]
+
+
+def _has_note_gap(song):
+    ordered = sorted(song.notes, key=lambda n: n.time)
+    return any(b.time > a.time + a.length for a, b in zip(ordered, ordered[1:]))
+
+
+def test_generated_songs_leave_gaps_for_rests():
+    from procedural_songs import rng
+
+    rng.seed(11)
+    assert any(
+        _has_note_gap(song)
+        for tier in TIER_CONFIGS
+        for song in generate_venue_album(tier)[1]
+    )
 
 
 def _bar_end_notes(song):

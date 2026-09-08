@@ -77,6 +77,9 @@ def song_play(**kwargs):
 
     # Track current career song if applicable
     if song_widget and song_widget.venue_tier is not None:
+        from procedural_songs import regenerate_set
+
+        regenerate_set(song_widget.venue_tier, song_widget.set_index, song)
         menu.current_career_song = {
             "tier": song_widget.venue_tier,
             "set_index": song_widget.set_index,
@@ -323,6 +326,13 @@ def game_pause(**kwargs):
 
 def game_stop_rewind(**kwargs):
     game = kwargs["game"]
+    career_info = getattr(game.menu, "current_career_song", None)
+    if career_info:
+        from procedural_songs import regenerate_set
+
+        song = career_info["song"]
+        regenerate_set(career_info["tier"], career_info["set_index"], song)
+        game.music.load(song)
     game.reset()
     game.music.rewind()
 
@@ -394,7 +404,6 @@ def _process_career_result(menu, game):
 
     tier = career_info["tier"]
     set_index = career_info["set_index"]
-    album = career_info["album"]
     song = career_info["song"]
 
     # Persist score before any song regeneration (still have live game.score)
@@ -409,11 +418,10 @@ def _process_career_result(menu, game):
     result = menu.songbook.career.process_set_result(score_percent, num_sets)
 
     if "error" not in result:
-        # If bombed, regenerate the song but keep showing best XP
+        # If bombed, rebuild the set in place but keep showing best XP
         if result["result"].value == "bombed" and not result["career_over"]:
-            new_song = regenerate_set(tier, set_index)
-            menu.songbook.apply_stored_score(new_song, venue_tier=tier, set_index=set_index)
-            album.songs[set_index] = new_song
+            regenerate_set(tier, set_index, song)
+            menu.songbook.apply_stored_score(song, venue_tier=tier, set_index=set_index)
 
     # Clear the current career song
     menu.current_career_song = None
@@ -439,10 +447,20 @@ def song_over_back(**kwargs):
 
 def song_over_retry(**kwargs):
     game = kwargs["game"]
+    menu = game.menu
 
     kwargs.update({"type": Dialogs.GAME_OVER})
-    game.menu.hide_dialog(**kwargs)
-    game.menu.refresh_song_display()
+    menu.hide_dialog(**kwargs)
+    menu.refresh_song_display()
+
+    career_info = getattr(menu, "current_career_song", None)
+    if career_info:
+        from procedural_songs import regenerate_set
+
+        song = career_info["song"]
+        regenerate_set(career_info["tier"], career_info["set_index"], song)
+        game.music.load(song)
+
     game.reset()
     game.music.rewind()
 

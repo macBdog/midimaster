@@ -44,6 +44,11 @@ class Song:
         self.backing_comp: str | None = None  # "guitar", "ep", …; None → auto
 
     def get_name(self):
+        from procedural_songs import is_venue_album
+
+        # Venue albums already show the album name in the menu chrome.
+        if is_venue_album(self.artist or ""):
+            return self.title
         return f"{self.artist} - {self.title}"
 
     def get_max_score(self):

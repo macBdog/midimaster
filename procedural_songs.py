@@ -43,6 +43,9 @@ PITCH_END = (52, 77)    # E3 .. F5
 
 BAR_32NDS = 32
 COUNT_IN_32NDS = 32
+# Chance a bar includes a rest. assign_notes fills the resulting gap with rest glyphs.
+REST_MOVING_CHANCE = 0.32
+REST_WHOLE_BAR_CHANCE = 0.16
 
 # Diatonic motifs as scale-degree offsets from a starting tone.
 # Short shapes that stay singable when transposed onto a chord tone.
@@ -283,14 +286,16 @@ def progression_for_set(tier_config: dict, set_num: int) -> str:
     return progs[set_num % len(progs)]
 
 
-def format_set_title(set_num: int, degree_name: str) -> str:
-    """Career song title. Keep 'Set N' prefix — song_book.score_key parses it."""
+def format_set_title(set_num: int, degree_name: str, key: str) -> str:
+    """Career song title. Keep 'Set N' prefix — song_book.score_key parses it.
+
+    Album name is shown separately in the menu, so the title is the set only.
+    """
     meta = PROGRESSION_META.get(degree_name, {})
     style = meta.get("style", degree_name)
     roman = meta.get("roman")
-    if roman:
-        return f"Set {set_num + 1}: {style} {roman}"
-    return f"Set {set_num + 1}: {style}"
+    body = f"{style} {roman}" if roman else style
+    return f"Set {set_num + 1} in {key} - {body}"
 
 
 def get_root_midi_for_key(key: str) -> int:
@@ -398,6 +403,30 @@ def resolve_pitch(
     return min(pool, key=lambda p: (abs(p - prev), abs(p - 67)))
 
 
+def _pick_rest_slot(
+    n: int,
+    first_bar: bool,
+    last_bar: bool,
+    cadence: bool,
+    after_rest: bool,
+) -> int | None:
+    """Index of a duration to skip, or None. Never the bar-ending chord tone."""
+    if n <= 0:
+        return None
+    if n == 1:
+        if first_bar or last_bar or cadence or after_rest:
+            return None
+        return 0 if rng.random() < REST_WHOLE_BAR_CHANCE else None
+    if rng.random() >= REST_MOVING_CHANCE:
+        return None
+    slots = list(range(n - 1))
+    if first_bar:
+        slots = [s for s in slots if s != 0]
+    if not slots:
+        return None
+    return int(rng.choice(slots))
+
+
 def pick_motif(num_notes: int, prefer: tuple[int, ...] | None) -> tuple[int, ...]:
     if prefer is not None and 1 <= len(prefer) <= num_notes:
         return prefer
@@ -477,6 +506,7 @@ def generate_melodic_content(
 
     Each bar ends on a chord tone, held longer than the moving notes.
     Motifs are reused (transposed onto the new chord) so phrases feel thematic.
+    Occasional gaps become rests when notes are assigned for drawing.
     """
     degrees = DEGREE_PROGRESSIONS.get(degree_name, DEGREE_PROGRESSIONS["145"])
     scale_pcs = scale_pitch_classes(song.key_signature)
@@ -493,6 +523,7 @@ def generate_melodic_content(
     time_32 = COUNT_IN_32NDS
     prev_pitch: int | None = None
     last_motif: tuple[int, ...] | None = None
+    after_rest = False
 
     for bar_i in range(bars):
         roman = degrees[bar_i % len(degrees)]
@@ -500,12 +531,26 @@ def generate_melodic_content(
         cadence = (bar_i + 1) % len(degrees) == 0
         durs = bar_durations(moving, resolve, cadence)
         n = len(durs)
+        first_bar = bar_i == 0
+        last_bar = bar_i == bars - 1
+        rest_i = _pick_rest_slot(n, first_bar, last_bar, cadence, after_rest)
+
+        if rest_i == 0 and n == 1:
+            time_32 += durs[0]
+            after_rest = True
+            continue
+
         reuse = last_motif is not None and rng.random() < 0.55
         motif = pick_motif(n, last_motif if reuse else None)
         last_motif = motif
         start = int(rng.choice(chord))
 
+        after_rest = False
         for i, length in enumerate(durs):
+            if i == rest_i:
+                time_32 += length
+                after_rest = True
+                continue
             if i == n - 1:
                 pitch = resolve_pitch(chord, prev_pitch, lo, hi, scale_pcs, cadence)
             else:
@@ -514,6 +559,7 @@ def generate_melodic_content(
             song.notes.append(Note(int(pitch), int(time_32), int(length)))
             prev_pitch = pitch
             time_32 += length
+            after_rest = False
 
 def generate_procedural_song(
     config: dict,
@@ -521,18 +567,14 @@ def generate_procedural_song(
     artist: str,
     clef_mode: ClefMode | None = DEFAULT_CLEF_MODE,
     degree_name: str | None = None,
+    song: Song | None = None,
 ) -> Song:
     """Generate a single procedural song from configuration.
-    Args:
-        config: Configuration dict with all generation parameters
-        title: Song title
-        artist: Artist/album name
-        clef_mode: Clef for melodic pitch limits (default treble)
-        degree_name: Stem progression id; if omitted, pick from config list
-    Returns:
-        Generated Song object
+
+    Pass an existing ``song`` to reset it in place (score is kept).
     """
-    song = Song()
+    if song is None:
+        song = Song()
     song.artist = artist
     song.title = title
     song.key_signature = rng.choice(config["keys"]).item()
@@ -540,6 +582,11 @@ def generate_procedural_song(
     song.ticks_per_beat = Song.SDQNotesPerBeat
     song.track_names = ["Player", "Backing"]
     song.saved = False
+    song.notes = []
+    song.backing_tracks = {}
+    song.backing_degrees = []
+    song.use_audio_backing = False
+    song.backing_comp = None
 
     degree_names = config.get("degree_progressions")
     if degree_name is None and degree_names:
@@ -578,11 +625,10 @@ def generate_venue_album(tier: int) -> tuple[str, list[Song]]:
             tier_config, set_num, num_sets, progress=career_progress(tier, set_num)
         )
         deg_name = progression_for_set(tier_config, set_num)
-        title = format_set_title(set_num, deg_name)
         song = generate_procedural_song(
-            set_config, title, album_name, degree_name=deg_name
+            set_config, "", album_name, degree_name=deg_name
         )
-        song.title = title
+        song.title = format_set_title(set_num, deg_name, song.key_signature)
         songs.append(song)
 
     return album_name, songs
@@ -608,14 +654,11 @@ def is_venue_album(album_name: str) -> bool:
     """
     return get_tier_for_album(album_name) is not None
 
-def regenerate_set(tier: int, set_num: int) -> "Song":
-    """Regenerate a single set with fresh random content.
-    Called when a player bombs a set and needs to retry.
-    Args:
-        tier: Venue tier (1-5)
-        set_num: Set index within venue (0-indexed)
-    Returns:
-        Newly generated Song object
+def regenerate_set(tier: int, set_num: int, song: Song | None = None) -> Song:
+    """Rebuild a set with fresh random content.
+
+    Pass ``song`` to reset that object in place so menu widgets keep their
+    reference. Score on a reused song is left intact.
     """
     tier_config = TIER_CONFIGS[tier]
     album_name = tier_config["album_name"]
@@ -625,10 +668,8 @@ def regenerate_set(tier: int, set_num: int) -> "Song":
         tier_config, set_num, num_sets, progress=career_progress(tier, set_num)
     )
     deg_name = progression_for_set(tier_config, set_num)
-    title = format_set_title(set_num, deg_name)
     song = generate_procedural_song(
-        set_config, title, album_name, degree_name=deg_name
+        set_config, "", album_name, degree_name=deg_name, song=song
     )
-    song.title = title
-
+    song.title = format_set_title(set_num, deg_name, song.key_signature)
     return song
